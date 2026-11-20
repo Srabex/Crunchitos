@@ -53,6 +53,9 @@ const SEMILLA = [
 
 const TIPOS = ["entrada", "venta", "tomada", "merma"];
 
+// Acceso inicial del equipo (se agrega una sola vez; después se maneja en Ajustes → Equipo).
+const EQUIPO_INICIAL = [["paolardzmq@gmail.com", "Pao"]];
+
 // ————————————————————————— utilidades
 
 const enc = new TextEncoder();
@@ -121,6 +124,14 @@ async function db(env) {
   ]);
   const sem = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'semilla'").first();
   if (!sem) await sembrar(env.DB);
+  const eq = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'equipo_inicial_v1'").first();
+  if (!eq) {
+    await env.DB.batch([
+      ...EQUIPO_INICIAL.map(([email, nombre]) =>
+        env.DB.prepare("INSERT OR IGNORE INTO equipo (email, nombre, creado) VALUES (?, ?, ?)").bind(email, nombre, Date.now())),
+      env.DB.prepare("INSERT OR REPLACE INTO meta (llave, valor) VALUES ('equipo_inicial_v1', '1')"),
+    ]);
+  }
   // Sabores nuevos (p. ej. plátano natural) entran solos a una base que ya existía, con su orden.
   await env.DB.batch(PRODUCTOS.flatMap(([id, base, nb, sabor, color], i) => [
     env.DB.prepare("INSERT OR IGNORE INTO productos (id, base, nombre_base, sabor, color, orden) VALUES (?,?,?,?,?,?)").bind(id, base, nb, sabor, color, i),
