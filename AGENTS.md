@@ -26,10 +26,13 @@ Panel para Sebas, Paola (Pao) y Víctor.
 - **Vender**: venta (precio por bolsa con botones + "otro", cliente opcional), "me llevé / regalo" y merma. Avisa si no alcanza el inventario (se puede guardar de todos modos).
 - **Inventario**: por sabor (llegó, vendidas, otras, quedan) y botón "Llegó mercancía" (entrada con costo por bolsa).
 - **Historial**: movimientos agrupados, borrar (doble toque) y descarga CSV para Excel.
+- **Gastos**: monto, categoría (etiquetas e impresión, envío de la fábrica, gasolina, empaque, publicidad, otro), concepto, quién lo pagó, fecha y nota. Descarga CSV.
+- **Inicio** también muestra gastos del periodo, **ganancia real** (ganancia de las bolsas − gastos), gastos por categoría y quién ha puesto.
+- **Historial**: "Cambiar precio" / "Cambiar costo" en ventas y entradas (para corregir el costo real por paquete).
 - **Ajustes**: precios, costo, aviso de stock bajo, WhatsApp de la página, equipo.
 
 ## Datos (D1)
-- `productos` (12 sabores), `movimientos` (grupo, tipo entrada/venta/tomada/merma, producto, cantidad, precio, cliente, nota, quién, fecha), `meta` (ajustes en JSON), `equipo`, `codigos`.
+- `productos` (12 sabores), `movimientos` (grupo, tipo entrada/venta/tomada/merma, producto, cantidad, precio, cliente, nota, quién, fecha), `gastos` (fecha, categoría, concepto, monto, pagó, nota, registró), `meta` (ajustes en JSON), `equipo`, `codigos`.
 - Inventario = entradas − ventas − tomadas − merma.
 
 ## Variables en Cloudflare (Settings → Variables and Secrets, tipo Secret)

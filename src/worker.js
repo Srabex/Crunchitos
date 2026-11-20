@@ -52,6 +52,7 @@ const SEMILLA = [
 ];
 
 const TIPOS = ["entrada", "venta", "tomada", "merma"];
+const CATEGORIAS = ["etiquetas", "envio", "gasolina", "empaque", "publicidad", "otro"];
 
 // Acceso inicial del equipo (se agrega una sola vez; después se maneja en Ajustes → Equipo).
 const EQUIPO_INICIAL = [["paolardzmq@gmail.com", "Pao"]];
@@ -117,6 +118,9 @@ async function db(env) {
       fecha TEXT NOT NULL, creado INTEGER NOT NULL)`),
     env.DB.prepare(`CREATE INDEX IF NOT EXISTS mov_grupo ON movimientos (grupo)`),
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS meta (llave TEXT PRIMARY KEY, valor TEXT NOT NULL)`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS gastos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT NOT NULL, categoria TEXT NOT NULL, concepto TEXT NOT NULL DEFAULT '',
+      monto REAL NOT NULL, pago TEXT NOT NULL DEFAULT '', nota TEXT NOT NULL DEFAULT '', quien TEXT NOT NULL DEFAULT '', creado INTEGER NOT NULL)`),
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS equipo (email TEXT PRIMARY KEY, nombre TEXT NOT NULL DEFAULT '', creado INTEGER NOT NULL)`),
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS codigos (
       email TEXT PRIMARY KEY, hash TEXT NOT NULL, intentos INTEGER NOT NULL DEFAULT 0,
@@ -257,11 +261,12 @@ async function verificar(env, D, body) {
 // ————————————————————————— datos del panel
 
 async function datos(D, yo) {
-  const [prod, mov, eq, aj] = await Promise.all([
+  const [prod, mov, eq, aj, gas] = await Promise.all([
     D.prepare("SELECT * FROM productos ORDER BY orden").all(),
     D.prepare("SELECT * FROM movimientos ORDER BY fecha DESC, creado DESC, id").all(),
     D.prepare("SELECT email, nombre FROM equipo ORDER BY creado").all(),
     ajustes(D),
+    D.prepare("SELECT * FROM gastos ORDER BY fecha DESC, creado DESC").all(),
   ]);
   return {
     ok: true,
@@ -273,6 +278,7 @@ async function datos(D, yo) {
     movimientos: mov.results,
     equipo: eq.results,
     ajustes: aj,
+    gastos: gas.results,
   };
 }
 
@@ -393,6 +399,37 @@ async function api(req, env, url) {
   if (mBorrar && metodo === "DELETE") {
     await D.prepare("DELETE FROM movimientos WHERE grupo = ?").bind(mBorrar[1]).run();
     return json({ ok: true });
+  }
+  const mPrecio = /^\/movimientos\/(g-[\w-]+)$/.exec(ruta);
+  if (mPrecio && metodo === "PUT") {
+    const precio = Number(body.precio);
+    if (!Number.isFinite(precio) || precio < 0 || precio > 100000) return error("Revisa el precio.");
+    await D.prepare("UPDATE movimientos SET precio = ? WHERE grupo = ? AND tipo IN ('venta','entrada')").bind(precio, mPrecio[1]).run();
+    return json({ ok: true });
+  }
+  if (ruta === "/gastos" && metodo === "POST") {
+    const monto = Number(body.monto);
+    if (!Number.isFinite(monto) || monto <= 0 || monto > 1000000) return error("Pon el monto del gasto.");
+    const categoria = CATEGORIAS.includes(body.categoria) ? body.categoria : "otro";
+    const fecha = esFecha(body.fecha) ? body.fecha : hoyChihuahua();
+    const pago = limpiarCorreo(body.pago) || yo;
+    await D.prepare(`INSERT INTO gastos (fecha, categoria, concepto, monto, pago, nota, quien, creado) VALUES (?,?,?,?,?,?,?,?)`)
+      .bind(fecha, categoria, texto(body.concepto, 80), Math.round(monto * 100) / 100, pago, texto(body.nota, 300), yo, Date.now()).run();
+    return json({ ok: true });
+  }
+  const mGasto = /^\/gastos\/(\d+)$/.exec(ruta);
+  if (mGasto && metodo === "DELETE") {
+    await D.prepare("DELETE FROM gastos WHERE id = ?").bind(Number(mGasto[1])).run();
+    return json({ ok: true });
+  }
+  if (ruta === "/gastos.csv" && metodo === "GET") {
+    const { results } = await D.prepare("SELECT * FROM gastos ORDER BY fecha DESC, creado DESC").all();
+    const esc = (v) => { const t = String(v ?? ""); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+    const filas = [["Fecha", "Categoría", "Concepto", "Monto", "Pagó", "Nota", "Registró"],
+      ...results.map((g) => [g.fecha, g.categoria, g.concepto, g.monto, g.pago, g.nota, g.quien])];
+    return new Response("\uFEFF" + filas.map((f) => f.map(esc).join(",")).join("\r\n"), {
+      headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="crunchitos-gastos-${hoyChihuahua()}.csv"`, "cache-control": "no-store" },
+    });
   }
   if (ruta === "/ajustes" && metodo === "PUT") return guardarAjustes(D, body);
   if (ruta === "/movimientos.csv" && metodo === "GET") {

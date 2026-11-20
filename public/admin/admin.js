@@ -15,7 +15,7 @@
     });
   }
   var fmt = new Intl.NumberFormat("es-MX", { maximumFractionDigits: 0 });
-  function pesos(n) { return "$" + fmt.format(Math.round(n || 0)); }
+  function pesos(n) { var r = Math.round(n || 0); return (r < 0 ? "-$" : "$") + fmt.format(Math.abs(r)); }
   function num(n) { return fmt.format(n || 0); }
   function aviso(t) {
     var a = document.getElementById("aviso");
@@ -58,6 +58,7 @@
   var ICON = {
     inicio: '<path d="M4 20V10l8-6 8 6v10h-5v-6H9v6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
     vender: '<path d="M6 7h12l-1 13H7L6 7Zm3 0a3 3 0 0 1 6 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+    gastos: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6M9 12h6M9 16h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>',
     inventario: '<path d="M4 8l8-4 8 4v8l-8 4-8-4V8Zm0 0l8 4 8-4M12 12v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
     historial: '<path d="M12 7v5l3 2M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
     ajustes: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 5v4M6 15v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'
@@ -142,7 +143,7 @@
 
   // ——— estructura
   function pintar() {
-    var tabs = [["inicio", "Inicio"], ["vender", "Vender"], ["inventario", "Inventario"], ["historial", "Historial"], ["ajustes", "Ajustes"]];
+    var tabs = [["inicio", "Inicio"], ["vender", "Vender"], ["gastos", "Gastos"], ["inventario", "Inventario"], ["historial", "Historial"], ["ajustes", "Ajustes"]];
     app.innerHTML =
       '<header class="top"><img src="/img/logo.svg" alt="Crunchitos"><div class="quien">' + esc(nombrePersona(D.yo)) +
       ' <button class="enlace" id="salir">Salir</button></div></header>' +
@@ -155,12 +156,13 @@
       b.onclick = function () { ir(b.getAttribute("data-v")); };
     });
     var v = document.getElementById("vista");
-    ({ inicio: vInicio, vender: vVender, inventario: vInventario, historial: vHistorial, ajustes: vAjustes, entrada: vVender })[vista](v);
+    ({ inicio: vInicio, vender: vVender, gastos: vGastos, inventario: vInventario, historial: vHistorial, ajustes: vAjustes, entrada: vVender })[vista](v);
   }
   function ir(v) {
     vista = v;
     if (v === "vender") form = nuevoForm("venta");
     if (v === "entrada") form = nuevoForm("entrada");
+    if (v === "gastos") gform = null;
     pintar(); window.scrollTo(0, 0);
   }
 
@@ -174,7 +176,11 @@
     var tomadas = 0, merma = 0;
     movs.forEach(function (m) { if (m.tipo === "tomada") tomadas += m.cantidad; if (m.tipo === "merma") merma += m.cantidad; });
     var enStock = 0; Object.keys(st).forEach(function (k) { enStock += Math.max(0, st[k]); });
-    var bajos = D.productos.filter(function (p) { return st[p.id] <= (D.ajustes.stockBajo || 0); });
+    var gastos = (D.gastos || []).filter(enPeriodo), totGastos = 0, porCat = {}, porPago = {};
+    gastos.forEach(function (g) { totGastos += g.monto; porCat[g.categoria] = (porCat[g.categoria] || 0) + g.monto; porPago[g.pago] = (porPago[g.pago] || 0) + g.monto; });
+    var gananciaBolsas = dinero - bolsas * cp;
+    var llego = {}; D.movimientos.forEach(function (m) { if (m.tipo === "entrada") llego[m.producto_id] = 1; });
+    var bajos = D.productos.filter(function (p) { return llego[p.id] && st[p.id] <= (D.ajustes.stockBajo || 0); });
 
     var porPrecio = {}, porSabor = {}, porPersona = {}, porCliente = {};
     ventas.forEach(function (m) {
@@ -192,7 +198,9 @@
     if (bajos.length) h += '<div class="alerta"><strong>Se están acabando:</strong> ' + bajos.map(function (p) { return esc(p.nombre_base + " " + p.sabor) + " (" + st[p.id] + ")"; }).join(", ") + "</div>";
     h += '<div class="kpis">' +
       '<div class="kpi amarillo"><span>Vendido</span><strong>' + pesos(dinero) + "</strong><small>" + num(bolsas) + " bolsas</small></div>" +
-      '<div class="kpi"><span>Ganancia</span><strong>' + pesos(dinero - bolsas * cp) + "</strong><small>costo " + pesos(cp) + " por bolsa</small></div>" +
+      '<div class="kpi"><span>Ganancia de las bolsas</span><strong>' + pesos(gananciaBolsas) + "</strong><small>costo " + pesos(cp) + " por bolsa</small></div>" +
+      '<div class="kpi"><span>Gastos</span><strong>' + pesos(totGastos) + "</strong><small>" + gastos.length + (gastos.length === 1 ? " gasto" : " gastos") + "</small></div>" +
+      '<div class="kpi ' + (gananciaBolsas - totGastos < 0 ? "rojo" : "verde") + '"><span>Ganancia real</span><strong>' + pesos(gananciaBolsas - totGastos) + "</strong><small>ganancia menos gastos</small></div>" +
       '<div class="kpi"><span>Quedan</span><strong>' + num(enStock) + "</strong><small>" + pesos(enStock * cp) + " a costo</small></div>" +
       '<div class="kpi"><span>Tomadas / merma</span><strong>' + num(tomadas + merma) + "</strong><small>" + pesos((tomadas + merma) * cp) + " a costo</small></div></div>";
 
@@ -213,6 +221,12 @@
         '<div style="height:8px;background:var(--crema);border-radius:9px;margin-top:4px"><div style="height:8px;border-radius:9px;background:' + esc(p.color || "#ECBE48") + ";width:" + Math.max(4, porSabor[id] / max * 100) + '%"></div></div></div>';
     }).join("") : '<p class="vacio">Sin ventas en este periodo.</p>') + "</div>";
 
+    var cats = Object.keys(porCat).sort(function (a, b) { return porCat[b] - porCat[a]; });
+    h += '<div class="caja"><div class="fila entre"><h3>Gastos</h3><button class="enlace" id="irgastos">+ Registrar gasto</button></div>' + (cats.length
+      ? "<table><tbody>" + cats.map(function (c) { return "<tr><td>" + esc(CAT[c] || c) + "</td><td class=num>" + pesos(porCat[c]) + "</td></tr>"; }).join("") +
+        "</tbody><tfoot><tr><td>Total</td><td class=num>" + pesos(totGastos) + "</td></tr></tfoot></table>" +
+        '<h3 style="margin-top:16px">Quién ha puesto</h3><table><tbody>' + Object.keys(porPago).map(function (q) { return "<tr><td>" + esc(nombrePersona(q)) + "</td><td class=num>" + pesos(porPago[q]) + "</td></tr>"; }).join("") + "</tbody></table>"
+      : '<p class="vacio">Sin gastos en este periodo.</p>') + "</div>";
     var personas = Object.keys(porPersona);
     if (personas.length) {
       h += '<div class="caja"><h3>Quién vendió</h3><table><tbody>' + personas.map(function (q) {
@@ -225,6 +239,65 @@
     }).join("") + "</tbody></table>" : '<p class="vacio">Cuando pongas el nombre del cliente en la venta, aquí ves quién te compra más.</p>') + "</div>";
     v.innerHTML = h;
     v.querySelectorAll("[data-p]").forEach(function (b) { b.onclick = function () { periodo = b.getAttribute("data-p"); pintar(); }; });
+    document.getElementById("irgastos").onclick = function () { ir("gastos"); };
+  }
+
+  // ——— gastos
+  var CAT = { etiquetas: "Etiquetas e impresión", envio: "Envío de la fábrica", gasolina: "Gasolina", empaque: "Empaque", publicidad: "Publicidad", otro: "Otro" };
+  var gform = null;
+  function vGastos(v) {
+    if (!gform) gform = { monto: "", concepto: "", categoria: "envio", pago: D.yo, fecha: D.hoy, nota: "" };
+    var g = gform;
+    var personas = [D.dueno].concat(D.equipo.map(function (e) { return e.email; }));
+    var h = "<h2>Gastos</h2>" +
+      '<form class="caja" id="fg" novalidate>' +
+      '<label>Monto<input id="gmonto" inputmode="decimal" placeholder="$0" value="' + esc(g.monto) + '" style="font-size:24px;font-weight:700"></label>' +
+      '<h3 style="margin:14px 0 8px">Categoría</h3><div class="chips">' + Object.keys(CAT).map(function (c) {
+        return '<button type="button" class="chip" data-cat="' + c + '" aria-pressed="' + (g.categoria === c) + '">' + CAT[c] + "</button>";
+      }).join("") + "</div>" +
+      '<label style="margin-top:12px">Concepto<input id="gconcepto" value="' + esc(g.concepto) + '" placeholder="Ej. 20 hojas de calcomanías"></label>' +
+      '<h3 style="margin:14px 0 8px">¿Quién lo pagó?</h3><div class="chips">' + personas.map(function (p) {
+        return '<button type="button" class="chip" data-pago="' + esc(p) + '" aria-pressed="' + (g.pago === p) + '">' + esc(nombrePersona(p)) + "</button>";
+      }).join("") + "</div>" +
+      '<div class="rejilla2" style="margin-top:12px"><label>Fecha<input type="date" id="gfecha" value="' + esc(g.fecha) + '" max="' + esc(D.hoy) + '"></label>' +
+      '<label>Nota (opcional)<input id="gnota" value="' + esc(g.nota) + '"></label></div>' +
+      '<p class="error" id="gerr" role="alert" style="margin-top:10px"></p>' +
+      '<button class="btn" style="width:100%;margin-top:6px" id="gguardar">Guardar gasto</button></form>';
+    var lista = (D.gastos || []).slice(0, 100);
+    h += '<div class="fila entre" style="margin:18px 0 10px"><h3 style="margin:0">Últimos gastos</h3><a class="btn chico claro" href="/api/gastos.csv">Descargar Excel</a></div>';
+    h += lista.length ? lista.map(function (x) {
+      return '<div class="mov"><div class="cab"><span><span class="pill p-gasto">' + esc(CAT[x.categoria] || x.categoria) + "</span> " + esc(fechaBonita(x.fecha)) + "</span><span>Pagó " + esc(nombrePersona(x.pago)) + "</span></div>" +
+        (x.concepto ? '<div style="font-weight:600;margin-top:6px">' + esc(x.concepto) + "</div>" : "") +
+        (x.nota ? '<div style="font-size:13px;color:var(--suave);margin-top:4px">' + esc(x.nota) + "</div>" : "") +
+        '<div class="pie" style="margin-top:8px"><strong>' + pesos(x.monto) + '</strong><button class="btn chico peligro" data-borrarg="' + x.id + '">Borrar</button></div></div>';
+    }).join("") : '<p class="vacio">Todavía no hay gastos. Registra el primero: etiquetas, envío, gasolina…</p>';
+    v.innerHTML = h;
+    function leer() {
+      g.monto = document.getElementById("gmonto").value; g.concepto = document.getElementById("gconcepto").value;
+      g.fecha = document.getElementById("gfecha").value || D.hoy; g.nota = document.getElementById("gnota").value;
+    }
+    v.querySelectorAll("[data-cat]").forEach(function (b) { b.onclick = function () { leer(); g.categoria = b.getAttribute("data-cat"); pintar(); }; });
+    v.querySelectorAll("[data-pago]").forEach(function (b) { b.onclick = function () { leer(); g.pago = b.getAttribute("data-pago"); pintar(); }; });
+    document.getElementById("fg").onsubmit = function (e) {
+      e.preventDefault(); leer();
+      var monto = parseFloat(String(g.monto).replace(/[$,\s]/g, ""));
+      var err = document.getElementById("gerr"), b = document.getElementById("gguardar");
+      if (!(monto > 0)) { err.textContent = "Pon el monto del gasto."; return; }
+      b.disabled = true;
+      api("POST", "/gastos", { monto: monto, concepto: g.concepto, categoria: g.categoria, pago: g.pago, fecha: g.fecha, nota: g.nota }).then(function (r) {
+        b.disabled = false;
+        if (r._status === 401) { pintarLogin(); return; }
+        if (!r.ok) { err.textContent = r.error || "No se pudo guardar."; return; }
+        aviso("Gasto guardado"); gform = null; cargar();
+      });
+    };
+    v.querySelectorAll("[data-borrarg]").forEach(function (b) {
+      b.onclick = function () {
+        if (!b.classList.contains("seguro")) { b.classList.add("seguro"); b.textContent = "¿Seguro? Toca otra vez"; setTimeout(function () { b.classList.remove("seguro"); b.textContent = "Borrar"; }, 4000); return; }
+        b.disabled = true;
+        api("DELETE", "/gastos/" + b.getAttribute("data-borrarg")).then(function (r) { aviso(r.ok ? "Borrado" : (r.error || "No se pudo borrar.")); cargar(); });
+      };
+    });
   }
 
   // ——— vender / registrar movimiento
@@ -392,10 +465,21 @@
         "<ul>" + g.items.map(function (m) { return "<li>" + m.cantidad + " × " + esc(nombreProd(m.producto_id)) + "</li>"; }).join("") + "</ul>" +
         (g.nota ? '<div style="font-size:13px;color:var(--suave);margin-bottom:8px">' + esc(g.nota) + "</div>" : "") +
         '<div class="pie"><span><strong>' + n + (n === 1 ? " bolsa" : " bolsas") + "</strong>" + (g.tipo === "venta" ? " · " + pesos(g.precio) + " c/u · <strong>" + pesos(n * g.precio) + "</strong>" : g.tipo === "entrada" && g.precio ? " · costo " + pesos(g.precio) : "") + "</span>" +
-        '<button class="btn chico peligro" data-borrar="' + esc(g.grupo) + '">Borrar</button></div></div>';
+        '<span class="fila" style="gap:6px">' + (g.tipo === "venta" || g.tipo === "entrada" ? '<button class="btn chico claro" data-precio-g="' + esc(g.grupo) + '" data-actual="' + g.precio + '" data-t="' + g.tipo + '">' + (g.tipo === "venta" ? "Cambiar precio" : "Cambiar costo") + "</button>" : "") +
+        '<button class="btn chico peligro" data-borrar="' + esc(g.grupo) + '">Borrar</button></span></div></div>';
     }).join("") : '<p class="vacio">No hay movimientos.</p>';
     v.innerHTML = h;
     v.querySelectorAll("[data-f]").forEach(function (b) { b.onclick = function () { filtroHist = b.getAttribute("data-f"); pintar(); }; });
+    v.querySelectorAll("[data-precio-g]").forEach(function (b) {
+      b.onclick = function () {
+        var t = b.getAttribute("data-t") === "venta" ? "Nuevo precio por bolsa" : "Nuevo costo por bolsa";
+        var nuevo = window.prompt(t + " (actual $" + b.getAttribute("data-actual") + "):", b.getAttribute("data-actual"));
+        if (nuevo === null) return;
+        var n = parseFloat(String(nuevo).replace(/[$,\s]/g, ""));
+        if (!(n >= 0)) { aviso("Ese número no es válido."); return; }
+        api("PUT", "/movimientos/" + b.getAttribute("data-precio-g"), { precio: n }).then(function (r) { aviso(r.ok ? "Actualizado" : (r.error || "No se pudo cambiar.")); cargar(); });
+      };
+    });
     v.querySelectorAll("[data-borrar]").forEach(function (b) {
       b.onclick = function () {
         if (!b.classList.contains("seguro")) { b.classList.add("seguro"); b.textContent = "¿Seguro? Toca otra vez"; setTimeout(function () { b.classList.remove("seguro"); b.textContent = "Borrar"; }, 4000); return; }
