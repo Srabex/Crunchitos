@@ -1,0 +1,464 @@
+// Panel de Crunchitos: inventario, ventas y reportes. Sin librerías.
+(function () {
+  "use strict";
+  var app = document.getElementById("app");
+  var D = null; // datos del servidor
+  var vista = "inicio";
+  var periodo = "30";
+  var filtroHist = "todos";
+  var form = null; // estado del formulario de movimiento
+
+  // ——— utilidades
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  var fmt = new Intl.NumberFormat("es-MX", { maximumFractionDigits: 0 });
+  function pesos(n) { return "$" + fmt.format(Math.round(n || 0)); }
+  function num(n) { return fmt.format(n || 0); }
+  function aviso(t) {
+    var a = document.getElementById("aviso");
+    a.textContent = t; a.hidden = false;
+    clearTimeout(aviso._t); aviso._t = setTimeout(function () { a.hidden = true; }, 2600);
+  }
+  function api(metodo, ruta, body) {
+    return fetch("/api" + ruta, {
+      method: metodo,
+      headers: body ? { "content-type": "application/json" } : {},
+      body: body ? JSON.stringify(body) : undefined,
+      credentials: "same-origin"
+    }).then(function (r) {
+      return r.json().catch(function () { return { ok: false, error: "Respuesta inválida." }; }).then(function (j) {
+        j._status = r.status; return j;
+      });
+    }).catch(function () { return { ok: false, error: "Sin conexión. Revisa tu internet.", _status: 0 }; });
+  }
+  function hoyLocal() {
+    var d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 10);
+  }
+  function restarDias(f, n) {
+    var d = new Date(f + "T12:00:00"); d.setDate(d.getDate() - n);
+    return d.toISOString().slice(0, 10);
+  }
+  function fechaBonita(f) {
+    var d = new Date(f + "T12:00:00");
+    return d.toLocaleDateString("es-MX", { weekday: "short", day: "numeric", month: "short" });
+  }
+  function nombreProd(id) {
+    var p = D.productos.find(function (x) { return x.id === id; });
+    return p ? p.nombre_base + " " + p.sabor : id;
+  }
+  function nombrePersona(email) {
+    if (email === D.dueno) return "Sebas";
+    var e = D.equipo.find(function (x) { return x.email === email; });
+    return e && e.nombre ? e.nombre : String(email).split("@")[0];
+  }
+  var ICON = {
+    inicio: '<path d="M4 20V10l8-6 8 6v10h-5v-6H9v6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+    vender: '<path d="M6 7h12l-1 13H7L6 7Zm3 0a3 3 0 0 1 6 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+    inventario: '<path d="M4 8l8-4 8 4v8l-8 4-8-4V8Zm0 0l8 4 8-4M12 12v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+    historial: '<path d="M12 7v5l3 2M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    ajustes: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 5v4M6 15v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'
+  };
+
+  // ——— cálculos
+  function stock() {
+    var s = {};
+    D.productos.forEach(function (p) { s[p.id] = 0; });
+    D.movimientos.forEach(function (m) { s[m.producto_id] = (s[m.producto_id] || 0) + (m.tipo === "entrada" ? m.cantidad : -m.cantidad); });
+    return s;
+  }
+  function costoPromedio() {
+    var n = 0, t = 0;
+    D.movimientos.forEach(function (m) { if (m.tipo === "entrada" && m.precio > 0) { n += m.cantidad; t += m.cantidad * m.precio; } });
+    return n ? t / n : Number(D.ajustes.costo) || 0;
+  }
+  function enPeriodo(m) {
+    if (periodo === "todo") return true;
+    if (periodo === "hoy") return m.fecha === D.hoy;
+    if (periodo === "mes") return m.fecha.slice(0, 7) === D.hoy.slice(0, 7);
+    return m.fecha > restarDias(D.hoy, Number(periodo));
+  }
+  function precioPublico() {
+    var ps = D.ajustes.precios.map(function (p) { return Number(p.valor) || 0; });
+    return ps.length ? Math.max.apply(null, ps) : 0;
+  }
+  function nombrePrecio(v) {
+    var p = D.ajustes.precios.find(function (x) { return Number(x.valor) === Number(v); });
+    return p ? p.nombre : "Otro precio";
+  }
+  function grupos(movs) {
+    var g = {}, orden = [];
+    movs.forEach(function (m) {
+      if (!g[m.grupo]) { g[m.grupo] = { grupo: m.grupo, tipo: m.tipo, fecha: m.fecha, quien: m.quien, cliente: m.cliente, nota: m.nota, precio: m.precio, creado: m.creado, items: [] }; orden.push(m.grupo); }
+      g[m.grupo].items.push(m);
+    });
+    return orden.map(function (k) { return g[k]; });
+  }
+
+  // ——— carga
+  function cargar() {
+    return api("GET", "/datos").then(function (d) {
+      if (d._status === 401) { D = null; pintarLogin(); return; }
+      if (!d.ok) { app.innerHTML = '<p class="cargando">' + esc(d.error || "No se pudo cargar.") + ' <button class="enlace" id="re">Reintentar</button></p>'; document.getElementById("re").onclick = cargar; return; }
+      D = d; D.hoy = hoyLocal() > d.hoy ? hoyLocal() : d.hoy;
+      pintar();
+    });
+  }
+
+  // ——— login
+  function pintarLogin(emailPrevio) {
+    var paso2 = !!emailPrevio;
+    app.innerHTML = '<div class="login"><form id="fl" novalidate>' +
+      '<img src="/img/logo-tinta.svg" alt="Crunchitos">' +
+      '<h1>Panel del equipo</h1>' +
+      (paso2
+        ? '<p>Te mandamos un código a <strong>' + esc(emailPrevio) + '</strong>. Revisa también spam.</p>' +
+          '<label>Código de 6 dígitos<input class="codigo" id="cod" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></label>' +
+          '<button class="btn" type="submit">Entrar</button><button class="enlace" type="button" id="otro">Usar otro correo</button>'
+        : '<p>Sin contraseñas: te llega un código a tu correo.</p>' +
+          '<label>Tu correo<input type="email" id="em" autocomplete="email" inputmode="email" required></label>' +
+          '<button class="btn" type="submit">Mandarme código</button>') +
+      '<p class="error" id="err" role="alert"></p></form></div>';
+    var f = document.getElementById("fl"), err = document.getElementById("err");
+    var campo = document.getElementById(paso2 ? "cod" : "em"); campo.focus();
+    if (paso2) document.getElementById("otro").onclick = function () { pintarLogin(); };
+    f.onsubmit = function (e) {
+      e.preventDefault();
+      var b = f.querySelector("[type=submit]"); b.disabled = true; err.textContent = "";
+      var p = paso2
+        ? api("POST", "/login/verificar", { email: emailPrevio, codigo: campo.value })
+        : api("POST", "/login/codigo", { email: campo.value });
+      p.then(function (r) {
+        b.disabled = false;
+        if (!r.ok) { err.textContent = r.error || "Algo falló."; return; }
+        if (paso2) { app.innerHTML = '<p class="cargando">Entrando…</p>'; cargar(); }
+        else { pintarLogin(campo.value.trim().toLowerCase()); if (r.prueba) document.getElementById("cod").value = r.prueba; }
+      });
+    };
+  }
+
+  // ——— estructura
+  function pintar() {
+    var tabs = [["inicio", "Inicio"], ["vender", "Vender"], ["inventario", "Inventario"], ["historial", "Historial"], ["ajustes", "Ajustes"]];
+    app.innerHTML =
+      '<header class="top"><img src="/img/logo.svg" alt="Crunchitos"><div class="quien">' + esc(nombrePersona(D.yo)) +
+      ' <button class="enlace" id="salir">Salir</button></div></header>' +
+      '<main id="vista"></main>' +
+      '<nav class="tabs" aria-label="Secciones">' + tabs.map(function (t) {
+        return '<button data-v="' + t[0] + '"' + (vista === t[0] ? ' aria-current="page"' : "") + '><svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[t[0]] + "</svg>" + t[1] + "</button>";
+      }).join("") + "</nav>";
+    document.getElementById("salir").onclick = function () { api("POST", "/logout").then(function () { pintarLogin(); }); };
+    app.querySelectorAll(".tabs button").forEach(function (b) {
+      b.onclick = function () { ir(b.getAttribute("data-v")); };
+    });
+    var v = document.getElementById("vista");
+    ({ inicio: vInicio, vender: vVender, inventario: vInventario, historial: vHistorial, ajustes: vAjustes, entrada: vVender })[vista](v);
+  }
+  function ir(v) {
+    vista = v;
+    if (v === "vender") form = nuevoForm("venta");
+    if (v === "entrada") form = nuevoForm("entrada");
+    pintar(); window.scrollTo(0, 0);
+  }
+
+  // ——— inicio (reportes)
+  function vInicio(v) {
+    var st = stock(), cp = costoPromedio();
+    var movs = D.movimientos.filter(enPeriodo);
+    var ventas = movs.filter(function (m) { return m.tipo === "venta"; });
+    var bolsas = 0, dinero = 0;
+    ventas.forEach(function (m) { bolsas += m.cantidad; dinero += m.cantidad * m.precio; });
+    var tomadas = 0, merma = 0;
+    movs.forEach(function (m) { if (m.tipo === "tomada") tomadas += m.cantidad; if (m.tipo === "merma") merma += m.cantidad; });
+    var enStock = 0; Object.keys(st).forEach(function (k) { enStock += Math.max(0, st[k]); });
+    var bajos = D.productos.filter(function (p) { return st[p.id] <= (D.ajustes.stockBajo || 0); });
+
+    var porPrecio = {}, porSabor = {}, porPersona = {}, porCliente = {};
+    ventas.forEach(function (m) {
+      var k = String(m.precio);
+      porPrecio[k] = porPrecio[k] || { b: 0, d: 0 }; porPrecio[k].b += m.cantidad; porPrecio[k].d += m.cantidad * m.precio;
+      porSabor[m.producto_id] = (porSabor[m.producto_id] || 0) + m.cantidad;
+      porPersona[m.quien] = porPersona[m.quien] || { b: 0, d: 0 }; porPersona[m.quien].b += m.cantidad; porPersona[m.quien].d += m.cantidad * m.precio;
+      if (m.cliente) { var c = m.cliente.trim(); porCliente[c] = porCliente[c] || { b: 0, d: 0 }; porCliente[c].b += m.cantidad; porCliente[c].d += m.cantidad * m.precio; }
+    });
+    var periodos = [["hoy", "Hoy"], ["7", "7 días"], ["30", "30 días"], ["mes", "Este mes"], ["todo", "Todo"]];
+    var h = '<div class="fila entre"><h2>Cómo vamos</h2></div>' +
+      '<div class="chips" role="group" aria-label="Periodo" style="margin-bottom:14px">' + periodos.map(function (p) {
+        return '<button class="chip" data-p="' + p[0] + '" aria-pressed="' + (periodo === p[0]) + '">' + p[1] + "</button>";
+      }).join("") + "</div>";
+    if (bajos.length) h += '<div class="alerta"><strong>Se están acabando:</strong> ' + bajos.map(function (p) { return esc(p.nombre_base + " " + p.sabor) + " (" + st[p.id] + ")"; }).join(", ") + "</div>";
+    h += '<div class="kpis">' +
+      '<div class="kpi amarillo"><span>Vendido</span><strong>' + pesos(dinero) + "</strong><small>" + num(bolsas) + " bolsas</small></div>" +
+      '<div class="kpi"><span>Ganancia</span><strong>' + pesos(dinero - bolsas * cp) + "</strong><small>costo " + pesos(cp) + " por bolsa</small></div>" +
+      '<div class="kpi"><span>Quedan</span><strong>' + num(enStock) + "</strong><small>" + pesos(enStock * cp) + " a costo</small></div>" +
+      '<div class="kpi"><span>Tomadas / merma</span><strong>' + num(tomadas + merma) + "</strong><small>" + pesos((tomadas + merma) * cp) + " a costo</small></div></div>";
+
+    var filasPrecio = Object.keys(porPrecio).sort(function (a, b) { return a - b; });
+    h += '<div class="caja"><h3>Ventas por precio</h3>' + (filasPrecio.length
+      ? "<table><thead><tr><th>Precio</th><th class=num>Bolsas</th><th class=num>Vendido</th><th class=num>Ganancia</th></tr></thead><tbody>" +
+        filasPrecio.map(function (k) {
+          var r = porPrecio[k];
+          return "<tr><td><strong>" + pesos(Number(k)) + "</strong> <small>" + esc(nombrePrecio(k)) + "</small></td><td class=num>" + num(r.b) + "</td><td class=num>" + pesos(r.d) + "</td><td class=num>" + pesos(r.d - r.b * cp) + "</td></tr>";
+        }).join("") + "</tbody><tfoot><tr><td>Total</td><td class=num>" + num(bolsas) + "</td><td class=num>" + pesos(dinero) + "</td><td class=num>" + pesos(dinero - bolsas * cp) + "</td></tr></tfoot></table>"
+      : '<p class="vacio">Sin ventas en este periodo.</p>') + "</div>";
+
+    var sabores = Object.keys(porSabor).sort(function (a, b) { return porSabor[b] - porSabor[a]; });
+    var max = sabores.length ? porSabor[sabores[0]] : 1;
+    h += '<div class="caja"><h3>Lo que más se vende</h3>' + (sabores.length ? sabores.map(function (id) {
+      var p = D.productos.find(function (x) { return x.id === id; }) || {};
+      return '<div style="margin-bottom:8px"><div class="fila entre" style="font-size:14px"><span><span class="punto" style="background:' + esc(p.color) + '"></span>' + esc(nombreProd(id)) + "</span><strong>" + porSabor[id] + "</strong></div>" +
+        '<div style="height:8px;background:var(--crema);border-radius:9px;margin-top:4px"><div style="height:8px;border-radius:9px;background:' + esc(p.color || "#ECBE48") + ";width:" + Math.max(4, porSabor[id] / max * 100) + '%"></div></div></div>';
+    }).join("") : '<p class="vacio">Sin ventas en este periodo.</p>') + "</div>";
+
+    var personas = Object.keys(porPersona);
+    if (personas.length) {
+      h += '<div class="caja"><h3>Quién vendió</h3><table><tbody>' + personas.map(function (q) {
+        return "<tr><td>" + esc(nombrePersona(q)) + "</td><td class=num>" + num(porPersona[q].b) + " bolsas</td><td class=num>" + pesos(porPersona[q].d) + "</td></tr>";
+      }).join("") + "</tbody></table></div>";
+    }
+    var clientes = Object.keys(porCliente).sort(function (a, b) { return porCliente[b].d - porCliente[a].d; }).slice(0, 10);
+    h += '<div class="caja"><h3>Mejores clientes</h3>' + (clientes.length ? "<table><tbody>" + clientes.map(function (c) {
+      return "<tr><td>" + esc(c) + "</td><td class=num>" + num(porCliente[c].b) + " bolsas</td><td class=num>" + pesos(porCliente[c].d) + "</td></tr>";
+    }).join("") + "</tbody></table>" : '<p class="vacio">Cuando pongas el nombre del cliente en la venta, aquí ves quién te compra más.</p>') + "</div>";
+    v.innerHTML = h;
+    v.querySelectorAll("[data-p]").forEach(function (b) { b.onclick = function () { periodo = b.getAttribute("data-p"); pintar(); }; });
+  }
+
+  // ——— vender / registrar movimiento
+  function nuevoForm(tipo) {
+    var precios = D.ajustes.precios;
+    var def = precios.find(function (p) { return /distrib/i.test(p.nombre); }) || precios[0];
+    return { tipo: tipo, items: {}, precio: tipo === "entrada" ? Number(D.ajustes.costo) : (def ? Number(def.valor) : 0), otro: false, cliente: "", nota: "", fecha: D.hoy, enviando: false };
+  }
+  function vVender(v) {
+    if (!form) form = nuevoForm(vista === "entrada" ? "entrada" : "venta");
+    var st = stock(), f = form, esEntrada = f.tipo === "entrada";
+    var titulos = { venta: "Registrar venta", entrada: "Llegó mercancía", tomada: "Bolsas que se tomaron", merma: "Merma (rotas o caducadas)" };
+    var h = "<h2>" + titulos[f.tipo] + "</h2>";
+    if (!esEntrada) {
+      h += '<div class="chips" role="group" aria-label="Tipo" style="margin-bottom:14px">' + [["venta", "Venta"], ["tomada", "Me llevé / regalo"], ["merma", "Merma"]].map(function (t) {
+        return '<button class="chip" data-t="' + t[0] + '" aria-pressed="' + (f.tipo === t[0]) + '">' + t[1] + "</button>";
+      }).join("") + "</div>";
+    } else {
+      h += '<p class="vacio" style="margin:-4px 0 14px">Pon cuántas bolsas llegaron de cada sabor.</p>';
+    }
+    h += '<div class="sabores">' + D.productos.map(function (p) {
+      var n = f.items[p.id] || 0, hay = st[p.id] || 0;
+      return '<div class="it' + (n ? " lleva" : "") + '"><img src="/img/etiquetas/' + esc(p.id) + '.webp" alt="" loading="lazy">' +
+        '<div class="nom">' + esc(p.nombre_base + " " + p.sabor) + '<small class="' + (hay <= (D.ajustes.stockBajo || 0) ? "bajo" : "") + '">Quedan ' + hay + "</small></div>" +
+        '<div class="paso"><button type="button" data-menos="' + esc(p.id) + '" aria-label="Quitar una de ' + esc(p.nombre_base + " " + p.sabor) + '">−</button>' +
+        '<input inputmode="numeric" data-n="' + esc(p.id) + '" value="' + (n || "") + '" placeholder="0" aria-label="Bolsas de ' + esc(p.nombre_base + " " + p.sabor) + '">' +
+        '<button type="button" data-mas="' + esc(p.id) + '" aria-label="Agregar una de ' + esc(p.nombre_base + " " + p.sabor) + '">+</button></div></div>';
+    }).join("") + "</div>";
+
+    h += '<div class="caja" style="margin-top:14px">';
+    if (f.tipo === "venta") {
+      var conocido = D.ajustes.precios.some(function (p) { return Number(p.valor) === Number(f.precio); }) && !f.otro;
+      h += "<h3>Precio por bolsa</h3><div class=\"chips\" style=\"margin-bottom:10px\">" + D.ajustes.precios.map(function (p) {
+        return '<button class="chip" type="button" data-precio="' + Number(p.valor) + '" aria-pressed="' + (conocido && Number(p.valor) === Number(f.precio)) + '">' + pesos(p.valor) + " · " + esc(p.nombre) + "</button>";
+      }).join("") + '<button class="chip" type="button" data-precio="otro" aria-pressed="' + !conocido + '">Otro</button></div>' +
+        (!conocido ? '<label>Precio por bolsa<input id="fprecio" inputmode="decimal" value="' + (f.precio || "") + '"></label>' : "");
+      var nombres = {}; D.movimientos.forEach(function (m) { if (m.cliente) nombres[m.cliente] = 1; });
+      h += '<div class="rejilla2" style="margin-top:10px"><label>Cliente (opcional)<input id="fcliente" list="lclientes" value="' + esc(f.cliente) + '" placeholder="Ej. Gym Fuerza"></label>' +
+        '<label>Fecha<input type="date" id="ffecha" value="' + esc(f.fecha) + '" max="' + esc(D.hoy) + '"></label></div>' +
+        '<datalist id="lclientes">' + Object.keys(nombres).map(function (n) { return '<option value="' + esc(n) + '">'; }).join("") + "</datalist>";
+    } else if (esEntrada) {
+      h += '<div class="rejilla2"><label>Costo por bolsa<input id="fprecio" inputmode="decimal" value="' + (f.precio || "") + '"></label>' +
+        '<label>Fecha<input type="date" id="ffecha" value="' + esc(f.fecha) + '" max="' + esc(D.hoy) + '"></label></div>';
+    } else {
+      h += '<label>Fecha<input type="date" id="ffecha" value="' + esc(f.fecha) + '" max="' + esc(D.hoy) + '"></label>';
+    }
+    h += '<label style="margin-top:10px">Nota (opcional)<input id="fnota" value="' + esc(f.nota) + '" placeholder="' + (f.tipo === "venta" ? "Ej. me pagó por transferencia" : esEntrada ? "Ej. segundo envío de la fábrica" : "Ej. muestras para un café") + '"></label>';
+    h += '<p class="error" id="ferr" role="alert" style="margin-top:10px"></p></div>';
+    if (esEntrada) h += '<button class="enlace" id="cancelar">Cancelar</button>';
+    h += '<div class="barra"><button class="btn ' + (f.tipo === "venta" ? "verde" : "") + '" id="guardar"></button></div>';
+    v.innerHTML = h;
+    resumenBoton();
+
+    v.querySelectorAll("[data-t]").forEach(function (b) { b.onclick = function () { f.tipo = b.getAttribute("data-t"); pintar(); }; });
+    v.querySelectorAll("[data-mas],[data-menos]").forEach(function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute("data-mas") || b.getAttribute("data-menos");
+        var n = (f.items[id] || 0) + (b.hasAttribute("data-mas") ? 1 : -1);
+        f.items[id] = Math.max(0, n);
+        var inp = v.querySelector('[data-n="' + id + '"]'); inp.value = f.items[id] || "";
+        inp.closest(".it").classList.toggle("lleva", !!f.items[id]);
+        resumenBoton();
+      };
+    });
+    v.querySelectorAll("[data-n]").forEach(function (inp) {
+      inp.oninput = function () {
+        var id = inp.getAttribute("data-n"), n = parseInt(inp.value.replace(/\D/g, ""), 10) || 0;
+        f.items[id] = n; inp.closest(".it").classList.toggle("lleva", !!n); resumenBoton();
+      };
+    });
+    v.querySelectorAll("[data-precio]").forEach(function (b) {
+      b.onclick = function () {
+        var p = b.getAttribute("data-precio");
+        if (p === "otro") { f.otro = true; } else { f.otro = false; f.precio = Number(p); }
+        guardarCampos(); pintar();
+        var fp = document.getElementById("fprecio"); if (fp) fp.focus();
+      };
+    });
+    ["fprecio", "fcliente", "ffecha", "fnota"].forEach(function (id) {
+      var e = document.getElementById(id); if (e) e.oninput = function () { guardarCampos(); resumenBoton(); };
+    });
+    var c = document.getElementById("cancelar"); if (c) c.onclick = function () { ir("inventario"); };
+    document.getElementById("guardar").onclick = function () { enviar(false); };
+  }
+  function guardarCampos() {
+    var g = function (id) { var e = document.getElementById(id); return e ? e.value : null; };
+    if (g("fprecio") !== null) form.precio = parseFloat(String(g("fprecio")).replace(",", ".")) || 0;
+    if (g("fcliente") !== null) form.cliente = g("fcliente");
+    if (g("ffecha") !== null) form.fecha = g("ffecha") || D.hoy;
+    if (g("fnota") !== null) form.nota = g("fnota");
+  }
+  function totalBolsas() {
+    var t = 0; Object.keys(form.items).forEach(function (k) { t += form.items[k] || 0; }); return t;
+  }
+  function resumenBoton() {
+    var b = document.getElementById("guardar"); if (!b) return;
+    var n = totalBolsas();
+    var etiqueta = { venta: "Guardar venta", entrada: "Guardar entrada", tomada: "Guardar", merma: "Guardar merma" }[form.tipo];
+    b.textContent = n ? etiqueta + " · " + n + (n === 1 ? " bolsa" : " bolsas") + (form.tipo === "venta" ? " · " + pesos(n * form.precio) : "") : "Elige las bolsas";
+    b.disabled = !n || form.enviando;
+  }
+  function enviar(forzar) {
+    guardarCampos();
+    var err = document.getElementById("ferr");
+    var items = Object.keys(form.items).filter(function (k) { return form.items[k] > 0; }).map(function (k) { return { producto_id: k, cantidad: form.items[k] }; });
+    form.enviando = true; resumenBoton(); err.textContent = "";
+    api("POST", "/movimientos", { tipo: form.tipo, items: items, precio: form.precio, cliente: form.cliente, nota: form.nota, fecha: form.fecha, forzar: forzar }).then(function (r) {
+      form.enviando = false; resumenBoton();
+      if (r._status === 401) { pintarLogin(); return; }
+      if (r.sinStock) {
+        err.innerHTML = "No alcanza el inventario: " + r.sinStock.map(function (s) { return esc(nombreProd(s.id)) + " (hay " + s.hay + ", pones " + s.pides + ")"; }).join(", ") +
+          '. <button class="enlace" id="forzar">Guardar de todos modos</button>';
+        document.getElementById("forzar").onclick = function () { enviar(true); };
+        return;
+      }
+      if (!r.ok) { err.textContent = r.error || "No se pudo guardar."; return; }
+      var tipo = form.tipo;
+      aviso({ venta: "Venta guardada 🙌", entrada: "Entrada guardada", tomada: "Guardado", merma: "Merma guardada" }[tipo]);
+      return cargar().then(function () {
+        if (tipo === "entrada") { vista = "inventario"; form = null; pintar(); }
+        else { form = nuevoForm(tipo); pintar(); }
+      });
+    });
+  }
+
+  // ——— inventario
+  function vInventario(v) {
+    var st = stock(), cp = costoPromedio();
+    var t = { e: 0, v: 0, t: 0, m: 0 };
+    var filas = D.productos.map(function (p) {
+      var r = { e: 0, v: 0, t: 0, m: 0 };
+      D.movimientos.forEach(function (m) {
+        if (m.producto_id !== p.id) return;
+        r[{ entrada: "e", venta: "v", tomada: "t", merma: "m" }[m.tipo]] += m.cantidad;
+      });
+      Object.keys(t).forEach(function (k) { t[k] += r[k]; });
+      var bajo = st[p.id] <= (D.ajustes.stockBajo || 0);
+      return "<tr><td><span class=\"punto\" style=\"background:" + esc(p.color) + "\"></span>" + esc(p.nombre_base + " " + p.sabor) + "</td><td class=num>" + r.e + "</td><td class=num>" + (r.v || "–") + "</td><td class=num>" + ((r.t + r.m) || "–") + '</td><td class="num' + (bajo ? " bajo" : "") + '"><strong>' + st[p.id] + "</strong></td></tr>";
+    }).join("");
+    var quedan = t.e - t.v - t.t - t.m;
+    v.innerHTML = '<div class="fila entre"><h2>Inventario</h2><button class="btn chico" id="llego">+ Llegó mercancía</button></div>' +
+      '<div class="kpis"><div class="kpi amarillo"><span>Quedan</span><strong>' + num(quedan) + "</strong><small>bolsas</small></div>" +
+      '<div class="kpi"><span>Valor a costo</span><strong>' + pesos(quedan * cp) + "</strong><small>" + pesos(cp) + " por bolsa</small></div>" +
+      '<div class="kpi"><span>Si se venden a público</span><strong>' + pesos(quedan * precioPublico()) + "</strong><small>" + pesos(precioPublico()) + " por bolsa</small></div>" +
+      '<div class="kpi"><span>Han llegado</span><strong>' + num(t.e) + "</strong><small>bolsas en total</small></div></div>" +
+      '<div class="caja" style="overflow-x:auto"><table><thead><tr><th>Sabor</th><th class=num>Llegó</th><th class=num>Vend.</th><th class=num title="Tomadas y merma">Otras</th><th class=num>Quedan</th></tr></thead><tbody>' + filas +
+      "</tbody><tfoot><tr><td>Total</td><td class=num>" + t.e + "</td><td class=num>" + t.v + "</td><td class=num>" + (t.t + t.m) + "</td><td class=num>" + quedan + "</td></tr></tfoot></table></div>" +
+      '<p class="vacio">Otras = bolsas que se tomaron o se echaron a perder. En rojo: sabores con ' + (D.ajustes.stockBajo || 0) + " bolsas o menos. Para corregir un conteo, registra una merma o una entrada con la diferencia.</p>";
+    document.getElementById("llego").onclick = function () { ir("entrada"); };
+  }
+
+  // ——— historial
+  function vHistorial(v) {
+    var tipos = [["todos", "Todo"], ["venta", "Ventas"], ["entrada", "Entradas"], ["tomada", "Tomadas"], ["merma", "Merma"]];
+    var gs = grupos(D.movimientos).filter(function (g) { return filtroHist === "todos" || g.tipo === filtroHist; });
+    var nombres = { venta: "Venta", entrada: "Entrada", tomada: "Tomada", merma: "Merma" };
+    var h = '<div class="fila entre"><h2>Historial</h2><a class="btn chico claro" href="/api/movimientos.csv">Descargar Excel</a></div>' +
+      '<div class="chips" style="margin-bottom:14px">' + tipos.map(function (t) {
+        return '<button class="chip" data-f="' + t[0] + '" aria-pressed="' + (filtroHist === t[0]) + '">' + t[1] + "</button>";
+      }).join("") + "</div>";
+    h += gs.length ? gs.slice(0, 200).map(function (g) {
+      var n = 0; g.items.forEach(function (m) { n += m.cantidad; });
+      return '<div class="mov"><div class="cab"><span><span class="pill p-' + g.tipo + '">' + nombres[g.tipo] + "</span> " + esc(fechaBonita(g.fecha)) + "</span><span>" + esc(nombrePersona(g.quien)) + "</span></div>" +
+        (g.cliente ? '<div style="font-weight:600;margin-top:6px">' + esc(g.cliente) + "</div>" : "") +
+        "<ul>" + g.items.map(function (m) { return "<li>" + m.cantidad + " × " + esc(nombreProd(m.producto_id)) + "</li>"; }).join("") + "</ul>" +
+        (g.nota ? '<div style="font-size:13px;color:var(--suave);margin-bottom:8px">' + esc(g.nota) + "</div>" : "") +
+        '<div class="pie"><span><strong>' + n + (n === 1 ? " bolsa" : " bolsas") + "</strong>" + (g.tipo === "venta" ? " · " + pesos(g.precio) + " c/u · <strong>" + pesos(n * g.precio) + "</strong>" : g.tipo === "entrada" && g.precio ? " · costo " + pesos(g.precio) : "") + "</span>" +
+        '<button class="btn chico peligro" data-borrar="' + esc(g.grupo) + '">Borrar</button></div></div>';
+    }).join("") : '<p class="vacio">No hay movimientos.</p>';
+    v.innerHTML = h;
+    v.querySelectorAll("[data-f]").forEach(function (b) { b.onclick = function () { filtroHist = b.getAttribute("data-f"); pintar(); }; });
+    v.querySelectorAll("[data-borrar]").forEach(function (b) {
+      b.onclick = function () {
+        if (!b.classList.contains("seguro")) { b.classList.add("seguro"); b.textContent = "¿Seguro? Toca otra vez"; setTimeout(function () { b.classList.remove("seguro"); b.textContent = "Borrar"; }, 4000); return; }
+        b.disabled = true;
+        api("DELETE", "/movimientos/" + b.getAttribute("data-borrar")).then(function (r) {
+          if (!r.ok) { aviso(r.error || "No se pudo borrar."); b.disabled = false; return; }
+          aviso("Borrado"); cargar();
+        });
+      };
+    });
+  }
+
+  // ——— ajustes
+  function vAjustes(v) {
+    var a = D.ajustes;
+    var tel = String(a.whatsapp || "").replace(/^52/, "");
+    var h = "<h2>Ajustes</h2>" +
+      '<div class="caja"><h3>Precios de venta</h3><p class="vacio" style="margin-bottom:10px">Son los botones que salen al registrar una venta. Los reportes separan lo vendido en cada precio.</p><div id="lprecios">' +
+      a.precios.map(filaPrecio).join("") + '</div><button class="enlace" id="addp">+ Agregar precio</button></div>' +
+      '<div class="caja"><div class="rejilla2"><label>Costo por bolsa (para nuevas entradas)<input id="acosto" inputmode="decimal" value="' + esc(a.costo) + '"></label>' +
+      '<label>Avisar cuando queden<input id="abajo" inputmode="numeric" value="' + esc(a.stockBajo) + '"></label></div>' +
+      '<label style="margin-top:10px">WhatsApp de la página (10 dígitos)<input id="awa" inputmode="tel" value="' + esc(tel) + '"></label>' +
+      '<p class="vacio" style="margin-top:6px">A este número llegan los pedidos de crunchitos.mx.</p></div>' +
+      '<button class="btn" id="gaj" style="width:100%;margin-bottom:20px">Guardar ajustes</button><p class="error" id="aerr"></p>';
+    h += '<div class="caja"><h3>Equipo con acceso</h3><table><tbody><tr><td>Sebas</td><td>' + esc(D.dueno) + "</td><td></td></tr>" +
+      D.equipo.map(function (e) {
+        return "<tr><td>" + esc(e.nombre || "—") + "</td><td>" + esc(e.email) + "</td><td class=num>" + (D.esDueno ? '<button class="btn chico peligro" data-quitar="' + esc(e.email) + '">Quitar</button>' : "") + "</td></tr>";
+      }).join("") + "</tbody></table>" +
+      (D.esDueno ? '<form id="feq" class="rejilla2" style="margin-top:12px"><label>Nombre<input id="enom" placeholder="Paola"></label><label>Correo<input id="eem" type="email" placeholder="correo@gmail.com"></label><button class="btn chico" style="grid-column:1/-1">Dar acceso</button></form>'
+        : '<p class="vacio" style="margin-top:8px">Solo Sebas puede agregar o quitar personas.</p>') + "</div>";
+    v.innerHTML = h;
+    function filaPrecio(p) {
+      return '<div class="fila" style="margin-bottom:8px;flex-wrap:nowrap"><input class="pn" value="' + esc(p.nombre) + '" placeholder="Nombre" aria-label="Nombre del precio"><input class="pv" inputmode="decimal" value="' + esc(p.valor) + '" style="width:90px" aria-label="Precio"><button class="btn chico peligro qp" type="button" aria-label="Quitar precio">×</button></div>';
+    }
+    function engancharQuitar() { v.querySelectorAll(".qp").forEach(function (b) { b.onclick = function () { b.parentNode.remove(); }; }); }
+    engancharQuitar();
+    document.getElementById("addp").onclick = function () {
+      document.getElementById("lprecios").insertAdjacentHTML("beforeend", filaPrecio({ nombre: "", valor: "" })); engancharQuitar();
+    };
+    document.getElementById("gaj").onclick = function () {
+      var precios = [].map.call(v.querySelectorAll("#lprecios .fila"), function (f) {
+        return { nombre: f.querySelector(".pn").value, valor: parseFloat(f.querySelector(".pv").value) };
+      }).filter(function (p) { return p.nombre.trim() && !isNaN(p.valor); }).sort(function (a, b) { return a.valor - b.valor; });
+      api("PUT", "/ajustes", { precios: precios, costo: parseFloat(document.getElementById("acosto").value), stockBajo: parseInt(document.getElementById("abajo").value, 10), whatsapp: document.getElementById("awa").value }).then(function (r) {
+        if (!r.ok) { document.getElementById("aerr").textContent = r.error || "No se pudo guardar."; return; }
+        aviso("Ajustes guardados"); cargar();
+      });
+    };
+    v.querySelectorAll("[data-quitar]").forEach(function (b) {
+      b.onclick = function () {
+        if (!b.classList.contains("seguro")) { b.classList.add("seguro"); b.textContent = "¿Seguro?"; return; }
+        api("DELETE", "/equipo/" + encodeURIComponent(b.getAttribute("data-quitar"))).then(function (r) { aviso(r.ok ? "Acceso quitado" : r.error); cargar(); });
+      };
+    });
+    var feq = document.getElementById("feq");
+    if (feq) feq.onsubmit = function (e) {
+      e.preventDefault();
+      api("POST", "/equipo", { nombre: document.getElementById("enom").value, email: document.getElementById("eem").value }).then(function (r) {
+        if (!r.ok) { aviso(r.error || "No se pudo agregar."); return; }
+        aviso("Listo, ya puede entrar"); cargar();
+      });
+    };
+  }
+
+  cargar();
+})();

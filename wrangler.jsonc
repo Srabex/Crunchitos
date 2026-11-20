@@ -1,0 +1,25 @@
+// Configuración de Cloudflare para Crunchitos (crunchitos.mx).
+{
+  "name": "crunchitos",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    // El servidor revisa cada visita primero (redirige www, protege /admin, responde /api).
+    "run_worker_first": true
+  },
+  "d1_databases": [
+    {
+      // Base con sabores, movimientos (entradas, ventas, tomadas, merma), ajustes, equipo y códigos de acceso.
+      "binding": "DB",
+      "database_name": "crunchitos",
+      "database_id": "PENDIENTE"
+    }
+  ],
+  "routes": [
+    { "pattern": "crunchitos.mx", "custom_domain": true },
+    { "pattern": "www.crunchitos.mx", "custom_domain": true }
+  ],
+  "observability": { "enabled": true }
+}

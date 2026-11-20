@@ -1,0 +1,8 @@
+{
+  "name": "crunchitos",
+  "private": true,
+  "scripts": {
+    "deploy": "npx wrangler deploy"
+  },
+  "type": "module"
+}
