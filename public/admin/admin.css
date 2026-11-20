@@ -17,6 +17,7 @@ input:focus,select:focus{outline:none;border-color:var(--tinta)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 20px;border-radius:999px;border:0;font-weight:700;cursor:pointer;background:var(--tinta);color:var(--crema);text-decoration:none}
 .btn:disabled{opacity:.5;cursor:default}
 .btn.verde{background:var(--verde);color:#fff}
+.btn.morado{background:#B5651D;color:#fff}
 .btn.claro{background:#fff;color:var(--tinta);border:2px solid var(--linea)}
 .btn.chico{min-height:38px;padding:0 14px;font-size:14px}
 .btn.peligro{background:#fff;color:var(--rojo);border:2px solid #F0C9C5}
@@ -77,7 +78,7 @@ tfoot td{font-weight:700;border-top:2px solid var(--tinta)}
 .mov{background:#fff;border-radius:18px;padding:12px 14px;margin-bottom:10px}
 .mov .cab{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--suave)}
 .pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;color:#fff}
-.p-gasto{background:#6B4E9B}.p-venta{background:var(--verde)}.p-entrada{background:#2F6F8F}.p-tomada{background:var(--sombra)}.p-merma{background:var(--rojo)}
+.p-gasto{background:#6B4E9B}.p-consigna{background:#B5651D}.p-devolucion{background:#2F6F8F}.p-venta{background:var(--verde)}.p-entrada{background:#2F6F8F}.p-tomada{background:var(--sombra)}.p-merma{background:var(--rojo)}
 .mov ul{margin:8px 0;padding-left:18px;font-size:14px}
 .mov .pie{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px}
 #aviso{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom));background:var(--tinta);color:var(--crema);padding:12px 20px;border-radius:999px;font-weight:600;z-index:20;box-shadow:0 6px 20px rgba(0,0,0,.2);max-width:90vw;text-align:center}

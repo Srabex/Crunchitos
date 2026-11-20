@@ -51,7 +51,7 @@ const SEMILLA = [
   ["platano-sal", 9, 1, 0],
 ];
 
-const TIPOS = ["entrada", "venta", "tomada", "merma"];
+const TIPOS = ["entrada", "venta", "tomada", "merma", "consigna", "devolucion"];
 const CATEGORIAS = ["etiquetas", "envio", "gasolina", "empaque", "publicidad", "otro"];
 
 // Acceso inicial del equipo (se agrega una sola vez; después se maneja en Ajustes → Equipo).
@@ -128,6 +128,11 @@ async function db(env) {
   ]);
   const sem = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'semilla'").first();
   if (!sem) await sembrar(env.DB);
+  const mig = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'mig_consigna'").first();
+  if (!mig) {
+    try { await env.DB.prepare("ALTER TABLE movimientos ADD COLUMN consigna INTEGER NOT NULL DEFAULT 0").run(); } catch (e) { /* ya existe */ }
+    await env.DB.prepare("INSERT OR REPLACE INTO meta (llave, valor) VALUES ('mig_consigna', '1')").run();
+  }
   const eq = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'equipo_inicial_v1'").first();
   if (!eq) {
     await env.DB.batch([
@@ -284,7 +289,8 @@ async function datos(D, yo) {
 
 async function stockPorProducto(D) {
   const { results } = await D.prepare(
-    `SELECT producto_id, SUM(CASE WHEN tipo = 'entrada' THEN cantidad ELSE -cantidad END) AS stock
+    `SELECT producto_id, SUM(CASE WHEN tipo IN ('entrada','devolucion') THEN cantidad
+       WHEN consigna = 1 THEN 0 ELSE -cantidad END) AS stock
      FROM movimientos GROUP BY producto_id`).all();
   return Object.fromEntries(results.map((r) => [r.producto_id, Number(r.stock) || 0]));
 }
@@ -293,7 +299,8 @@ async function guardarMovimiento(D, yo, body) {
   const tipo = String(body.tipo);
   if (!TIPOS.includes(tipo)) return error("Tipo de movimiento no válido.");
   const fecha = esFecha(body.fecha) ? body.fecha : hoyChihuahua();
-  const precio = tipo === "venta" || tipo === "entrada" ? Number(body.precio) : 0;
+  const precio = ["venta", "entrada", "consigna"].includes(tipo) ? Number(body.precio) : 0;
+  if (tipo === "consigna" && !texto(body.cliente, 80)) return error("Pon a qué tienda o persona se le dejó.");
   if (!Number.isFinite(precio) || precio < 0 || precio > 100000) return error("Revisa el precio.");
   if ((tipo === "venta") && precio === 0 && !body.sinCobro) return error("Pon el precio por bolsa.");
   const { results: prods } = await D.prepare("SELECT id FROM productos").all();
@@ -303,7 +310,7 @@ async function guardarMovimiento(D, yo, body) {
     .filter((i) => validos.has(i.id) && i.n > 0 && i.n <= 10000);
   if (!items.length) return error("Agrega al menos una bolsa.");
 
-  if (tipo !== "entrada" && !body.forzar) {
+  if (tipo !== "entrada" && tipo !== "devolucion" && !body.forzar) {
     const stock = await stockPorProducto(D);
     const faltan = items.filter((i) => (stock[i.id] ?? 0) < i.n);
     if (faltan.length) return json({ ok: false, sinStock: faltan.map((i) => ({ id: i.id, hay: stock[i.id] ?? 0, pides: i.n })) }, 409);
@@ -317,6 +324,30 @@ async function guardarMovimiento(D, yo, body) {
     D.prepare(`INSERT INTO movimientos (grupo, tipo, producto_id, cantidad, precio, cliente, nota, quien, fecha, creado)
       VALUES (?,?,?,?,?,?,?,?,?,?)`).bind(grupo, tipo, i.id, i.n, precio, cliente, nota, yo, fecha, ahora)));
   return json({ ok: true, grupo });
+}
+
+// Visita a una tienda con consigna: lo vendido cuenta como venta, lo que regresa vuelve a bodega.
+async function liquidar(D, yo, body) {
+  const tienda = texto(body.tienda, 80);
+  if (!tienda) return error("Falta la tienda.");
+  const fecha = esFecha(body.fecha) ? body.fecha : hoyChihuahua();
+  const precio = Number(body.precio);
+  if (!Number.isFinite(precio) || precio < 0 || precio > 100000) return error("Revisa el precio.");
+  const { results: prods } = await D.prepare("SELECT id FROM productos").all();
+  const validos = new Set(prods.map((p) => p.id));
+  const lista = (o) => Object.entries(o || {}).map(([id, n]) => ({ id, n: Math.trunc(Number(n)) })).filter((x) => validos.has(x.id) && x.n > 0 && x.n <= 10000);
+  const vendidas = lista(body.vendidas), devueltas = lista(body.devueltas), merma = lista(body.merma);
+  if (!vendidas.length && !devueltas.length && !merma.length) return error("Pon cuántas se vendieron o regresan.");
+  const ahora = Date.now(), nota = texto(body.nota, 300);
+  const ins = (grupo, tipo, x, p, consigna) => D.prepare(`INSERT INTO movimientos (grupo, tipo, producto_id, cantidad, precio, cliente, nota, quien, fecha, creado, consigna)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?)`).bind(grupo, tipo, x.id, x.n, p, tienda, nota, yo, fecha, ahora, consigna);
+  const gV = "g-" + crypto.randomUUID(), gD = "g-" + crypto.randomUUID(), gM = "g-" + crypto.randomUUID();
+  await D.batch([
+    ...vendidas.map((x) => ins(gV, "venta", x, precio, 1)),
+    ...devueltas.map((x) => ins(gD, "devolucion", x, 0, 1)),
+    ...merma.map((x) => ins(gM, "merma", x, 0, 1)),
+  ]);
+  return json({ ok: true });
 }
 
 async function guardarAjustes(D, body) {
@@ -357,7 +388,7 @@ function csv(movs, productos) {
   };
   const filas = [["Fecha", "Tipo", "Sabor", "Bolsas", "Precio por bolsa", "Total", "Cliente", "Quién", "Nota"]];
   for (const m of movs) {
-    filas.push([m.fecha, m.tipo, nom[m.producto_id] || m.producto_id, m.cantidad, m.precio,
+    filas.push([m.fecha, m.tipo === "venta" && m.consigna ? "venta (consigna)" : m.tipo, nom[m.producto_id] || m.producto_id, m.cantidad, m.precio,
       m.tipo === "venta" ? m.precio * m.cantidad : "", m.cliente, m.quien, m.nota]);
   }
   return "﻿" + filas.map((f) => f.map(esc).join(",")).join("\r\n");
@@ -395,6 +426,7 @@ async function api(req, env, url) {
 
   if (ruta === "/datos" && metodo === "GET") return json(await datos(D, yo));
   if (ruta === "/movimientos" && metodo === "POST") return guardarMovimiento(D, yo, body);
+  if (ruta === "/consigna/liquidar" && metodo === "POST") return liquidar(D, yo, body);
   const mBorrar = /^\/movimientos\/(g-[\w-]+)$/.exec(ruta);
   if (mBorrar && metodo === "DELETE") {
     await D.prepare("DELETE FROM movimientos WHERE grupo = ?").bind(mBorrar[1]).run();
@@ -404,7 +436,7 @@ async function api(req, env, url) {
   if (mPrecio && metodo === "PUT") {
     const precio = Number(body.precio);
     if (!Number.isFinite(precio) || precio < 0 || precio > 100000) return error("Revisa el precio.");
-    await D.prepare("UPDATE movimientos SET precio = ? WHERE grupo = ? AND tipo IN ('venta','entrada')").bind(precio, mPrecio[1]).run();
+    await D.prepare("UPDATE movimientos SET precio = ? WHERE grupo = ? AND tipo IN ('venta','entrada','consigna')").bind(precio, mPrecio[1]).run();
     return json({ ok: true });
   }
   if (ruta === "/gastos" && metodo === "POST") {

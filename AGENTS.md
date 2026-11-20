@@ -26,6 +26,7 @@ Panel para Sebas, Paola (Pao) y Víctor.
 - **Vender**: venta (precio por bolsa con botones + "otro", cliente opcional), "me llevé / regalo" y merma. Avisa si no alcanza el inventario (se puede guardar de todos modos).
 - **Inventario**: por sabor (llegó, vendidas, otras, quedan) y botón "Llegó mercancía" (entrada con costo por bolsa).
 - **Historial**: movimientos agrupados, borrar (doble toque) y descarga CSV para Excel.
+- **Consigna**: en Vender → "Consigna" se dejan bolsas a una tienda o persona con precio acordado (salen de bodega, no cuentan como venta). En Inventario → "En consigna" se ve cada tienda (bolsas por sabor, valor, días) y **Pasar a cobrar** registra cuántas se vendieron (venta con `consigna = 1`) y cuántas regresan (`devolucion`, vuelven a bodega).
 - **Gastos**: monto, categoría (etiquetas e impresión, envío de la fábrica, gasolina, empaque, publicidad, otro), concepto, quién lo pagó, fecha y nota. Descarga CSV.
 - **Inicio** también muestra gastos del periodo, **ganancia real** (ganancia de las bolsas − gastos), gastos por categoría y quién ha puesto.
 - **Historial**: "Cambiar precio" / "Cambiar costo" en ventas y entradas (para corregir el costo real por paquete).
@@ -33,7 +34,7 @@ Panel para Sebas, Paola (Pao) y Víctor.
 
 ## Datos (D1)
 - `productos` (12 sabores), `movimientos` (grupo, tipo entrada/venta/tomada/merma, producto, cantidad, precio, cliente, nota, quién, fecha), `gastos` (fecha, categoría, concepto, monto, pagó, nota, registró), `meta` (ajustes en JSON), `equipo`, `codigos`.
-- Inventario = entradas − ventas − tomadas − merma.
+- Bodega = entradas + devoluciones − ventas − tomadas − merma − consigna (los movimientos con `consigna = 1` no tocan bodega). En tienda = consigna − ventas/devoluciones/merma con `consigna = 1` de esa tienda (campo `cliente`).
 
 ## Variables en Cloudflare (Settings → Variables and Secrets, tipo Secret)
 - `RESEND_API_KEY`: la misma de Aura (dominio asesorsebas.com verificado en Resend).
