@@ -14,7 +14,7 @@
       // Base con sabores, movimientos (entradas, ventas, tomadas, merma), ajustes, equipo y códigos de acceso.
       "binding": "DB",
       "database_name": "crunchitos",
-      "database_id": "PENDIENTE"
+      "database_id": "4f8e27d0-abf8-49c4-80c5-1ee14cb34618"
     }
   ],
   "routes": [
