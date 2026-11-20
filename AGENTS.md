@@ -1,6 +1,6 @@
 # Crunchitos — crunchitos.mx
 
-Snacks de frutas y verduras (chips de jícama, pepino, camote y plátano; 11 sabores, bolsa de 100 g).
+Snacks de frutas y verduras (chips de jícama, pepino, camote y plátano; 12 sabores, bolsa de 100 g).
 Marca propia del equipo de Asesor Sebas; una fábrica socia produce y el equipo distribuye en Chihuahua.
 Panel para Sebas, Paola (Pao) y Víctor.
 
@@ -15,7 +15,7 @@ Panel para Sebas, Paola (Pao) y Víctor.
 - Letras locales en `public/fonts/` (Bubblegum Sans, Gochi Hand, Poppins recortada a español).
 
 ## Página pública (`public/index.html`)
-- Hero con logo y los 4 Crunchis, 11 sabores (etiquetas en `public/img/etiquetas/<id>.webp`) con botón de WhatsApp por sabor, sección para negocios/eventos y cierre.
+- Hero con logo y los 4 Crunchis, 12 sabores (etiquetas en `public/img/etiquetas/<id>.webp`) con botón de WhatsApp por sabor, sección para negocios/eventos y cierre.
 - El WhatsApp y los sabores agotados vienen de `/api/publico` (se cambia el número desde el panel → Ajustes). Si un sabor llega a 0, sale "Agotado por ahora" y el botón cambia a "Avísame cuando haya".
 - Voz de marca: no decir "100% natural", "saludable", "sin conservadores" ni "no frito" (NOM-051 / falta confirmar con la fábrica).
 - Imagen para compartir: `public/og.jpg` (fuente editable `diseno/og.html`, captura a 1200×630). Favicons e íconos en `public/`.
@@ -29,7 +29,7 @@ Panel para Sebas, Paola (Pao) y Víctor.
 - **Ajustes**: precios, costo, aviso de stock bajo, WhatsApp de la página, equipo.
 
 ## Datos (D1)
-- `productos` (11 sabores), `movimientos` (grupo, tipo entrada/venta/tomada/merma, producto, cantidad, precio, cliente, nota, quién, fecha), `meta` (ajustes en JSON), `equipo`, `codigos`.
+- `productos` (12 sabores), `movimientos` (grupo, tipo entrada/venta/tomada/merma, producto, cantidad, precio, cliente, nota, quién, fecha), `meta` (ajustes en JSON), `equipo`, `codigos`.
 - Inventario = entradas − ventas − tomadas − merma.
 
 ## Variables en Cloudflare (Settings → Variables and Secrets, tipo Secret)

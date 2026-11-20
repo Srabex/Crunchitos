@@ -20,7 +20,7 @@ const AJUSTES_INICIALES = {
   stockBajo: 3,
 };
 
-// Los 11 sabores. El id coincide con la imagen /img/etiquetas/<id>.webp
+// Los sabores (12 desde que se agregó plátano natural). El id coincide con la imagen /img/etiquetas/<id>.webp
 const PRODUCTOS = [
   ["jicama-limon", "jicama", "Jícama", "limón y sal", "#D1A383"],
   ["jicama-chile", "jicama", "Jícama", "con chile", "#D0936E"],
@@ -31,8 +31,9 @@ const PRODUCTOS = [
   ["pepino-adobado", "pepino", "Pepino", "adobado", "#91B25B"],
   ["camote-limon", "camote", "Camote", "limón y sal", "#C2875D"],
   ["camote-adobado", "camote", "Camote", "adobado", "#C88A5F"],
-  ["platano-canela", "platano", "Plátano", "azúcar y canela", "#F2C54C"],
+  ["platano-natural", "platano", "Plátano", "natural", "#EEC14A"],
   ["platano-sal", "platano", "Plátano", "con sal", "#ECBE48"],
+  ["platano-canela", "platano", "Plátano", "azúcar y canela", "#F2C54C"],
 ];
 
 // Inventario real al 20 nov 2026: [id, llegaron, vendidas a $40, tomadas por Sebas]
@@ -120,6 +121,11 @@ async function db(env) {
   ]);
   const sem = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'semilla'").first();
   if (!sem) await sembrar(env.DB);
+  // Sabores nuevos (p. ej. plátano natural) entran solos a una base que ya existía, con su orden.
+  await env.DB.batch(PRODUCTOS.flatMap(([id, base, nb, sabor, color], i) => [
+    env.DB.prepare("INSERT OR IGNORE INTO productos (id, base, nombre_base, sabor, color, orden) VALUES (?,?,?,?,?,?)").bind(id, base, nb, sabor, color, i),
+    env.DB.prepare("UPDATE productos SET orden = ? WHERE id = ?").bind(i, id),
+  ]));
   listo = true;
   return env.DB;
 }
