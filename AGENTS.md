@@ -23,7 +23,7 @@ Panel para Sebas, Paola (Pao) y Víctor.
 ## Panel (`/admin/`)
 - Sin contraseñas: código de 6 dígitos por correo (Resend). Entra el dueño (`DUENO` en src/worker.js = Sebas) y los correos de la tabla `equipo`, que Sebas agrega en Ajustes → Equipo.
 - **Inicio**: vendido, ganancia (con costo promedio de las entradas), lo que queda, tomadas/merma; ventas por precio ($30/$40/$50…), por sabor, por persona y mejores clientes; filtro por periodo; aviso de sabores por acabarse.
-- **Vender**: venta (precio por bolsa con botones + "otro", cliente opcional), "me llevé / regalo" y merma. Avisa si no alcanza el inventario (se puede guardar de todos modos).
+- **Vender**: venta (botones de precio + campo libre de precio por bolsa y "total cobrado" que se calculan entre sí; cliente opcional), "me llevé / regalo" y merma. Avisa si no alcanza el inventario (se puede guardar de todos modos).
 - **Inventario**: por sabor (llegó, vendidas, otras, quedan) y botón "Llegó mercancía" (entrada con costo por bolsa).
 - **Historial**: movimientos agrupados, borrar (doble toque) y descarga CSV para Excel.
 - **Consigna**: en Vender → "Consigna" se dejan bolsas a una tienda o persona con precio acordado (salen de bodega, no cuentan como venta). En Inventario → "En consigna" se ve cada tienda (bolsas por sabor, valor, días) y **Pasar a cobrar** registra cuántas se vendieron (venta con `consigna = 1`) y cuántas regresan (`devolucion`, vuelven a bodega).

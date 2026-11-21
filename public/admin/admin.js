@@ -15,6 +15,7 @@
     });
   }
   var fmt = new Intl.NumberFormat("es-MX", { maximumFractionDigits: 0 });
+  function redondo(n) { return Math.round(n * 100) / 100; }
   function pesos(n) { var r = Math.round(n || 0); return (r < 0 ? "-$" : "$") + fmt.format(Math.abs(r)); }
   function num(n) { return fmt.format(n || 0); }
   function aviso(t) {
@@ -219,7 +220,7 @@
       }).join("") + "</div>";
     if (bajos.length) h += '<div class="alerta"><strong>Se están acabando:</strong> ' + bajos.map(function (p) { return esc(p.nombre_base + " " + p.sabor) + " (" + st[p.id] + ")"; }).join(", ") + "</div>";
     h += '<div class="kpis">' +
-      '<div class="kpi amarillo"><span>Vendido</span><strong>' + pesos(dinero) + "</strong><small>" + num(bolsas) + " bolsas</small></div>" +
+      '<div class="kpi amarillo"><span>Vendido</span><strong>' + pesos(dinero) + "</strong><small>" + num(bolsas) + " bolsas" + (bolsas ? " · prom. " + pesos(dinero / bolsas) : "") + "</small></div>" +
       '<div class="kpi"><span>Ganancia de las bolsas</span><strong>' + pesos(gananciaBolsas) + "</strong><small>costo " + pesos(cp) + " por bolsa</small></div>" +
       '<div class="kpi"><span>Gastos</span><strong>' + pesos(totGastos) + "</strong><small>" + gastos.length + (gastos.length === 1 ? " gasto" : " gastos") + "</small></div>" +
       '<div class="kpi ' + (gananciaBolsas - totGastos < 0 ? "rojo" : "verde") + '"><span>Ganancia real</span><strong>' + pesos(gananciaBolsas - totGastos) + "</strong><small>ganancia menos gastos</small></div>" +
@@ -328,7 +329,7 @@
   function nuevoForm(tipo) {
     var precios = D.ajustes.precios;
     var def = precios.find(function (p) { return /distrib/i.test(p.nombre); }) || precios[0];
-    return { tipo: tipo, items: {}, precio: tipo === "entrada" ? Number(D.ajustes.costo) : (def ? Number(def.valor) : 0), otro: false, cliente: "", nota: "", fecha: D.hoy, enviando: false };
+    return { tipo: tipo, items: {}, precio: tipo === "entrada" ? Number(D.ajustes.costo) : (def ? Number(def.valor) : 0), cliente: "", nota: "", fecha: D.hoy, enviando: false };
   }
   function vVender(v) {
     if (!form) form = nuevoForm(vista === "entrada" ? "entrada" : "venta");
@@ -354,12 +355,13 @@
     h += '<div class="caja" style="margin-top:14px">';
     if (f.tipo === "venta" || f.tipo === "consigna") {
       var esCons = f.tipo === "consigna";
-      var conocido = D.ajustes.precios.some(function (p) { return Number(p.valor) === Number(f.precio); }) && !f.otro;
       if (esCons) h += '<p class="vacio" style="margin:0 0 10px">Las bolsas salen de tu inventario pero no cuentan como vendidas. Cuando pases a cobrar, en Inventario → En consigna marcas cuántas se vendieron.</p>';
-      h += "<h3>" + (esCons ? "Precio acordado por bolsa" : "Precio por bolsa") + "</h3><div class=\"chips\" style=\"margin-bottom:10px\">" + D.ajustes.precios.map(function (p) {
-        return '<button class="chip" type="button" data-precio="' + Number(p.valor) + '" aria-pressed="' + (conocido && Number(p.valor) === Number(f.precio)) + '">' + pesos(p.valor) + " · " + esc(p.nombre) + "</button>";
-      }).join("") + '<button class="chip" type="button" data-precio="otro" aria-pressed="' + !conocido + '">Otro</button></div>' +
-        (!conocido ? '<label>Precio por bolsa<input id="fprecio" inputmode="decimal" value="' + (f.precio || "") + '"></label>' : "");
+      h += "<h3>" + (esCons ? "Precio acordado por bolsa" : "¿A cuánto la vendiste?") + "</h3><div class=\"chips\" style=\"margin-bottom:10px\">" + D.ajustes.precios.map(function (p) {
+        return '<button class="chip" type="button" data-precio="' + Number(p.valor) + '" aria-pressed="' + (Number(p.valor) === Number(f.precio)) + '">' + pesos(p.valor) + " · " + esc(p.nombre) + "</button>";
+      }).join("") + "</div>" +
+        '<div class="rejilla2"><label>Precio por bolsa<input id="fprecio" inputmode="decimal" value="' + (f.precio || "") + '"></label>' +
+        '<label>Total cobrado<input id="ftotal" inputmode="decimal" value="' + (totalBolsas() && f.precio ? redondo(totalBolsas() * f.precio) : "") + '" placeholder="$0"></label></div>' +
+        '<p class="vacio" style="margin-top:6px;font-size:13px">Toca un precio o escribe el tuyo ($35, $45, $47…). Si diste un trato (ej. 3 por $100), pon el total y se calcula solo.</p>';
       var nombres = {}; D.movimientos.forEach(function (m) { if (m.cliente && (!esCons || m.tipo === "consigna")) nombres[m.cliente] = 1; });
       h += '<div class="rejilla2" style="margin-top:10px"><label>' + (esCons ? "Tienda o persona" : "Cliente (opcional)") + '<input id="fcliente" list="lclientes" value="' + esc(f.cliente) + '" placeholder="' + (esCons ? "Ej. Abarrotes Doña Mary" : "Ej. Gym Fuerza") + '"></label>' +
         '<label>Fecha<input type="date" id="ffecha" value="' + esc(f.fecha) + '" max="' + esc(D.hoy) + '"></label></div>' +
@@ -385,24 +387,32 @@
         f.items[id] = Math.max(0, n);
         var inp = v.querySelector('[data-n="' + id + '"]'); inp.value = f.items[id] || "";
         inp.closest(".it").classList.toggle("lleva", !!f.items[id]);
-        resumenBoton();
+        sincPrecio("precio");
       };
     });
     v.querySelectorAll("[data-n]").forEach(function (inp) {
       inp.oninput = function () {
         var id = inp.getAttribute("data-n"), n = parseInt(inp.value.replace(/\D/g, ""), 10) || 0;
-        f.items[id] = n; inp.closest(".it").classList.toggle("lleva", !!n); resumenBoton();
+        f.items[id] = n; inp.closest(".it").classList.toggle("lleva", !!n); sincPrecio("precio");
       };
     });
+    function sincPrecio(desde) {
+      var fp = document.getElementById("fprecio"), ft = document.getElementById("ftotal"), n = totalBolsas();
+      if (desde !== "precio" && fp) fp.value = f.precio || "";
+      if (desde !== "total" && ft) ft.value = n && f.precio ? redondo(n * f.precio) : "";
+      v.querySelectorAll("[data-precio]").forEach(function (c) { c.setAttribute("aria-pressed", String(Number(c.getAttribute("data-precio")) === Number(f.precio))); });
+      resumenBoton();
+    }
     v.querySelectorAll("[data-precio]").forEach(function (b) {
-      b.onclick = function () {
-        var p = b.getAttribute("data-precio");
-        if (p === "otro") { f.otro = true; } else { f.otro = false; f.precio = Number(p); }
-        guardarCampos(); pintar();
-        var fp = document.getElementById("fprecio"); if (fp) fp.focus();
-      };
+      b.onclick = function () { f.precio = Number(b.getAttribute("data-precio")); sincPrecio(); };
     });
-    ["fprecio", "fcliente", "ffecha", "fnota"].forEach(function (id) {
+    var fpI = document.getElementById("fprecio"), ftI = document.getElementById("ftotal");
+    if (fpI) fpI.oninput = function () { f.precio = parseFloat(String(fpI.value).replace(/[$,\s]/g, "")) || 0; if (ftI) sincPrecio("precio"); else resumenBoton(); };
+    if (ftI) ftI.oninput = function () {
+      var t = parseFloat(String(ftI.value).replace(/[$,\s]/g, "")) || 0, n = totalBolsas();
+      if (n) { f.precio = redondo(t / n); sincPrecio("total"); }
+    };
+    ["fcliente", "ffecha", "fnota"].forEach(function (id) {
       var e = document.getElementById(id); if (e) e.oninput = function () { guardarCampos(); resumenBoton(); };
     });
     var c = document.getElementById("cancelar"); if (c) c.onclick = function () { ir("inventario"); };
@@ -410,7 +420,7 @@
   }
   function guardarCampos() {
     var g = function (id) { var e = document.getElementById(id); return e ? e.value : null; };
-    if (g("fprecio") !== null) form.precio = parseFloat(String(g("fprecio")).replace(",", ".")) || 0;
+    if (g("fprecio") !== null) form.precio = parseFloat(String(g("fprecio")).replace(/[$,\s]/g, "")) || 0;
     if (g("fcliente") !== null) form.cliente = g("fcliente");
     if (g("ffecha") !== null) form.fecha = g("ffecha") || D.hoy;
     if (g("fnota") !== null) form.nota = g("fnota");
@@ -558,14 +568,14 @@
         "<ul>" + g.items.map(function (m) { return "<li>" + m.cantidad + " × " + esc(nombreProd(m.producto_id)) + "</li>"; }).join("") + "</ul>" +
         (g.nota ? '<div style="font-size:13px;color:var(--suave);margin-bottom:8px">' + esc(g.nota) + "</div>" : "") +
         '<div class="pie"><span><strong>' + n + (n === 1 ? " bolsa" : " bolsas") + "</strong>" + (g.tipo === "venta" || g.tipo === "consigna" ? " · " + pesos(g.precio) + " c/u · <strong>" + pesos(n * g.precio) + "</strong>" : g.tipo === "entrada" && g.precio ? " · costo " + pesos(g.precio) : "") + "</span>" +
-        '<span class="fila" style="gap:6px">' + (g.tipo === "venta" || g.tipo === "entrada" || g.tipo === "consigna" ? '<button class="btn chico claro" data-precio-g="' + esc(g.grupo) + '" data-actual="' + g.precio + '" data-t="' + g.tipo + '">' + (g.tipo === "venta" ? "Cambiar precio" : "Cambiar costo") + "</button>" : "") +
+        '<span class="fila" style="gap:6px">' + (g.tipo === "venta" || g.tipo === "entrada" || g.tipo === "consigna" ? '<button class="btn chico claro" data-precio-g="' + esc(g.grupo) + '" data-actual="' + g.precio + '" data-t="' + g.tipo + '">' + (g.tipo === "entrada" ? "Cambiar costo" : "Cambiar precio") + "</button>" : "") +
         '<button class="btn chico peligro" data-borrar="' + esc(g.grupo) + '">Borrar</button></span></div></div>';
     }).join("") : '<p class="vacio">No hay movimientos.</p>';
     v.innerHTML = h;
     v.querySelectorAll("[data-f]").forEach(function (b) { b.onclick = function () { filtroHist = b.getAttribute("data-f"); pintar(); }; });
     v.querySelectorAll("[data-precio-g]").forEach(function (b) {
       b.onclick = function () {
-        var t = b.getAttribute("data-t") === "venta" ? "Nuevo precio por bolsa" : "Nuevo costo por bolsa";
+        var t = b.getAttribute("data-t") === "entrada" ? "Nuevo costo por bolsa" : "Nuevo precio por bolsa";
         var nuevo = window.prompt(t + " (actual $" + b.getAttribute("data-actual") + "):", b.getAttribute("data-actual"));
         if (nuevo === null) return;
         var n = parseFloat(String(nuevo).replace(/[$,\s]/g, ""));
