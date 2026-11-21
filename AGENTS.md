@@ -20,7 +20,7 @@ Panel para Sebas, Paola (Pao) y Víctor.
 ## Página pública (`public/index.html`)
 - Hero con logo y los 4 Crunchis, 12 sabores (etiquetas en `public/img/etiquetas/<id>.webp`) con botón de WhatsApp por sabor, sección para negocios/eventos y cierre.
 - El WhatsApp y los sabores agotados vienen de `/api/publico` (se cambia el número desde el panel → Ajustes). Si un sabor llega a 0, sale "Agotado por ahora" y el botón cambia a "Avísame cuando haya".
-- Voz de marca: no decir "100% natural", "saludable", "sin conservadores" ni "no frito" (NOM-051 / falta confirmar con la fábrica).
+- Voz de marca: decir "snacks deshidratados" (nunca "botana") y resaltar "deshidratados". No decir "100% natural", "saludable", "sin conservadores" ni "no frito" (NOM-051 / falta confirmar con la fábrica).
 - Imagen para compartir: `public/og.jpg` (fuente editable `diseno/og.html`, captura a 1200×630). Favicons e íconos en `public/`.
 
 ## Panel (`/admin/`)
