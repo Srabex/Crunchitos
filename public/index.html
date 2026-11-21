@@ -26,7 +26,7 @@
 <link rel="preload" href="/fonts/BubblegumSans.woff" as="font" type="font/woff" crossorigin>
 <link rel="stylesheet" href="/fonts/fonts.css">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"Organization","name":"Crunchitos","url":"https://crunchitos.mx/","logo":"https://crunchitos.mx/icon-512.png","description":"Snacks de frutas y verduras: chips de jícama, pepino, camote y plátano.","areaServed":{"@type":"City","name":"Chihuahua"},"contactPoint":{"@type":"ContactPoint","telephone":"+52-614-235-5166","contactType":"sales","availableLanguage":"es"}}
+{"@context":"https://schema.org","@type":"Organization","name":"Crunchitos","url":"https://crunchitos.mx/","logo":"https://crunchitos.mx/icon-512.png","description":"Snacks de frutas y verduras: chips de jícama, pepino, camote y plátano.","sameAs":["https://www.facebook.com/mxcrunchitos","https://www.instagram.com/mxcrunchitos/"],"areaServed":{"@type":"City","name":"Chihuahua"},"contactPoint":{"@type":"ContactPoint","telephone":"+52-614-235-5166","contactType":"sales","availableLanguage":"es"}}
 </script>
 <style>
 :root{--tinta:#3B2216;--crema:#FFF6E6;--sombra:#9A6A25;--amarillo:#ECBE48;--jicama:#D1A383;--pepino:#82A85B;--camote:#C2875D;--platano:#F2C54C;--verde:#5E9A2A;--wa:#1F9D55}
@@ -96,7 +96,8 @@ h2{font-family:"Bubblegum Sans",sans-serif;font-weight:400;font-size:clamp(36px,
 .final p{font-size:18px;margin:0 0 26px}
 footer{background:var(--tinta);color:var(--crema);padding:28px 0;font-size:14px}
 footer .envoltura{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center}
-footer a{opacity:.8}
+footer a{opacity:.85}
+.redes{display:flex;align-items:center;gap:14px}.redes svg{width:26px;height:26px;display:block}.redes a{display:inline-flex;padding:6px}.redes .equipo{font-size:13px;opacity:.6}
 .oculto{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
 </head>
@@ -198,7 +199,11 @@ footer a{opacity:.8}
 <footer>
   <div class="envoltura">
     <span>© <span id="anio">2026</span> Crunchitos · Chihuahua, México</span>
-    <a href="/admin/" rel="nofollow">Equipo</a>
+    <span class="redes">
+      <a href="https://www.instagram.com/mxcrunchitos/" target="_blank" rel="noopener" aria-label="Instagram de Crunchitos"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.3" fill="currentColor"/></svg></a>
+      <a href="https://www.facebook.com/mxcrunchitos" target="_blank" rel="noopener" aria-label="Facebook de Crunchitos"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M13.5 21v-7.5h2.5l.4-3h-2.9V8.6c0-.9.3-1.5 1.5-1.5h1.5V4.4A20 20 0 0 0 14.3 4c-2.2 0-3.8 1.4-3.8 3.9v2.6H8v3h2.5V21z"/></svg></a>
+      <a href="/admin/" rel="nofollow" class="equipo">Equipo</a>
+    </span>
   </div>
 </footer>
 

@@ -4,6 +4,9 @@ Snacks de frutas y verduras (chips de jícama, pepino, camote y plátano; 12 sab
 Marca propia del equipo de Asesor Sebas; una fábrica socia produce y el equipo distribuye en Chihuahua.
 Panel para Sebas, Paola (Pao) y Víctor.
 
+## Redes
+- Facebook: https://www.facebook.com/mxcrunchitos · Instagram: https://www.instagram.com/mxcrunchitos/ (correo mxcrunchitos@gmail.com). Ligadas en el pie de la página y en `sameAs`.
+
 ## Dominio
 - **crunchitos.mx** (comprado en Cloudflare Registrar, 20 nov 2026). `www.crunchitos.mx` redirige al dominio sin www (src/worker.js).
 - Los dominios se conectan solos al publicar (`routes` con `custom_domain` en wrangler.jsonc).
