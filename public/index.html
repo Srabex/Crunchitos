@@ -84,6 +84,16 @@ h2{font-family:"Bubblegum Sans",sans-serif;font-weight:400;font-size:clamp(36px,
 @media (min-width:800px){.galeria{grid-template-columns:1.1fr 1fr 1fr;grid-template-areas:"t fila fila" "t b1 b2";gap:16px}.g-t{display:block;grid-area:t}.g-fila{aspect-ratio:auto;height:300px}.g-b1,.g-b2{aspect-ratio:auto;height:340px}}
 .fotos .nota{font-size:14px;margin:14px 0 0;opacity:.8}
 .donde{background:var(--tinta);color:var(--crema)}
+.puntos{background:var(--pepino)}
+.puntos h2{color:var(--crema);text-shadow:3px 3px 0 #4f6e33}
+.puntos .intro{color:var(--tinta)}
+.lista-puntos{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));margin-top:22px}
+.punto{background:var(--crema);border-radius:24px;padding:20px 22px;display:flex;flex-direction:column;gap:6px}
+.punto h3{margin:0;font-size:19px}
+.punto p{margin:0;font-size:15px;opacity:.85}
+.punto .btn{margin-top:10px;align-self:flex-start;min-height:46px;padding:10px 20px;font-size:16px}
+.puntos .mas{margin:20px 0 0;font-size:15px;color:var(--tinta)}
+.puntos .mas a{color:var(--tinta);font-weight:700}
 .tarjetas{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:28px}
 .tarjeta{border-radius:28px;padding:26px;display:flex;flex-direction:column;gap:12px;color:var(--tinta)}
 .tarjeta h3{font-family:"Bubblegum Sans",sans-serif;font-weight:400;font-size:32px;margin:0;line-height:1.05}
@@ -159,6 +169,15 @@ footer a{opacity:.85}
       <figure class="g-b2"><img src="/img/fotos/bolsa-2.webp" alt="Bolsa de Crunchitos con sazón, de cerca" width="800" height="1000" loading="lazy" decoding="async"></figure>
     </div>
     <div class="acciones" style="margin-top:24px"><a class="btn btn-wa" data-wa="Hola, vi las fotos y se me antojaron 😋 ¿Qué sabores tienes hoy?" href="https://wa.me/526142355166">Quiero una bolsa</a></div>
+  </div>
+</section>
+
+<section class="puntos" id="donde" hidden>
+  <div class="envoltura">
+    <h2>Dónde encontrar Crunchitos</h2>
+    <p class="intro">Pásate por tus snacks deshidratados a estos lugares en Chihuahua.</p>
+    <div class="lista-puntos" id="puntos"></div>
+    <p class="mas">¿Tienes un negocio? <a href="#negocios">Véndelos tú también</a></p>
   </div>
 </section>
 
@@ -264,6 +283,16 @@ footer a{opacity:.85}
       a.textContent = "Avísame cuando haya";
       a.setAttribute("data-wa", "Hola, avísame cuando vuelva a haber Crunchitos de " + c.querySelector("img").alt.replace("Etiqueta Crunchitos ", "") + " 🙏");
     });
+    var pts = d.puntos || [];
+    if (pts.length) {
+      var esc = function (s) { return String(s || "").replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+      document.getElementById("puntos").innerHTML = pts.map(function (x) {
+        var mapa = x.mapa || "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(x.nombre + " " + x.direccion + " Chihuahua");
+        return '<article class="punto"><h3>' + esc(x.nombre) + "</h3>" + (x.direccion ? "<p>" + esc(x.direccion) + ", Chihuahua</p>" : "") +
+          '<a class="btn btn-claro" href="' + esc(mapa) + '" target="_blank" rel="noopener">Cómo llegar</a></article>';
+      }).join("");
+      document.getElementById("donde").hidden = false;
+    }
     pintarLigas();
   }).catch(function () {});
 })();

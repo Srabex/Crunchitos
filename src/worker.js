@@ -136,6 +136,17 @@ async function db(env) {
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS remisiones (
     grupo TEXT PRIMARY KEY, telefono TEXT NOT NULL DEFAULT '', creado INTEGER NOT NULL,
     confirmado INTEGER NOT NULL DEFAULT 0, confirmado_por TEXT NOT NULL DEFAULT '', firma TEXT NOT NULL DEFAULT '')`).run();
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS puntos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, direccion TEXT NOT NULL DEFAULT '',
+    mapa TEXT NOT NULL DEFAULT '', creado INTEGER NOT NULL)`).run();
+  const pto = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'puntos_v1'").first();
+  if (!pto) {
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO puntos (nombre, direccion, mapa, creado) VALUES (?, ?, ?, ?)")
+        .bind("Tortillería y Abarrotes De Jesús", "C. Egipto 2619, Col. Álamos", "https://maps.app.goo.gl/R9cFxqED6UNFnapt5", Date.now()),
+      env.DB.prepare("INSERT OR REPLACE INTO meta (llave, valor) VALUES ('puntos_v1', '1')"),
+    ]);
+  }
   // 21 nov 2026: todo lo que llegó de plátano era natural (no hubo con sal). Se corrige una sola vez.
   const fixP = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'fix_platano_sal_v1'").first();
   if (!fixP) {
@@ -285,6 +296,7 @@ async function datos(D, yo) {
     D.prepare("SELECT * FROM gastos ORDER BY fecha DESC, creado DESC").all(),
   ]);
   const rem = await D.prepare("SELECT * FROM remisiones").all();
+  const pts = await D.prepare("SELECT * FROM puntos ORDER BY creado").all();
   return {
     ok: true,
     yo,
@@ -297,6 +309,7 @@ async function datos(D, yo) {
     ajustes: aj,
     gastos: gas.results,
     remisiones: rem.results,
+    puntos: pts.results,
   };
 }
 
@@ -428,8 +441,9 @@ async function api(req, env, url) {
 
   // Público: lo usa la página para el WhatsApp y los sabores agotados.
   if (ruta === "/publico" && metodo === "GET") {
-    const [aj, stock] = await Promise.all([ajustes(D), stockPorProducto(D)]);
-    return json({ whatsapp: aj.whatsapp, agotados: Object.keys(stock).filter((k) => stock[k] <= 0) }, 200, {
+    const [aj, stock, pts] = await Promise.all([ajustes(D), stockPorProducto(D),
+      D.prepare("SELECT nombre, direccion, mapa FROM puntos ORDER BY creado").all()]);
+    return json({ whatsapp: aj.whatsapp, agotados: Object.keys(stock).filter((k) => stock[k] <= 0), puntos: pts.results }, 200, {
       "cache-control": "public, max-age=60",
     });
   }
@@ -530,6 +544,21 @@ async function api(req, env, url) {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return error("Revisa el correo.");
     await D.prepare("INSERT OR REPLACE INTO equipo (email, nombre, creado) VALUES (?, ?, ?)")
       .bind(email, texto(body.nombre, 40), Date.now()).run();
+    return json({ ok: true });
+  }
+  // Puntos de venta que salen en la página ("Dónde encontrar Crunchitos").
+  if (ruta === "/puntos" && metodo === "POST") {
+    const nombre = texto(body.nombre, 80);
+    if (!nombre) return error("Pon el nombre del lugar.");
+    const mapa = String(body.mapa ?? "").trim().slice(0, 300);
+    if (mapa && !/^https:\/\//.test(mapa)) return error("La liga del mapa debe empezar con https://");
+    await D.prepare("INSERT INTO puntos (nombre, direccion, mapa, creado) VALUES (?, ?, ?, ?)")
+      .bind(nombre, texto(body.direccion, 120), mapa, Date.now()).run();
+    return json({ ok: true });
+  }
+  const mPt = /^\/puntos\/(\d+)$/.exec(ruta);
+  if (mPt && metodo === "DELETE") {
+    await D.prepare("DELETE FROM puntos WHERE id = ?").bind(Number(mPt[1])).run();
     return json({ ok: true });
   }
   const mEq = /^\/equipo\/(.+)$/.exec(ruta);

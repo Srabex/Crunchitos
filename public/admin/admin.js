@@ -655,6 +655,17 @@
       '<label style="margin-top:10px">WhatsApp de la página (10 dígitos)<input id="awa" inputmode="tel" value="' + esc(tel) + '"></label>' +
       '<p class="vacio" style="margin-top:6px">A este número llegan los pedidos de crunchitos.mx.</p></div>' +
       '<button class="btn" id="gaj" style="width:100%;margin-bottom:20px">Guardar ajustes</button><p class="error" id="aerr"></p>';
+    h += '<div class="caja"><h3>Dónde encontrarnos (sale en la página)</h3>' +
+      ((D.puntos || []).length ? "<table><tbody>" + D.puntos.map(function (x) {
+        return "<tr><td><strong>" + esc(x.nombre) + "</strong><br><span class=vacio>" + esc(x.direccion) + "</span></td><td class=num>" +
+          (x.mapa ? '<a href="' + esc(x.mapa) + '" target="_blank" rel="noopener" style="color:var(--tinta);font-weight:600;margin-right:6px">Mapa</a>' : "") +
+          '<button class="btn chico peligro" data-qpunto="' + x.id + '">Quitar</button></td></tr>';
+      }).join("") + "</tbody></table>" : '<p class="vacio">Todavía no hay lugares.</p>') +
+      '<form id="fpunto" style="margin-top:12px"><label>Nombre del lugar<input id="pnom" placeholder="Ej. Tortillería De Jesús"></label>' +
+      '<label style="margin-top:8px">Dirección corta<input id="pdir" placeholder="Calle y número, colonia"></label>' +
+      '<label style="margin-top:8px">Liga de Google Maps (opcional)<input id="pmap" inputmode="url" placeholder="https://maps.app.goo.gl/…"></label>' +
+      '<p class="vacio" style="margin-top:6px">En Google Maps busca el lugar → Compartir → Copiar vínculo, y pégalo aquí.</p>' +
+      '<button class="btn chico" style="width:100%;margin-top:10px">Agregar lugar</button></form></div>';
     h += '<div class="caja"><h3>Equipo con acceso</h3><table><tbody><tr><td>Sebas</td><td>' + esc(D.dueno) + "</td><td></td></tr>" +
       D.equipo.map(function (e) {
         return "<tr><td>" + esc(e.nombre || "—") + "</td><td>" + esc(e.email) + "</td><td class=num>" + (D.esDueno ? '<button class="btn chico peligro" data-quitar="' + esc(e.email) + '">Quitar</button>' : "") + "</td></tr>";
@@ -685,6 +696,19 @@
         api("DELETE", "/equipo/" + encodeURIComponent(b.getAttribute("data-quitar"))).then(function (r) { aviso(r.ok ? "Acceso quitado" : r.error); cargar(); });
       };
     });
+    v.querySelectorAll("[data-qpunto]").forEach(function (b) {
+      b.onclick = function () {
+        if (!b.classList.contains("seguro")) { b.classList.add("seguro"); b.textContent = "¿Seguro?"; return; }
+        api("DELETE", "/puntos/" + b.getAttribute("data-qpunto")).then(function (r) { aviso(r.ok ? "Lugar quitado" : r.error); cargar(); });
+      };
+    });
+    document.getElementById("fpunto").onsubmit = function (e) {
+      e.preventDefault();
+      api("POST", "/puntos", { nombre: document.getElementById("pnom").value, direccion: document.getElementById("pdir").value, mapa: document.getElementById("pmap").value }).then(function (r) {
+        if (!r.ok) { aviso(r.error || "No se pudo agregar."); return; }
+        aviso("Listo, ya sale en la página"); cargar();
+      });
+    };
     var feq = document.getElementById("feq");
     if (feq) feq.onsubmit = function (e) {
       e.preventDefault();
