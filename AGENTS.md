@@ -1,6 +1,6 @@
 # Crunchitos — crunchitos.mx
 
-Snacks de frutas y verduras (chips de jícama, pepino, camote y plátano; 12 sabores, bolsa de 100 g).
+Snacks deshidratados (chips de jícama, pepino, camote y plátano; 12 sabores, bolsa de 100 g).
 Marca propia del equipo de Asesor Sebas; una fábrica socia produce y el equipo distribuye en Chihuahua.
 Panel para Sebas, Paola (Pao) y Víctor.
 
@@ -30,12 +30,14 @@ Panel para Sebas, Paola (Pao) y Víctor.
 - **Inventario**: por sabor (llegó, vendidas, otras, quedan) y botón "Llegó mercancía" (entrada con costo por bolsa).
 - **Historial**: movimientos agrupados, borrar (doble toque) y descarga CSV para Excel.
 - **Consigna**: en Vender → "Consigna" se dejan bolsas a una tienda o persona con precio acordado (salen de bodega, no cuentan como venta). En Inventario → "En consigna" se ve cada tienda (bolsas por sabor, valor, días) y **Pasar a cobrar** registra cuántas se vendieron (venta con `consigna = 1`) y cuántas regresan (`devolucion`, vuelven a bodega).
+- **Recibo de consigna (remisión)**: al guardar una consigna se abre "Recibo de consigna" con 3 formas de que la tienda confirme sin usuario: enviar la liga por WhatsApp (campo opcional "WhatsApp de la tienda"), que escaneen un QR, o "Que confirme aquí en mi cel" si no tienen datos. La liga es `/r/<grupo>` (página `public/r/index.html`, API pública `/api/remision/<grupo>` y `/confirmar`): ven sabores, bolsas, precio y condiciones, ponen su nombre, firman con el dedo (opcional) y tocan "Confirmo que recibí". El estado (⏳ falta / ✓ confirmó + firma) sale en Inventario → En consigna y en Historial (botón "Recibo"). Tabla `remisiones`. QR con `public/admin/qrcode.js` (Kazuhiko Arase, MIT).
 - **Gastos**: monto, categoría (etiquetas e impresión, envío de la fábrica, gasolina, empaque, publicidad, otro), concepto, quién lo pagó, fecha y nota. Descarga CSV.
 - **Inicio** también muestra gastos del periodo, **ganancia real** (ganancia de las bolsas − gastos), gastos por categoría y quién ha puesto.
 - **Historial**: "Cambiar precio" / "Cambiar costo" en ventas y entradas (para corregir el costo real por paquete).
 - **Ajustes**: precios, costo, aviso de stock bajo, WhatsApp de la página, equipo.
 
 ## Datos (D1)
+- 21 nov 2026: lo registrado como "plátano con sal" era plátano natural; se corrigió una sola vez (meta `fix_platano_sal_v1`).
 - `productos` (12 sabores), `movimientos` (grupo, tipo entrada/venta/tomada/merma, producto, cantidad, precio, cliente, nota, quién, fecha), `gastos` (fecha, categoría, concepto, monto, pagó, nota, registró), `meta` (ajustes en JSON), `equipo`, `codigos`.
 - Bodega = entradas + devoluciones − ventas − tomadas − merma − consigna (los movimientos con `consigna = 1` no tocan bodega). En tienda = consigna − ventas/devoluciones/merma con `consigna = 1` de esa tienda (campo `cliente`).
 

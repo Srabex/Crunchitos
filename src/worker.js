@@ -48,7 +48,7 @@ const SEMILLA = [
   ["camote-limon", 10, 0, 1],
   ["camote-adobado", 11, 2, 0],
   ["platano-canela", 8, 1, 0],
-  ["platano-sal", 9, 1, 0],
+  ["platano-natural", 9, 1, 0], // se registró como "con sal" por error; era natural
 ];
 
 const TIPOS = ["entrada", "venta", "tomada", "merma", "consigna", "devolucion"];
@@ -132,6 +132,17 @@ async function db(env) {
   if (!mig) {
     try { await env.DB.prepare("ALTER TABLE movimientos ADD COLUMN consigna INTEGER NOT NULL DEFAULT 0").run(); } catch (e) { /* ya existe */ }
     await env.DB.prepare("INSERT OR REPLACE INTO meta (llave, valor) VALUES ('mig_consigna', '1')").run();
+  }
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS remisiones (
+    grupo TEXT PRIMARY KEY, telefono TEXT NOT NULL DEFAULT '', creado INTEGER NOT NULL,
+    confirmado INTEGER NOT NULL DEFAULT 0, confirmado_por TEXT NOT NULL DEFAULT '', firma TEXT NOT NULL DEFAULT '')`).run();
+  // 21 nov 2026: todo lo que llegó de plátano era natural (no hubo con sal). Se corrige una sola vez.
+  const fixP = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'fix_platano_sal_v1'").first();
+  if (!fixP) {
+    await env.DB.batch([
+      env.DB.prepare("UPDATE movimientos SET producto_id = 'platano-natural' WHERE producto_id = 'platano-sal'"),
+      env.DB.prepare("INSERT OR REPLACE INTO meta (llave, valor) VALUES ('fix_platano_sal_v1', '1')"),
+    ]);
   }
   const eq = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'equipo_inicial_v1'").first();
   if (!eq) {
@@ -273,6 +284,7 @@ async function datos(D, yo) {
     ajustes(D),
     D.prepare("SELECT * FROM gastos ORDER BY fecha DESC, creado DESC").all(),
   ]);
+  const rem = await D.prepare("SELECT * FROM remisiones").all();
   return {
     ok: true,
     yo,
@@ -284,6 +296,7 @@ async function datos(D, yo) {
     equipo: eq.results,
     ajustes: aj,
     gastos: gas.results,
+    remisiones: rem.results,
   };
 }
 
@@ -320,9 +333,15 @@ async function guardarMovimiento(D, yo, body) {
   const ahora = Date.now();
   const cliente = texto(body.cliente, 80);
   const nota = texto(body.nota, 300);
-  await D.batch(items.map((i) =>
+  const st = items.map((i) =>
     D.prepare(`INSERT INTO movimientos (grupo, tipo, producto_id, cantidad, precio, cliente, nota, quien, fecha, creado)
-      VALUES (?,?,?,?,?,?,?,?,?,?)`).bind(grupo, tipo, i.id, i.n, precio, cliente, nota, yo, fecha, ahora)));
+      VALUES (?,?,?,?,?,?,?,?,?,?)`).bind(grupo, tipo, i.id, i.n, precio, cliente, nota, yo, fecha, ahora));
+  if (tipo === "consigna") {
+    let tel = String(body.telefono ?? "").replace(/\D/g, "");
+    if (tel.length === 10) tel = "52" + tel;
+    st.push(D.prepare("INSERT OR REPLACE INTO remisiones (grupo, telefono, creado) VALUES (?, ?, ?)").bind(grupo, tel.slice(0, 15), ahora));
+  }
+  await D.batch(st);
   return json({ ok: true, grupo });
 }
 
@@ -413,6 +432,37 @@ async function api(req, env, url) {
     return json({ whatsapp: aj.whatsapp, agotados: Object.keys(stock).filter((k) => stock[k] <= 0) }, 200, {
       "cache-control": "public, max-age=60",
     });
+  }
+  // Remisión de consigna: liga pública (el folio es un id largo imposible de adivinar).
+  const mRem = /^\/remision\/(g-[\w-]+)(\/confirmar)?$/.exec(ruta);
+  if (mRem) {
+    const grupo = mRem[1];
+    const { results: movs } = await D.prepare(
+      `SELECT m.*, p.nombre_base, p.sabor FROM movimientos m JOIN productos p ON p.id = m.producto_id
+       WHERE m.grupo = ? AND m.tipo = 'consigna' ORDER BY p.orden`).bind(grupo).all();
+    if (!movs.length) return error("No encontramos esta remisión.", 404);
+    let rem = await D.prepare("SELECT * FROM remisiones WHERE grupo = ?").bind(grupo).first();
+    if (mRem[2] && metodo === "POST") {
+      if (!rem) {
+        await D.prepare("INSERT OR IGNORE INTO remisiones (grupo, creado) VALUES (?, ?)").bind(grupo, Date.now()).run();
+      }
+      const nombre = texto(body.nombre, 60);
+      if (!nombre) return error("Escribe tu nombre para confirmar.");
+      const firma = typeof body.firma === "string" && body.firma.startsWith("data:image/png;base64,") && body.firma.length < 120000 ? body.firma : "";
+      await D.prepare("UPDATE remisiones SET confirmado = ?, confirmado_por = ?, firma = ? WHERE grupo = ? AND confirmado = 0")
+        .bind(Date.now(), nombre, firma, grupo).run();
+      rem = await D.prepare("SELECT * FROM remisiones WHERE grupo = ?").bind(grupo).first();
+    } else if (metodo !== "GET") return error("No permitido.", 405);
+    const aj = await ajustes(D);
+    const m0 = movs[0];
+    return json({
+      ok: true,
+      folio: grupo.replace(/-/g, "").slice(-6).toUpperCase(),
+      tienda: m0.cliente, fecha: m0.fecha, precio: m0.precio, nota: m0.nota,
+      items: movs.map((m) => ({ nombre: `${m.nombre_base} ${m.sabor}`, cantidad: m.cantidad })),
+      confirmado: rem?.confirmado || 0, confirmado_por: rem?.confirmado_por || "", firma: rem?.firma || "",
+      whatsapp: aj.whatsapp,
+    }, 200, { "x-robots-tag": "noindex" });
   }
   if (ruta === "/login/codigo" && metodo === "POST") return pedirCodigo(env, D, body);
   if (ruta === "/login/verificar" && metodo === "POST") return verificar(env, D, body);
@@ -507,6 +557,13 @@ export default {
       }
     }
     if (url.pathname === "/admin") return Response.redirect(new URL("/admin/", url).toString(), 301);
+    if (/^\/r\/g-[\w-]+\/?$/.test(url.pathname)) {
+      const page = await env.ASSETS.fetch(new Request(new URL("/r/", url), req));
+      const r = new Response(page.body, page);
+      r.headers.set("x-robots-tag", "noindex, nofollow");
+      r.headers.set("cache-control", "no-store");
+      return r;
+    }
     const res = await env.ASSETS.fetch(req);
     if (url.pathname.startsWith("/admin")) {
       const r = new Response(res.body, res);

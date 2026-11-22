@@ -82,8 +82,8 @@
       var esC = m.tipo === "consigna" || (m.consigna && (m.tipo === "venta" || m.tipo === "devolucion" || m.tipo === "merma"));
       if (!esC) return;
       var k = (m.cliente || "Sin nombre").trim();
-      var r = t[k] = t[k] || { tienda: k, items: {}, precio: 0, desde: null, ultima: null, vendido: 0 };
-      if (m.tipo === "consigna") { r.items[m.producto_id] = (r.items[m.producto_id] || 0) + m.cantidad; r.precio = m.precio; if (!r.desde) r.desde = m.fecha; r.ultima = m.fecha; }
+      var r = t[k] = t[k] || { tienda: k, items: {}, precio: 0, desde: null, ultima: null, vendido: 0, grupos: [] };
+      if (m.tipo === "consigna") { r.items[m.producto_id] = (r.items[m.producto_id] || 0) + m.cantidad; r.precio = m.precio; if (!r.desde) r.desde = m.fecha; r.ultima = m.fecha; if (r.grupos.indexOf(m.grupo) < 0) r.grupos.push(m.grupo); }
       else { r.items[m.producto_id] = (r.items[m.producto_id] || 0) - m.cantidad; if (m.tipo === "venta") r.vendido += m.cantidad * m.precio; }
     });
     return Object.keys(t).map(function (k) {
@@ -91,6 +91,12 @@
       Object.keys(r.items).forEach(function (id) { if (r.items[id] <= 0) delete r.items[id]; else n += r.items[id]; });
       r.bolsas = n; return r;
     }).filter(function (r) { return r.bolsas > 0; }).sort(function (a, b) { return (a.ultima || "").localeCompare(b.ultima || ""); });
+  }
+  function remision(grupo) { return (D.remisiones || []).find(function (r) { return r.grupo === grupo; }) || {}; }
+  function ligaRemision(grupo) { return location.origin + "/r/" + grupo; }
+  function estadoRemision(grupo) {
+    var r = remision(grupo);
+    return r.confirmado ? '<span style="color:var(--verde);font-weight:600">✓ Confirmó ' + esc(r.confirmado_por || "la tienda") + "</span>" : '<span style="color:#9A6A25;font-weight:600">⏳ Falta que confirme</span>';
   }
   function diasDesde(f) { return Math.max(0, Math.round((new Date(D.hoy + "T12:00:00") - new Date(f + "T12:00:00")) / 86400000)); }
   function costoPromedio() {
@@ -171,7 +177,7 @@
       ' <button class="enlace" id="salir">Salir</button></div></header>' +
       '<main id="vista"></main>' +
       '<nav class="tabs" aria-label="Secciones">' + tabs.map(function (t) {
-        var actual = vista === "liquidar" || vista === "entrada" ? "inventario" : vista;
+        var actual = vista === "liquidar" || vista === "entrada" || vista === "remision" ? "inventario" : vista;
         return '<button data-v="' + t[0] + '"' + (actual === t[0] ? ' aria-current="page"' : "") + '><svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[t[0]] + "</svg>" + t[1] + "</button>";
       }).join("") + "</nav>";
     document.getElementById("salir").onclick = function () { api("POST", "/logout").then(function () { pintarLogin(); }); };
@@ -179,7 +185,7 @@
       b.onclick = function () { ir(b.getAttribute("data-v")); };
     });
     var v = document.getElementById("vista");
-    ({ inicio: vInicio, vender: vVender, gastos: vGastos, inventario: vInventario, historial: vHistorial, ajustes: vAjustes, entrada: vVender, liquidar: vLiquidar })[vista](v);
+    ({ inicio: vInicio, vender: vVender, gastos: vGastos, inventario: vInventario, historial: vHistorial, ajustes: vAjustes, entrada: vVender, liquidar: vLiquidar, remision: vRemision })[vista](v);
   }
   function ir(v) {
     vista = v;
@@ -365,6 +371,7 @@
       var nombres = {}; D.movimientos.forEach(function (m) { if (m.cliente && (!esCons || m.tipo === "consigna")) nombres[m.cliente] = 1; });
       h += '<div class="rejilla2" style="margin-top:10px"><label>' + (esCons ? "Tienda o persona" : "Cliente (opcional)") + '<input id="fcliente" list="lclientes" value="' + esc(f.cliente) + '" placeholder="' + (esCons ? "Ej. Abarrotes Doña Mary" : "Ej. Gym Fuerza") + '"></label>' +
         '<label>Fecha<input type="date" id="ffecha" value="' + esc(f.fecha) + '" max="' + esc(D.hoy) + '"></label></div>' +
+        (esCons ? '<label style="margin-top:10px">WhatsApp de la tienda (opcional, para mandarle el recibo)<input id="ftel" inputmode="tel" value="' + esc(f.telefono || "") + '" placeholder="10 dígitos"></label>' : "") +
         '<datalist id="lclientes">' + Object.keys(nombres).map(function (n) { return '<option value="' + esc(n) + '">'; }).join("") + "</datalist>";
     } else if (esEntrada) {
       h += '<div class="rejilla2"><label>Costo por bolsa<input id="fprecio" inputmode="decimal" value="' + (f.precio || "") + '"></label>' +
@@ -412,7 +419,7 @@
       var t = parseFloat(String(ftI.value).replace(/[$,\s]/g, "")) || 0, n = totalBolsas();
       if (n) { f.precio = redondo(t / n); sincPrecio("total"); }
     };
-    ["fcliente", "ffecha", "fnota"].forEach(function (id) {
+    ["fcliente", "ffecha", "fnota", "ftel"].forEach(function (id) {
       var e = document.getElementById(id); if (e) e.oninput = function () { guardarCampos(); resumenBoton(); };
     });
     var c = document.getElementById("cancelar"); if (c) c.onclick = function () { ir("inventario"); };
@@ -422,6 +429,7 @@
     var g = function (id) { var e = document.getElementById(id); return e ? e.value : null; };
     if (g("fprecio") !== null) form.precio = parseFloat(String(g("fprecio")).replace(/[$,\s]/g, "")) || 0;
     if (g("fcliente") !== null) form.cliente = g("fcliente");
+    if (g("ftel") !== null) form.telefono = g("ftel");
     if (g("ffecha") !== null) form.fecha = g("ffecha") || D.hoy;
     if (g("fnota") !== null) form.nota = g("fnota");
   }
@@ -440,7 +448,7 @@
     var err = document.getElementById("ferr");
     var items = Object.keys(form.items).filter(function (k) { return form.items[k] > 0; }).map(function (k) { return { producto_id: k, cantidad: form.items[k] }; });
     form.enviando = true; resumenBoton(); err.textContent = "";
-    api("POST", "/movimientos", { tipo: form.tipo, items: items, precio: form.precio, cliente: form.cliente, nota: form.nota, fecha: form.fecha, forzar: forzar }).then(function (r) {
+    api("POST", "/movimientos", { tipo: form.tipo, items: items, precio: form.precio, cliente: form.cliente, nota: form.nota, fecha: form.fecha, telefono: form.telefono || "", forzar: forzar }).then(function (r) {
       form.enviando = false; resumenBoton();
       if (r._status === 401) { pintarLogin(); return; }
       if (r.sinStock) {
@@ -453,7 +461,8 @@
       var tipo = form.tipo;
       aviso({ venta: "Venta guardada 🙌", consigna: "Consigna guardada", entrada: "Entrada guardada", tomada: "Guardado", merma: "Merma guardada" }[tipo]);
       return cargar().then(function () {
-        if (tipo === "entrada" || tipo === "consigna") { vista = "inventario"; form = null; pintar(); }
+        if (tipo === "consigna") { rgrupo = r.grupo; vista = "remision"; form = null; pintar(); }
+        else if (tipo === "entrada") { vista = "inventario"; form = null; pintar(); }
         else { form = nuevoForm(tipo); pintar(); }
       });
     });
@@ -487,6 +496,7 @@
       '<p class="vacio">Quedan = en tu bodega. Tiendas = dejadas a consigna. Otras = bolsas que se tomaron o se echaron a perder. En rojo: sabores con ' + (D.ajustes.stockBajo || 0) + " bolsas o menos. Para corregir un conteo, registra una merma o una entrada con la diferencia.</p>";
     document.getElementById("llego").onclick = function () { ir("entrada"); };
     v.querySelectorAll("[data-cobrar]").forEach(function (b) { b.onclick = function () { lform = null; ltienda = b.getAttribute("data-cobrar"); ir("liquidar"); }; });
+    v.querySelectorAll("[data-recibo]").forEach(function (b) { b.onclick = function () { rgrupo = b.getAttribute("data-recibo"); ir("remision"); }; });
     var nc = document.getElementById("nuevacons"); if (nc) nc.onclick = function () { ir("vender"); form.tipo = "consigna"; pintar(); };
   }
   function vConsignas(cs) {
@@ -497,8 +507,43 @@
       return '<div class="mov"><div class="cab"><span style="font-weight:700;color:var(--tinta);font-size:16px">' + esc(c.tienda) + "</span><span" + (d >= 14 ? ' class="bajo"' : "") + ">hace " + d + (d === 1 ? " día" : " días") + "</span></div>" +
         "<ul>" + Object.keys(c.items).map(function (id) { return "<li>" + c.items[id] + " × " + esc(nombreProd(id)) + "</li>"; }).join("") + "</ul>" +
         '<div class="pie"><span><strong>' + c.bolsas + (c.bolsas === 1 ? " bolsa" : " bolsas") + "</strong> · " + pesos(c.precio) + " c/u · <strong>" + pesos(c.bolsas * c.precio) + "</strong></span>" +
-        '<button class="btn chico verde" data-cobrar="' + esc(c.tienda) + '">Pasar a cobrar</button></div></div>';
+        '<button class="btn chico verde" data-cobrar="' + esc(c.tienda) + '">Pasar a cobrar</button></div>' +
+        '<div class="pie" style="margin-top:8px;font-size:13px">' + estadoRemision(c.grupos[c.grupos.length - 1]) +
+        '<button class="btn chico claro" data-recibo="' + esc(c.grupos[c.grupos.length - 1]) + '">Recibo</button></div></div>';
     }).join("");
+  }
+
+  // ——— recibo digital de consigna (la tienda confirma desde una liga, sin usuario)
+  var rgrupo = null;
+  function vRemision(v) {
+    var movs = D.movimientos.filter(function (m) { return m.grupo === rgrupo && m.tipo === "consigna"; });
+    if (!movs.length) { vista = "inventario"; pintar(); return; }
+    var r = remision(rgrupo), liga = ligaRemision(rgrupo), n = 0;
+    movs.forEach(function (m) { n += m.cantidad; });
+    var tienda = movs[0].cliente, folio = rgrupo.replace(/-/g, "").slice(-6).toUpperCase();
+    var msg = "Hola, te dejo el recibo de los Crunchitos que dejamos a consigna (" + n + " bolsas, folio " + folio + "). Ábrelo y toca \"Confirmo que recibí\" 🙌 " + liga;
+    var wa = "https://wa.me/" + (r.telefono || "") + "?text=" + encodeURIComponent(msg);
+    var qr = "";
+    try { var q = qrcode(0, "M"); q.addData(liga); q.make(); qr = q.createSvgTag({ cellSize: 6, margin: 2, scalable: true }); } catch (e) { qr = ""; }
+    v.innerHTML = '<button class="enlace" id="volver">← Inventario</button><h2>Recibo de consigna</h2>' +
+      '<div class="caja"><div class="fila entre"><strong>' + esc(tienda) + '</strong><span class="vacio">Folio ' + esc(folio) + "</span></div>" +
+      '<p style="margin:6px 0 0;font-size:14px">' + n + " bolsas · " + pesos(movs[0].precio) + " c/u · " + pesos(n * movs[0].precio) + "</p>" +
+      '<p style="margin:10px 0 0">' + estadoRemision(rgrupo) + (r.confirmado ? ' <span class="vacio">(' + esc(new Date(r.confirmado).toLocaleString("es-MX", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })) + ")</span>" : "") + "</p>" + (r.firma ? '<img alt="Firma" src="' + esc(r.firma) + '" style="display:block;height:80px;margin-top:8px;background:#fff;border-radius:10px">' : "") + "</div>" +
+      (r.confirmado ? "" :
+      '<div class="caja"><h3>Mándaselo por WhatsApp</h3><a class="btn verde" style="width:100%" href="' + esc(wa) + '" target="_blank" rel="noopener">Enviar recibo por WhatsApp</a>' +
+      '<button class="btn claro" style="width:100%;margin-top:10px" id="copiar">Copiar liga</button>' +
+      (r.telefono ? "" : '<p class="vacio" style="margin-top:8px">Como no pusiste su WhatsApp, te va a pedir que escojas el contacto.</p>') + "</div>" +
+      '<div class="caja" style="text-align:center"><h3>O que escaneen este QR</h3><div style="max-width:260px;margin:0 auto;background:#fff;padding:8px;border-radius:16px">' + qr + "</div>" +
+      '<p class="vacio" style="margin-top:8px">Con la cámara de su cel abren el recibo, ponen su nombre y tocan "Confirmo que recibí".</p></div>' +
+      '<div class="caja"><h3>¿No tiene datos?</h3><a class="btn claro" style="width:100%" href="' + esc(liga) + '" target="_blank" rel="noopener">Que confirme aquí en mi cel</a>' +
+      '<p class="vacio" style="margin-top:8px">Se abre el recibo en tu cel: le das el teléfono, pone su nombre, firma con el dedo y toca "Confirmo que recibí".</p></div>') +
+      '<button class="btn claro" style="width:100%" id="actualizar">Actualizar estado</button>';
+    document.getElementById("volver").onclick = function () { ir("inventario"); };
+    document.getElementById("actualizar").onclick = function () { cargar(); };
+    var c = document.getElementById("copiar");
+    if (c) c.onclick = function () {
+      (navigator.clipboard ? navigator.clipboard.writeText(liga) : Promise.reject()).then(function () { aviso("Liga copiada"); }, function () { window.prompt("Copia la liga:", liga); });
+    };
   }
 
   // ——— pasar a cobrar una consigna
@@ -569,10 +614,13 @@
         (g.nota ? '<div style="font-size:13px;color:var(--suave);margin-bottom:8px">' + esc(g.nota) + "</div>" : "") +
         '<div class="pie"><span><strong>' + n + (n === 1 ? " bolsa" : " bolsas") + "</strong>" + (g.tipo === "venta" || g.tipo === "consigna" ? " · " + pesos(g.precio) + " c/u · <strong>" + pesos(n * g.precio) + "</strong>" : g.tipo === "entrada" && g.precio ? " · costo " + pesos(g.precio) : "") + "</span>" +
         '<span class="fila" style="gap:6px">' + (g.tipo === "venta" || g.tipo === "entrada" || g.tipo === "consigna" ? '<button class="btn chico claro" data-precio-g="' + esc(g.grupo) + '" data-actual="' + g.precio + '" data-t="' + g.tipo + '">' + (g.tipo === "entrada" ? "Cambiar costo" : "Cambiar precio") + "</button>" : "") +
-        '<button class="btn chico peligro" data-borrar="' + esc(g.grupo) + '">Borrar</button></span></div></div>';
+        (g.tipo === "consigna" ? '<button class="btn chico claro" data-recibo="' + esc(g.grupo) + '">Recibo</button>' : "") +
+        '<button class="btn chico peligro" data-borrar="' + esc(g.grupo) + '">Borrar</button></span></div>' +
+        (g.tipo === "consigna" ? '<div style="font-size:13px;margin-top:8px">' + estadoRemision(g.grupo) + "</div>" : "") + "</div>";
     }).join("") : '<p class="vacio">No hay movimientos.</p>';
     v.innerHTML = h;
     v.querySelectorAll("[data-f]").forEach(function (b) { b.onclick = function () { filtroHist = b.getAttribute("data-f"); pintar(); }; });
+    v.querySelectorAll("[data-recibo]").forEach(function (b) { b.onclick = function () { rgrupo = b.getAttribute("data-recibo"); ir("remision"); }; });
     v.querySelectorAll("[data-precio-g]").forEach(function (b) {
       b.onclick = function () {
         var t = b.getAttribute("data-t") === "entrada" ? "Nuevo costo por bolsa" : "Nuevo precio por bolsa";

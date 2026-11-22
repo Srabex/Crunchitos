@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Remisión de consigna · Crunchitos</title>
+<meta property="og:title" content="Remisión de consigna · Crunchitos">
+<meta property="og:description" content="Revisa lo que recibiste y confírmalo con un toque.">
+<meta property="og:image" content="https://crunchitos.mx/og.jpg">
+<meta name="theme-color" content="#ECBE48">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+:root{--tinta:#3B2216;--crema:#FFF6E6;--amarillo:#ECBE48;--sombra:#9A6A25;--verde:#1F9D55}
+*{box-sizing:border-box}
+body{margin:0;font-family:Poppins,system-ui,sans-serif;color:var(--tinta);background:var(--amarillo);min-height:100vh;min-height:100dvh;padding:20px 14px 40px}
+.hoja{max-width:460px;margin:0 auto;background:var(--crema);border-radius:28px;padding:24px 20px;box-shadow:0 10px 30px rgba(59,34,22,.15)}
+.logo{display:block;width:200px;margin:0 auto}
+h1{font-family:"Bubblegum Sans",sans-serif;font-weight:400;font-size:30px;text-align:center;margin:10px 0 2px}
+.folio{text-align:center;font-size:13px;opacity:.75;margin:0 0 16px}
+.dato{display:flex;justify-content:space-between;gap:10px;font-size:15px;padding:6px 0;border-bottom:1px dashed #E4D3B6}
+.dato span:first-child{opacity:.7}
+table{width:100%;border-collapse:collapse;margin:14px 0 6px;font-size:15px}
+td{padding:8px 4px;border-bottom:1px solid #EADFCB}
+td.n{text-align:right;font-weight:700;white-space:nowrap}
+tfoot td{font-weight:700;border-bottom:0;border-top:2px solid var(--tinta)}
+.cond{font-size:13px;line-height:1.5;background:#fff;border-radius:16px;padding:12px 14px;margin:14px 0}
+label{display:block;font-size:14px;font-weight:500;margin-bottom:6px}
+input{width:100%;font:inherit;border:2px solid #EADFCB;border-radius:14px;padding:12px 14px;min-height:50px;background:#fff}
+input:focus{outline:none;border-color:var(--tinta)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:56px;border:0;border-radius:999px;font:700 17px Poppins,sans-serif;cursor:pointer;text-decoration:none;margin-top:12px}
+.btn.ok{background:var(--verde);color:#fff;box-shadow:0 6px 0 #146b39}
+.btn.wa{background:#fff;color:var(--tinta);border:2px solid #EADFCB}
+.btn:disabled{opacity:.6}
+.listo{text-align:center;background:#DFF1E5;border-radius:18px;padding:16px;margin-top:14px}
+.listo strong{display:block;font-size:20px}
+.err{color:#B3261E;text-align:center;font-weight:600}
+.cargando{text-align:center;padding:30px}
+.firma{position:relative;margin-top:12px}
+.firma canvas{display:block;width:100%;height:150px;background:#fff;border:2px dashed #D8C4A2;border-radius:14px;touch-action:none}
+.firma button{position:absolute;top:6px;right:8px;border:0;background:none;font:600 13px Poppins,sans-serif;color:#9A6A25;padding:6px}
+.firmaok{display:block;max-width:100%;height:90px;margin:8px auto 0;background:#fff;border-radius:12px}
+</style>
+</head>
+<body>
+<main class="hoja" id="app"><p class="cargando">Cargando…</p></main>
+<script>
+(function () {
+  var app = document.getElementById("app");
+  var grupo = (location.pathname.match(/\/r\/(g-[\w-]+)/) || [])[1];
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  var fmt = new Intl.NumberFormat("es-MX", { maximumFractionDigits: 2 });
+  function pesos(n) { return "$" + fmt.format(n || 0); }
+  function fecha(f) { return new Date(f + "T12:00:00").toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" }); }
+  function cuando(ms) { return new Date(ms).toLocaleString("es-MX", { day: "numeric", month: "long", hour: "numeric", minute: "2-digit" }); }
+  if (!grupo) { app.innerHTML = '<p class="err">Liga no válida.</p>'; return; }
+
+  function achicar(cv) {
+    var c = document.createElement("canvas"); c.width = 400; c.height = Math.round(400 * cv.height / cv.width);
+    c.getContext("2d").drawImage(cv, 0, 0, c.width, c.height); return c.toDataURL("image/png");
+  }
+  function pintar(d) {
+    var total = 0, bolsas = 0;
+    d.items.forEach(function (i) { bolsas += i.cantidad; total += i.cantidad * d.precio; });
+    var waMsg = "Hola, soy " + (d.confirmado_por || "") + " de " + d.tienda + ". Confirmo que recibí " + bolsas + " bolsas de Crunchitos a consigna (folio " + d.folio + ").";
+    var h = '<img class="logo" src="/img/logo-tinta.svg" alt="Crunchitos">' +
+      "<h1>Remisión de consigna</h1>" +
+      '<p class="folio">Folio ' + esc(d.folio) + "</p>" +
+      '<div class="dato"><span>Para</span><strong>' + esc(d.tienda) + "</strong></div>" +
+      '<div class="dato"><span>Fecha</span><span>' + esc(fecha(d.fecha)) + "</span></div>" +
+      '<div class="dato"><span>Precio por bolsa</span><span>' + pesos(d.precio) + "</span></div>" +
+      "<table><tbody>" + d.items.map(function (i) {
+        return "<tr><td>" + esc(i.nombre) + '</td><td class="n">' + i.cantidad + "</td></tr>";
+      }).join("") + "</tbody><tfoot><tr><td>Total: " + bolsas + ' bolsas</td><td class="n">' + pesos(total) + "</td></tr></tfoot></table>" +
+      '<div class="cond">Las bolsas quedan <b>a consigna</b>: solo se paga lo vendido. Pasaremos a cobrar lo vendido y a resurtir; lo que no se venda se recoge sin costo.</div>';
+    if (d.confirmado) {
+      h += '<div class="listo"><strong>✅ Recibido y confirmado</strong>' +
+        (d.confirmado_por ? "por " + esc(d.confirmado_por) + " · " : "") + esc(cuando(d.confirmado)) +
+        (d.firma ? '<img class="firmaok" alt="Firma" src="' + esc(d.firma) + '">' : "") + "</div>" +
+        '<a class="btn wa" href="https://wa.me/' + esc(d.whatsapp) + "?text=" + encodeURIComponent(waMsg) + '">Avisar por WhatsApp</a>';
+    } else {
+      h += '<form id="f"><label for="nom">¿Quién recibe?</label><input id="nom" autocomplete="name" placeholder="Tu nombre" required>' +
+        '<label for="lienzo" style="margin-top:14px">Firma con tu dedo (opcional)</label>' +
+        '<div class="firma"><canvas id="lienzo" aria-label="Espacio para firmar"></canvas><button type="button" id="borrar">Borrar</button></div>' +
+        '<button class="btn ok" type="submit">✅ Confirmo que recibí</button></form><p class="err" id="err"></p>';
+    }
+    app.innerHTML = h;
+    var f = document.getElementById("f"), cv = document.getElementById("lienzo"), firmado = false;
+    if (cv) {
+      var ctx, dib = false;
+      var prep = function () { var r = cv.getBoundingClientRect(), k = 2; cv.width = r.width * k; cv.height = r.height * k; ctx = cv.getContext("2d"); ctx.scale(k, k); ctx.lineWidth = 2.5; ctx.lineCap = ctx.lineJoin = "round"; ctx.strokeStyle = "#3B2216"; firmado = false; };
+      prep();
+      var pt = function (e) { var r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+      cv.addEventListener("pointerdown", function (e) { dib = true; cv.setPointerCapture(e.pointerId); var q = pt(e); ctx.beginPath(); ctx.moveTo(q[0], q[1]); });
+      cv.addEventListener("pointermove", function (e) { if (!dib) return; var q = pt(e); ctx.lineTo(q[0], q[1]); ctx.stroke(); firmado = true; });
+      cv.addEventListener("pointerup", function () { dib = false; });
+      document.getElementById("borrar").onclick = prep;
+    }
+    if (f) f.onsubmit = function (e) {
+      e.preventDefault();
+      var nom = document.getElementById("nom").value.trim();
+      if (!nom) { document.getElementById("err").textContent = "Escribe tu nombre para confirmar."; return; }
+      var b = f.querySelector("button"); b.disabled = true;
+      fetch("/api/remision/" + grupo + "/confirmar", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nombre: nom, firma: firmado ? achicar(cv) : "" }) })
+        .then(function (r) { return r.json(); })
+        .then(function (d2) { if (!d2.ok) throw 0; pintar(d2); })
+        .catch(function () { b.disabled = false; document.getElementById("err").textContent = "No se pudo confirmar. Revisa tu internet e intenta de nuevo."; });
+    };
+  }
+
+  fetch("/api/remision/" + grupo).then(function (r) { return r.json(); }).then(function (d) {
+    if (!d.ok) { app.innerHTML = '<p class="err">' + esc(d.error || "No encontramos esta remisión.") + "</p>"; return; }
+    pintar(d);
+  }).catch(function () { app.innerHTML = '<p class="err">Sin conexión. Intenta de nuevo.</p>'; });
+})();
+</script>
+</body>
+</html>
