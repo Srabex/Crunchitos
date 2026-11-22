@@ -81,6 +81,7 @@ h2{font-family:"Bubblegum Sans",sans-serif;font-weight:400;font-size:clamp(36px,
 .galeria{display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"fila fila" "b1 b2";gap:12px}
 .galeria figure{margin:0;border-radius:24px;overflow:hidden;background:#e9dcc6}
 .galeria img{width:100%;height:100%;object-fit:cover}
+.surtido{margin:0;border-radius:24px;overflow:hidden;background:#e9dcc6}.surtido img{display:block;width:100%;height:auto}
 .g-fila{grid-area:fila;aspect-ratio:16/9}.g-b1{grid-area:b1;aspect-ratio:4/5}.g-b2{grid-area:b2;aspect-ratio:4/5}.g-t{display:none}
 @media (min-width:800px){.galeria{grid-template-columns:1.1fr 1fr 1fr;grid-template-areas:"t fila fila" "t b1 b2";gap:16px}.g-t{display:block;grid-area:t}.g-fila{aspect-ratio:auto;height:300px}.g-b1,.g-b2{aspect-ratio:auto;height:340px}}
 .fotos .nota{font-size:14px;margin:14px 0 0;opacity:.8}
@@ -163,13 +164,8 @@ footer a{opacity:.85}
 <section class="fotos" id="bolsa">
   <div class="envoltura">
     <h2>Así llega tu bolsa</h2>
-    <p class="intro">Bolsa de 100 g bien llena, con chips grandes y crujientes. Fotos reales de nuestro producto, sin filtros.</p>
-    <div class="galeria">
-      <figure class="g-t"><img src="/img/fotos/bolsas-t.webp" alt="Bolsas de Crunchitos de varios sabores acomodadas sobre una mesa de madera" width="900" height="1140" loading="lazy" decoding="async"></figure>
-      <figure class="g-fila"><img src="/img/fotos/bolsas-fila.webp" alt="Cinco bolsas de Crunchitos de distintos sabores en fila" width="1200" height="722" loading="lazy" decoding="async"></figure>
-      <figure class="g-b1"><img src="/img/fotos/bolsa-1.webp" alt="Bolsa de Crunchitos enchilados, de cerca" width="800" height="1000" loading="lazy" decoding="async"></figure>
-      <figure class="g-b2"><img src="/img/fotos/bolsa-2.webp" alt="Bolsa de Crunchitos con sazón, de cerca" width="800" height="1000" loading="lazy" decoding="async"></figure>
-    </div>
+    <p class="intro">Bolsa de 100 g bien llena, con chips grandes y crujientes. Estos son nuestros 11 sabores.</p>
+    <figure class="surtido"><img src="/img/fotos/surtido.webp" alt="Los 11 sabores de Crunchitos en sus bolsas, sobre una mesa de madera" width="1600" height="1195" loading="lazy" decoding="async"></figure>
     <div class="acciones" style="margin-top:24px"><a class="btn btn-wa" data-wa="Hola, vi las fotos y se me antojaron 😋 ¿Qué sabores tienes hoy?" href="https://wa.me/526142355166">Quiero una bolsa</a></div>
   </div>
 </section>
@@ -248,7 +244,7 @@ footer a{opacity:.85}
   ];
   // Sabores con foto de la bolsa en public/img/bolsas/<id>.webp; los demás muestran su etiqueta.
   var CON_FOTO = ["jicama-limon", "jicama-chile", "jicama-rancherito", "jicama-esquite", "jicama-habanero", "pepino-limon", "pepino-adobado",
-    "camote-limon", "camote-adobado", "platano-natural", "platano-canela"];
+    "camote-limon", "camote-adobado", "platano-natural", "platano-sal", "platano-canela"];
   var wa = "526142355166";
   var rejilla = document.getElementById("rejilla");
   document.getElementById("anio").textContent = new Date().getFullYear();
@@ -262,7 +258,7 @@ footer a{opacity:.85}
     var nombre = s[2] + " " + s[3];
     return '<article class="sabor" data-base="' + s[1] + '" data-id="' + s[0] + '">' +
       (CON_FOTO.indexOf(s[0]) >= 0
-        ? '<img class="bolsa" src="/img/bolsas/' + s[0] + '.webp?v=3" alt="Bolsa de Crunchitos ' + nombre + '" width="600" height="800" loading="lazy" decoding="async">'
+        ? '<img class="bolsa" src="/img/bolsas/' + s[0] + '.webp?v=4" alt="Bolsa de Crunchitos ' + nombre + '" width="600" height="800" loading="lazy" decoding="async">'
         : '<img src="/img/etiquetas/' + s[0] + '.webp" alt="Etiqueta Crunchitos ' + nombre + '" width="560" height="560" loading="lazy" decoding="async">') +
       '<h3>' + s[2] + '<span>' + s[3] + '</span></h3>' +
       '<span class="estado">Agotado por ahora</span>' +

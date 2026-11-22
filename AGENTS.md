@@ -18,6 +18,7 @@ Panel para Sebas, Paola (Pao, paolardzmq@gmail.com) y Víctor (victor.hernandez.
 - Letras locales en `public/fonts/` (Bubblegum Sans, Gochi Hand, Poppins recortada a español).
 
 ## Página pública (`public/index.html`)
+- "Así llega tu bolsa": foto de grupo `public/img/fotos/surtido.webp` (montaje de las 11 bolsas reales sobre la mesa; las fotos viejas de la galería quedaron sin usar).
 - Hero con logo y los 4 Crunchis, 12 sabores (foto de la bolsa en `public/img/bolsas/<id>.webp` para los de `CON_FOTO`; los demás muestran su etiqueta de `public/img/etiquetas/<id>.webp`; fotos editadas con IA poniendo la calca v2 sobre la bolsa real) con botón de WhatsApp por sabor, sección para negocios/eventos y cierre.
 - El WhatsApp y los sabores agotados vienen de `/api/publico` (se cambia el número desde el panel → Ajustes). Si un sabor llega a 0, sale "Agotado por ahora" y el botón cambia a "Avísame cuando haya".
 - Voz de marca: decir "snacks deshidratados" (nunca "botana") y resaltar "deshidratados". No decir "100% natural", "saludable", "sin conservadores" ni "no frito" (NOM-051 / falta confirmar con la fábrica).
