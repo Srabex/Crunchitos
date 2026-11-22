@@ -369,7 +369,10 @@
         '<label>Total cobrado<input id="ftotal" inputmode="decimal" value="' + (totalBolsas() && f.precio ? redondo(totalBolsas() * f.precio) : "") + '" placeholder="$0"></label></div>' +
         '<p class="vacio" style="margin-top:6px;font-size:13px">Toca un precio o escribe el tuyo ($35, $45, $47…). Si diste un trato (ej. 3 por $100), pon el total y se calcula solo.</p>';
       var nombres = {}; D.movimientos.forEach(function (m) { if (m.cliente && (!esCons || m.tipo === "consigna")) nombres[m.cliente] = 1; });
-      h += '<div class="rejilla2" style="margin-top:10px"><label>' + (esCons ? "Tienda o persona" : "Cliente (opcional)") + '<input id="fcliente" list="lclientes" value="' + esc(f.cliente) + '" placeholder="' + (esCons ? "Ej. Abarrotes Doña Mary" : "Ej. Gym Fuerza") + '"></label>' +
+      var conocidas = esCons ? Object.keys(nombres) : [];
+      if (conocidas.length) h += '<p style="margin:12px 0 6px;font-size:14px;font-weight:600">Tiendas que ya tienes (toca una):</p><div class="chips" id="tiendas">' +
+        conocidas.map(function (n) { return '<button type="button" class="chip" data-tienda="' + esc(n) + '" aria-pressed="' + (f.cliente === n) + '">' + esc(n) + "</button>"; }).join("") + "</div>";
+      h += '<div class="rejilla2" style="margin-top:10px"><label>' + (esCons ? (conocidas.length ? "O escribe una nueva" : "Tienda o persona") : "Cliente (opcional)") + '<input id="fcliente" list="lclientes" value="' + esc(f.cliente) + '" placeholder="' + (esCons ? "Ej. Abarrotes Doña Mary" : "Ej. Gym Fuerza") + '"></label>' +
         '<label>Fecha<input type="date" id="ffecha" value="' + esc(f.fecha) + '" max="' + esc(D.hoy) + '"></label></div>' +
         (esCons ? '<label style="margin-top:10px">WhatsApp de la tienda (opcional, para mandarle el recibo)<input id="ftel" inputmode="tel" value="' + esc(f.telefono || "") + '" placeholder="10 dígitos"></label>' : "") +
         '<datalist id="lclientes">' + Object.keys(nombres).map(function (n) { return '<option value="' + esc(n) + '">'; }).join("") + "</datalist>";
@@ -384,6 +387,18 @@
     if (esEntrada) h += '<button class="enlace" id="cancelar">Cancelar</button>';
     h += '<div class="barra"><button class="btn ' + (f.tipo === "venta" ? "verde" : f.tipo === "consigna" ? "morado" : "") + '" id="guardar"></button></div>';
     v.innerHTML = h;
+    v.querySelectorAll("[data-tienda]").forEach(function (b) {
+      b.onclick = function () {
+        guardarCampos();
+        var n = b.getAttribute("data-tienda"); form.cliente = n;
+        // Si ya le habíamos mandado recibo, reusa su WhatsApp.
+        D.movimientos.some(function (m) {
+          if (m.tipo === "consigna" && m.cliente === n) { var r = remision(m.grupo); if (r.telefono) { form.telefono = r.telefono.replace(/^52/, ""); return true; } }
+          return false;
+        });
+        pintar();
+      };
+    });
     resumenBoton();
 
     v.querySelectorAll("[data-t]").forEach(function (b) { b.onclick = function () { f.tipo = b.getAttribute("data-t"); pintar(); }; });
