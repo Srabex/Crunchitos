@@ -68,6 +68,7 @@ h2{font-family:"Bubblegum Sans",sans-serif;font-weight:400;font-size:clamp(36px,
 @media (min-width:700px){.rejilla{grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px}}
 .sabor{background:#fff;border-radius:24px;padding:12px 10px 14px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;box-shadow:0 2px 0 rgba(59,34,22,.08)}
 .sabor img{width:100%;max-width:220px;aspect-ratio:1;height:auto}
+.sabor img.bolsa{max-width:none;aspect-ratio:3/4;object-fit:cover;border-radius:16px}
 .sabor h3{margin:0;font-size:15px;line-height:1.2}
 .sabor h3 span{display:block;font-family:"Gochi Hand",cursive;font-weight:400;font-size:22px}
 .sabor .pedir{margin-top:auto;min-height:44px;font-size:14px;padding:0 14px;width:100%;box-shadow:0 4px 0 #146b39}
@@ -245,6 +246,9 @@ footer a{opacity:.85}
     ["platano-sal", "platano", "Plátano", "con sal"],
     ["platano-canela", "platano", "Plátano", "azúcar y canela"]
   ];
+  // Sabores con foto de la bolsa en public/img/bolsas/<id>.webp; los demás muestran su etiqueta.
+  var CON_FOTO = ["jicama-limon", "jicama-chile", "jicama-rancherito", "jicama-esquite", "pepino-limon", "pepino-adobado",
+    "camote-limon", "camote-adobado", "platano-natural", "platano-canela"];
   var wa = "526142355166";
   var rejilla = document.getElementById("rejilla");
   document.getElementById("anio").textContent = new Date().getFullYear();
@@ -257,7 +261,9 @@ footer a{opacity:.85}
   rejilla.innerHTML = SABORES.map(function (s) {
     var nombre = s[2] + " " + s[3];
     return '<article class="sabor" data-base="' + s[1] + '" data-id="' + s[0] + '">' +
-      '<img src="/img/etiquetas/' + s[0] + '.webp" alt="Etiqueta Crunchitos ' + nombre + '" width="560" height="560" loading="lazy" decoding="async">' +
+      (CON_FOTO.indexOf(s[0]) >= 0
+        ? '<img class="bolsa" src="/img/bolsas/' + s[0] + '.webp" alt="Bolsa de Crunchitos ' + nombre + '" width="600" height="800" loading="lazy" decoding="async">'
+        : '<img src="/img/etiquetas/' + s[0] + '.webp" alt="Etiqueta Crunchitos ' + nombre + '" width="560" height="560" loading="lazy" decoding="async">') +
       '<h3>' + s[2] + '<span>' + s[3] + '</span></h3>' +
       '<span class="estado">Agotado por ahora</span>' +
       '<a class="btn btn-wa pedir" data-wa="Hola, quiero Crunchitos de ' + nombre + ' 🙌 ¿Cuántos tienes?" href="#">Lo quiero</a>' +
