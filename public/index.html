@@ -262,7 +262,7 @@ footer a{opacity:.85}
     var nombre = s[2] + " " + s[3];
     return '<article class="sabor" data-base="' + s[1] + '" data-id="' + s[0] + '">' +
       (CON_FOTO.indexOf(s[0]) >= 0
-        ? '<img class="bolsa" src="/img/bolsas/' + s[0] + '.webp" alt="Bolsa de Crunchitos ' + nombre + '" width="600" height="800" loading="lazy" decoding="async">'
+        ? '<img class="bolsa" src="/img/bolsas/' + s[0] + '.webp?v=2" alt="Bolsa de Crunchitos ' + nombre + '" width="600" height="800" loading="lazy" decoding="async">'
         : '<img src="/img/etiquetas/' + s[0] + '.webp" alt="Etiqueta Crunchitos ' + nombre + '" width="560" height="560" loading="lazy" decoding="async">') +
       '<h3>' + s[2] + '<span>' + s[3] + '</span></h3>' +
       '<span class="estado">Agotado por ahora</span>' +
