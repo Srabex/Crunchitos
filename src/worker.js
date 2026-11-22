@@ -147,6 +147,14 @@ async function db(env) {
       env.DB.prepare("INSERT OR REPLACE INTO meta (llave, valor) VALUES ('puntos_v1', '1')"),
     ]);
   }
+  const ptoF = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'puntos_foto_v1'").first();
+  if (!ptoF) {
+    try { await env.DB.prepare("ALTER TABLE puntos ADD COLUMN foto TEXT NOT NULL DEFAULT ''").run(); } catch (e) { /* ya existe */ }
+    await env.DB.batch([
+      env.DB.prepare("UPDATE puntos SET foto = '/img/puntos/de-jesus.webp' WHERE mapa = 'https://maps.app.goo.gl/R9cFxqED6UNFnapt5' AND foto = ''"),
+      env.DB.prepare("INSERT OR REPLACE INTO meta (llave, valor) VALUES ('puntos_foto_v1', '1')"),
+    ]);
+  }
   // 21 nov 2026: todo lo que llegó de plátano era natural (no hubo con sal). Se corrige una sola vez.
   const fixP = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'fix_platano_sal_v1'").first();
   if (!fixP) {
@@ -304,7 +312,7 @@ async function datos(D, yo) {
     D.prepare("SELECT * FROM gastos ORDER BY fecha DESC, creado DESC").all(),
   ]);
   const rem = await D.prepare("SELECT * FROM remisiones").all();
-  const pts = await D.prepare("SELECT * FROM puntos ORDER BY creado").all();
+  const pts = await D.prepare("SELECT id, nombre, direccion, mapa, creado, length(foto) AS tieneFoto FROM puntos ORDER BY creado").all();
   return {
     ok: true,
     yo,
@@ -450,7 +458,8 @@ async function api(req, env, url) {
   // Público: lo usa la página para el WhatsApp y los sabores agotados.
   if (ruta === "/publico" && metodo === "GET") {
     const [aj, stock, pts] = await Promise.all([ajustes(D), stockPorProducto(D),
-      D.prepare("SELECT nombre, direccion, mapa FROM puntos ORDER BY creado").all()]);
+      D.prepare(`SELECT nombre, direccion, mapa, CASE WHEN foto LIKE '/%' THEN foto WHEN foto <> '' THEN '/api/punto-foto/' || id || '?v=' || length(foto) ELSE '' END AS foto
+        FROM puntos ORDER BY creado`).all()]);
     return json({ whatsapp: aj.whatsapp, agotados: Object.keys(stock).filter((k) => stock[k] <= 0), puntos: pts.results }, 200, {
       "cache-control": "public, max-age=60",
     });
@@ -485,6 +494,14 @@ async function api(req, env, url) {
       confirmado: rem?.confirmado || 0, confirmado_por: rem?.confirmado_por || "", firma: rem?.firma || "",
       whatsapp: aj.whatsapp,
     }, 200, { "x-robots-tag": "noindex" });
+  }
+  const mFoto = /^\/punto-foto\/(\d+)$/.exec(ruta);
+  if (mFoto && metodo === "GET") {
+    const r = await D.prepare("SELECT foto FROM puntos WHERE id = ?").bind(Number(mFoto[1])).first();
+    const m = /^data:(image\/(?:jpeg|webp|png));base64,(.+)$/.exec(r?.foto || "");
+    if (!m) return error("Sin foto.", 404);
+    const bin = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0));
+    return new Response(bin, { headers: { "content-type": m[1], "cache-control": "public, max-age=86400" } });
   }
   if (ruta === "/login/codigo" && metodo === "POST") return pedirCodigo(env, D, body);
   if (ruta === "/login/verificar" && metodo === "POST") return verificar(env, D, body);
@@ -560,8 +577,15 @@ async function api(req, env, url) {
     if (!nombre) return error("Pon el nombre del lugar.");
     const mapa = String(body.mapa ?? "").trim().slice(0, 300);
     if (mapa && !/^https:\/\//.test(mapa)) return error("La liga del mapa debe empezar con https://");
-    await D.prepare("INSERT INTO puntos (nombre, direccion, mapa, creado) VALUES (?, ?, ?, ?)")
-      .bind(nombre, texto(body.direccion, 120), mapa, Date.now()).run();
+    await D.prepare("INSERT INTO puntos (nombre, direccion, mapa, foto, creado) VALUES (?, ?, ?, ?, ?)")
+      .bind(nombre, texto(body.direccion, 120), mapa, fotoValida(body.foto), Date.now()).run();
+    return json({ ok: true });
+  }
+  const mPtF = /^\/puntos\/(\d+)\/foto$/.exec(ruta);
+  if (mPtF && metodo === "PUT") {
+    const foto = fotoValida(body.foto);
+    if (!foto) return error("No se pudo leer la foto.");
+    await D.prepare("UPDATE puntos SET foto = ? WHERE id = ?").bind(foto, Number(mPtF[1])).run();
     return json({ ok: true });
   }
   const mPt = /^\/puntos\/(\d+)$/.exec(ruta);
@@ -576,6 +600,11 @@ async function api(req, env, url) {
     return json({ ok: true });
   }
   return error("No encontrado.", 404);
+}
+
+// Foto de un punto de venta: la reduce el panel en el cel; aquí solo se valida tipo y tamaño.
+function fotoValida(f) {
+  return typeof f === "string" && /^data:image\/(jpeg|webp|png);base64,/.test(f) && f.length < 600000 ? f : "";
 }
 
 export default {

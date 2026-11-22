@@ -88,7 +88,8 @@ h2{font-family:"Bubblegum Sans",sans-serif;font-weight:400;font-size:clamp(36px,
 .puntos h2{color:var(--crema);text-shadow:3px 3px 0 #4f6e33}
 .puntos .intro{color:var(--tinta)}
 .lista-puntos{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));margin-top:22px}
-.punto{background:var(--crema);border-radius:24px;padding:20px 22px;display:flex;flex-direction:column;gap:6px}
+.punto{background:var(--crema);border-radius:24px;padding:20px 22px;display:flex;flex-direction:column;gap:6px;overflow:hidden}
+.punto img{display:block;max-width:none;width:calc(100% + 44px);margin:-20px -22px 10px;aspect-ratio:4/3;object-fit:cover;object-position:center 25%}
 .punto h3{margin:0;font-size:19px}
 .punto p{margin:0;font-size:15px;opacity:.85}
 .punto .btn{margin-top:10px;align-self:flex-start;min-height:46px;padding:10px 20px;font-size:16px}
@@ -290,7 +291,7 @@ footer a{opacity:.85}
       var esc = function (s) { return String(s || "").replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
       document.getElementById("puntos").innerHTML = pts.map(function (x) {
         var mapa = x.mapa || "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(x.nombre + " " + x.direccion + " Chihuahua");
-        return '<article class="punto"><h3>' + esc(x.nombre) + "</h3>" + (x.direccion ? "<p>" + esc(x.direccion) + ", Chihuahua</p>" : "") +
+        return '<article class="punto">' + (x.foto ? '<img src="' + esc(x.foto) + '" alt="Fachada de ' + esc(x.nombre) + '" loading="lazy" decoding="async">' : "") + "<h3>" + esc(x.nombre) + "</h3>" + (x.direccion ? "<p>" + esc(x.direccion) + ", Chihuahua</p>" : "") +
           '<a class="btn btn-claro" href="' + esc(mapa) + '" target="_blank" rel="noopener">Cómo llegar</a></article>';
       }).join("");
       document.getElementById("donde").hidden = false;

@@ -644,6 +644,19 @@
   }
 
   // ——— ajustes
+  // Reduce la foto en el cel (máx. 800 px) para que pese poco y cargue rápido en la página.
+  function achicarFoto(file) {
+    return new Promise(function (ok, mal) {
+      var img = new Image(), url = URL.createObjectURL(file);
+      img.onload = function () {
+        var k = Math.min(1, 800 / Math.max(img.width, img.height)), c = document.createElement("canvas");
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url); ok(c.toDataURL("image/jpeg", 0.78));
+      };
+      img.onerror = mal; img.src = url;
+    });
+  }
   function vAjustes(v) {
     var a = D.ajustes;
     var tel = String(a.whatsapp || "").replace(/^52/, "");
@@ -659,10 +672,12 @@
       ((D.puntos || []).length ? "<table><tbody>" + D.puntos.map(function (x) {
         return "<tr><td><strong>" + esc(x.nombre) + "</strong><br><span class=vacio>" + esc(x.direccion) + "</span></td><td class=num>" +
           (x.mapa ? '<a href="' + esc(x.mapa) + '" target="_blank" rel="noopener" style="color:var(--tinta);font-weight:600;margin-right:6px">Mapa</a>' : "") +
+          '<label class="btn chico claro" style="cursor:pointer">' + (x.tieneFoto ? "Cambiar foto" : "Subir foto") + '<input type="file" accept="image/*" data-fpunto="' + x.id + '" hidden></label> ' +
           '<button class="btn chico peligro" data-qpunto="' + x.id + '">Quitar</button></td></tr>';
       }).join("") + "</tbody></table>" : '<p class="vacio">Todavía no hay lugares.</p>') +
       '<form id="fpunto" style="margin-top:12px"><label>Nombre del lugar<input id="pnom" placeholder="Ej. Tortillería De Jesús"></label>' +
       '<label style="margin-top:8px">Dirección corta<input id="pdir" placeholder="Calle y número, colonia"></label>' +
+      '<label style="margin-top:8px">Foto de la fachada (opcional, ayuda a que la ubiquen)<input id="pfoto" type="file" accept="image/*"></label>' +
       '<label style="margin-top:8px">Liga de Google Maps (opcional)<input id="pmap" inputmode="url" placeholder="https://maps.app.goo.gl/…"></label>' +
       '<p class="vacio" style="margin-top:6px">En Google Maps busca el lugar → Compartir → Copiar vínculo, y pégalo aquí.</p>' +
       '<button class="btn chico" style="width:100%;margin-top:10px">Agregar lugar</button></form></div>';
@@ -702,9 +717,20 @@
         api("DELETE", "/puntos/" + b.getAttribute("data-qpunto")).then(function (r) { aviso(r.ok ? "Lugar quitado" : r.error); cargar(); });
       };
     });
+    v.querySelectorAll("[data-fpunto]").forEach(function (inp) {
+      inp.onchange = function () {
+        if (!inp.files[0]) return;
+        aviso("Subiendo foto…");
+        achicarFoto(inp.files[0]).then(function (foto) { return api("PUT", "/puntos/" + inp.getAttribute("data-fpunto") + "/foto", { foto: foto }); })
+          .then(function (r) { aviso(r.ok ? "Foto lista" : r.error || "No se pudo subir."); cargar(); }, function () { aviso("No se pudo leer la foto."); });
+      };
+    });
     document.getElementById("fpunto").onsubmit = function (e) {
       e.preventDefault();
-      api("POST", "/puntos", { nombre: document.getElementById("pnom").value, direccion: document.getElementById("pdir").value, mapa: document.getElementById("pmap").value }).then(function (r) {
+      var archivo = document.getElementById("pfoto").files[0];
+      (archivo ? achicarFoto(archivo) : Promise.resolve("")).then(function (foto) {
+        return api("POST", "/puntos", { nombre: document.getElementById("pnom").value, direccion: document.getElementById("pdir").value, mapa: document.getElementById("pmap").value, foto: foto });
+      }).then(function (r) {
         if (!r.ok) { aviso(r.error || "No se pudo agregar."); return; }
         aviso("Listo, ya sale en la página"); cargar();
       });
