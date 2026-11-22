@@ -155,6 +155,14 @@ async function db(env) {
       env.DB.prepare("INSERT OR REPLACE INTO meta (llave, valor) VALUES ('fix_platano_sal_v1', '1')"),
     ]);
   }
+  // 22 nov 2026: Víctor entra al panel (una sola vez; si Sebas lo quita después, no regresa solo).
+  const eqV = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'equipo_victor_v1'").first();
+  if (!eqV) {
+    await env.DB.batch([
+      env.DB.prepare("INSERT OR IGNORE INTO equipo (email, nombre, creado) VALUES (?, ?, ?)").bind("victor.hernandez.lider@gmail.com", "Víctor", Date.now()),
+      env.DB.prepare("INSERT OR REPLACE INTO meta (llave, valor) VALUES ('equipo_victor_v1', '1')"),
+    ]);
+  }
   const eq = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'equipo_inicial_v1'").first();
   if (!eq) {
     await env.DB.batch([

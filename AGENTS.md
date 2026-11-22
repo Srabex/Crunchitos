@@ -2,7 +2,7 @@
 
 Snacks deshidratados (chips de jícama, pepino, camote y plátano; 12 sabores, bolsa de 100 g).
 Marca propia del equipo de Asesor Sebas; una fábrica socia produce y el equipo distribuye en Chihuahua.
-Panel para Sebas, Paola (Pao) y Víctor.
+Panel para Sebas, Paola (Pao, paolardzmq@gmail.com) y Víctor (victor.hernandez.lider@gmail.com).
 
 ## Redes
 - Facebook: https://www.facebook.com/mxcrunchitos · Instagram: https://www.instagram.com/mxcrunchitos/ (correo mxcrunchitos@gmail.com). Ligadas en el pie de la página y en `sameAs`.
