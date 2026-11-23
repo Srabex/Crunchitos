@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Cartel QR Crunchitos</title>
+<!-- Fuente editable de los carteles QR media carta.
+     Uso: diseno/cartel.html?tipo=tienda  o  ?tipo=domicilio
+     Captura a 600x927 con escala 2.75 (≈ 300 dpi en media carta). Sin gramaje: el peso varía por sabor. -->
+<style>
+@font-face{font-family:"Bubblegum Sans";src:url(../public/fonts/BubblegumSans.woff) format("woff")}
+@font-face{font-family:"Gochi Hand";src:url(../public/fonts/GochiHand.woff) format("woff")}
+@font-face{font-family:"Poppins";src:url(../public/fonts/Poppins-Regular.woff) format("woff");font-weight:400}
+@font-face{font-family:"Poppins";src:url(../public/fonts/Poppins-Medium.woff) format("woff");font-weight:500}
+@font-face{font-family:"Poppins";src:url(../public/fonts/Poppins-Bold.woff) format("woff");font-weight:700}
+*{box-sizing:border-box;margin:0}
+html,body{width:600px;height:927px;overflow:hidden}
+body{font-family:Poppins,sans-serif;color:#3B2216;position:relative;
+  background:#ECBE48 repeating-conic-gradient(from 0deg at 50% 42%,rgba(255,246,230,.16) 0deg 9deg,rgba(255,246,230,0) 9deg 18deg)}
+.logo{position:absolute;left:50%;top:40px;width:340px;transform:translateX(-50%);filter:drop-shadow(0 5px 0 #9A6A25)}
+.desc{position:absolute;top:162px;width:100%;text-align:center;font-weight:700;font-size:15px;letter-spacing:2.2px}
+.antojo{position:absolute;top:200px;width:100%;text-align:center;font-family:"Gochi Hand";font-size:44px;color:#FFF6E6;
+  text-shadow:0 3px 0 #9A6A25,2px 3px 0 #9A6A25,-2px 3px 0 #9A6A25}
+.crunchi{position:absolute;left:28px;top:262px;width:205px}
+.precio{position:absolute;left:236px;top:301px;width:325px;height:127px;background:#FFF6E6;border-radius:18px;text-align:center;padding-top:18px}
+.precio .t{font-weight:700;font-size:13px;letter-spacing:1px}
+.precio .p{font-weight:700;font-size:34px;line-height:1;margin-top:8px;letter-spacing:1px}
+.precio .s{font-size:13px;margin-top:10px}
+.qrbox{position:absolute;left:39px;top:502px;width:522px;height:267px;background:#FFF6E6;border-radius:22px}
+.qr{position:absolute;left:26px;top:26px;width:215px;height:215px;background:#fff;border-radius:12px;padding:12px}
+.qr svg{width:100%;height:100%;display:block}
+.txt{position:absolute;left:266px;top:58px;right:22px}
+.txt h2{font-family:"Gochi Hand";font-weight:400;font-size:29px;line-height:1.12}
+.txt p{font-size:13.5px;line-height:1.45;margin-top:12px}
+.btn{position:absolute;left:50%;top:773px;transform:translateX(-50%);padding:13px 34px;border-radius:30px;font-weight:700;font-size:18px;color:#FFF6E6;white-space:nowrap}
+.btn.tinta{background:#3B2216;box-shadow:0 6px 0 #9A6A25}
+.btn.verde{background:#1F9D55;box-shadow:0 6px 0 #167A41}
+.web{position:absolute;top:856px;width:100%;text-align:center;font-weight:700;font-size:14px;letter-spacing:3.5px}
+</style>
+</head>
+<body>
+<img class="logo" src="../public/img/logo.svg" alt="Crunchitos">
+<div class="desc">SNACKS DESHIDRATADOS</div>
+<div class="antojo">¿Se te antojó?</div>
+<img class="crunchi" src="../public/img/crunchi/jicama.webp" alt="">
+<div class="precio"><div class="t" id="pt">AQUÍ LOS TIENES A</div><div class="p">$ ______</div><div class="s">12 sabores</div></div>
+<div class="qrbox"><div class="qr" id="qr"></div>
+  <div class="txt"><h2 id="h"></h2><p id="d"></p></div></div>
+<div class="btn" id="btn"></div>
+<div class="web">CRUNCHITOS.MX</div>
+<script src="../public/admin/qrcode.js"></script>
+<script>
+const tipo=new URLSearchParams(location.search).get('tipo')||'tienda';
+const q=qrcode(0,'M');q.addData('https://crunchitos.mx/?ref=tienda');q.make();
+document.getElementById('qr').innerHTML=q.createSvgTag({cellSize:8,margin:0,scalable:true}).replace(/fill="black"/g,'fill="#3B2216"');
+const b=document.getElementById('btn');
+if(tipo==='domicilio'){
+  document.getElementById('pt').textContent='PRECIO';
+  document.getElementById('h').innerHTML='Escanéame y<br>pídelos a domicilio';
+  document.getElementById('d').textContent='Escoge tu sabor y te los llevamos en Chihuahua.';
+  b.textContent='WhatsApp 614 235 5166';b.className='btn verde';
+}else{
+  document.getElementById('h').innerHTML='Escanéame y<br>conoce los 12<br>sabores';
+  document.getElementById('d').textContent='Jícama, pepino, camote y plátano. Pregunta en caja por tu favorito.';
+  b.textContent='¡Pídelos aquí en caja!';b.className='btn tinta';
+}
+</script>
+</body>
+</html>
