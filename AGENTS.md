@@ -1,6 +1,7 @@
 # Crunchitos — crunchitos.mx
 
-Snacks deshidratados (chips de jícama, pepino, camote y plátano; 12 sabores, bolsa de 100 g).
+Snacks deshidratados (chips de jícama, pepino, camote y plátano; 12 sabores, bolsa única).
+- **Sin gramaje** en la página ni en ningún lado (23 nov 2026): el peso varía entre 85, 90 y 100 g según el sabor, así que se habla de "bolsa" o "bolsa única" sin gramos.
 Marca propia del equipo de Asesor Sebas; una fábrica socia produce y el equipo distribuye en Chihuahua.
 Panel para Sebas, Paola (Pao, paolardzmq@gmail.com) y Víctor (victor.hernandez.lider@gmail.com).
 
