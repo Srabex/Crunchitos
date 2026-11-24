@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Estado para WhatsApp</title>
-<!-- Estados 1080x1920 para distribuidores: ?tipo=ya | antojo | sabores. Captura a escala 1. -->
+<!-- Estados 1080x1920 (sin precio: cada distribuidor pone el suyo) para distribuidores: ?tipo=ya | antojo | sabores. Captura a escala 1. -->
 <style>
 @font-face{font-family:"Bubblegum Sans";src:url(../public/fonts/BubblegumSans.woff) format("woff")}
 @font-face{font-family:"Gochi Hand";src:url(../public/fonts/GochiHand.woff) format("woff")}
@@ -36,9 +36,9 @@ var CH = '<div class="desfile"><img src="../public/img/crunchi/platano.webp"><im
 var PIE = '<div class="pie"><span>¡Pídemelos aquí! 👇</span></div>';
 var html = "";
 if (t === "ya") {
-  html = L + '<div class="h">¡Ya tengo Crunchitos!</div><p class="sub">Jícama, pepino, camote y plátano en 12 sabores, crujientes de verdad.</p><div class="pill"><b>$55</b> la bolsa</div>' + CH + PIE;
+  html = L + '<div class="h">¡Ya tengo Crunchitos!</div><p class="sub">Jícama, pepino, camote y plátano en 12 sabores, crujientes de verdad.</p><div class="pill"><b>12</b> sabores</div>' + CH + PIE;
 } else if (t === "antojo") {
-  html = L.replace('margin-top:190px', '') + '<div class="h" style="margin-top:36px">¿Se te antojó?</div><img class="foto" src="../public/img/fotos/surtido.webp" alt=""><div class="pill"><b>$55</b> la bolsa · 12 sabores</div>' + PIE;
+  html = L.replace('margin-top:190px', '') + '<div class="h" style="margin-top:36px">¿Se te antojó?</div><img class="foto" src="../public/img/fotos/surtido.webp" alt=""><div class="pill"><b>12</b> sabores · crujientes de verdad</div>' + PIE;
 } else {
   var ids = ["jicama-limon", "jicama-chile", "jicama-rancherito", "jicama-esquite", "jicama-habanero", "pepino-limon", "pepino-adobado", "camote-limon", "camote-adobado", "platano-natural", "platano-sal", "platano-canela"];
   html = L + '<div class="h" style="font-size:100px;margin-top:36px">Escoge tu sabor</div><div class="grid">' + ids.map(function (i) { return '<img src="../public/img/bolsas/' + i + '.webp">'; }).join("") + '</div>' + PIE;

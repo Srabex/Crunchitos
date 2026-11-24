@@ -161,7 +161,6 @@ body.con-barra{padding-bottom:96px}
     <p class="descriptor">SNACKS DESHIDRATADOS</p>
     <h1>¡Crujiente de verdad!</h1>
     <p class="sub"><b>Snacks deshidratados</b> de jícama, pepino, camote y plátano, crujientes y con sabor mexicano. Una bolsa para el antojo, la lonchera o la oficina.</p>
-    <p class="precio-hero"><b data-precio>$55</b> por bolsa</p>
     <div class="acciones">
       <a class="btn btn-wa" href="#sabores">Arma tu pedido</a>
       <a class="btn btn-claro" href="#donde" id="ir-donde">Dónde comprar</a>
@@ -190,7 +189,7 @@ body.con-barra{padding-bottom:96px}
   <div class="envoltura">
     <h2>Escoge tu sabor</h2>
     <p class="intro">Cuatro bases y doce sabores. El color de la etiqueta te dice cuál es: verde limón, rojo chile, naranja habanero… Arma tu surtido con los botones <b>+</b> y te lo llevamos.</p>
-    <div class="aviso-min"><svg viewBox="0 0 24 24" fill="none" stroke="#3B2216" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8" fill="#ECBE48"/><circle cx="17" cy="17.5" r="1.8" fill="#ECBE48"/></svg><span><b>Te lo llevamos a tu casa u oficina en Chihuahua</b> a partir de <b><span data-minimo>10</span> bolsas</b>, surtidas como quieras. ¿Quieres menos? Búscalos en una de nuestras <a href="#donde">tiendas</a>.</span></div>
+    <div class="aviso-min"><svg viewBox="0 0 24 24" fill="none" stroke="#3B2216" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8" fill="#ECBE48"/><circle cx="17" cy="17.5" r="1.8" fill="#ECBE48"/></svg><span><b><span data-minimo>10</span> bolsas surtidas a tu casa u oficina: <span data-paquete>$550</span>.</b> Arma tu combinación de sabores. ¿Quieres menos? Búscalos en una de nuestras <a href="#donde">tiendas</a>.</span></div>
     <div class="filtros" role="group" aria-label="Filtrar sabores">
       <button class="filtro" data-base="todos" aria-pressed="true">Todos</button>
       <button class="filtro" data-base="jicama" aria-pressed="false">Jícama</button>
@@ -221,7 +220,7 @@ body.con-barra{padding-bottom:96px}
       <div class="beneficio"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#ECBE48"/><path d="M7 12.5l3.2 3.2L17 9" stroke="#3B2216" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Te mandamos clientes</b> de tu zona: a quien nos escriba le decimos que vaya contigo.</span></div>
       <div class="beneficio"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#ECBE48"/><path d="M7 12.5l3.2 3.2L17 9" stroke="#3B2216" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Cartel con QR</b> para tu mostrador, listo para pegar.</span></div>
       <div class="beneficio"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#ECBE48"/><path d="M7 12.5l3.2 3.2L17 9" stroke="#3B2216" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Fotos y textos de los 12 sabores</b> para tus estados, tus redes o tu tienda en línea.</span></div>
-      <div class="beneficio"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#ECBE48"/><path d="M7 12.5l3.2 3.2L17 9" stroke="#3B2216" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>No te competimos:</b> respetamos el precio de <span data-precio>$55</span> y no vendemos más barato que tú.</span></div>
+      <div class="beneficio"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#ECBE48"/><path d="M7 12.5l3.2 3.2L17 9" stroke="#3B2216" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>No te competimos:</b> a quien busca Crunchitos cerca de ti, lo mandamos contigo.</span></div>
       <div class="beneficio"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#ECBE48"/><path d="M7 12.5l3.2 3.2L17 9" stroke="#3B2216" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Precio especial por paquete</b> para tienda, gym, cafetería, oficina o tienda en línea.</span></div>
     </div>
     <a class="btn btn-wa" data-wa="Hola, vengo de crunchitos.mx. Me interesa vender Crunchitos 🙌 ¿Me mandas los paquetes para emprendedores?" href="https://wa.me/526142355166">Quiero los paquetes para emprendedores</a>
@@ -307,8 +306,7 @@ body.con-barra{padding-bottom:96px}
         ? '<img class="bolsa" src="/img/bolsas/' + s[0] + '.webp?v=4" alt="Bolsa de Crunchitos ' + nombre + '" width="600" height="800" loading="lazy" decoding="async">'
         : '<img src="/img/etiquetas/' + s[0] + '.webp" alt="Etiqueta Crunchitos ' + nombre + '" width="560" height="560" loading="lazy" decoding="async">') +
       '<h3>' + s[2] + '<span>' + s[3] + '</span></h3>' +
-      '<span class="precio"><span data-precio>$55</span> la bolsa</span>' +
-      '<span class="estado">Agotado por ahora</span>' +
+            '<span class="estado">Agotado por ahora</span>' +
       '<div class="contador"><button type="button" data-menos aria-label="Quitar una bolsa de ' + nombre + '" disabled>−</button><output aria-label="Bolsas de ' + nombre + '">0</output><button type="button" data-mas aria-label="Agregar una bolsa de ' + nombre + '">+</button></div>' +
       '<a class="btn btn-wa avisame" data-wa="Hola, avísame cuando vuelva a haber Crunchitos de ' + nombre + ' 🙏" href="#">Avísame cuando haya</a>' +
       '</article>';
@@ -316,7 +314,7 @@ body.con-barra{padding-bottom:96px}
   pintarLigas();
 
   function pintarDatos() {
-    document.querySelectorAll("[data-precio]").forEach(function (e) { e.textContent = "$" + fmt.format(PRECIO); });
+    document.querySelectorAll("[data-paquete]").forEach(function (e) { e.textContent = "$" + fmt.format(PRECIO * MINIMO); });
     document.querySelectorAll("[data-minimo]").forEach(function (e) { e.textContent = MINIMO; });
   }
   function pintarPedido() {
@@ -332,8 +330,8 @@ body.con-barra{padding-bottom:96px}
     var barra = document.getElementById("barra"), enviar = document.getElementById("b-enviar");
     barra.classList.toggle("visible", n > 0);
     document.body.classList.toggle("con-barra", n > 0);
-    document.getElementById("b-total").textContent = n + (n === 1 ? " bolsa" : " bolsas") + " · $" + fmt.format(n * PRECIO);
     var falta = MINIMO - n;
+    document.getElementById("b-total").textContent = falta > 0 ? n + " de " + MINIMO + " bolsas" : n + " bolsas · $" + fmt.format(n * PRECIO);
     document.getElementById("b-falta").textContent = falta > 0 ? "Te " + (falta === 1 ? "falta 1 bolsa" : "faltan " + falta + " bolsas") + " para el envío" : "¡Listo para enviar!";
     document.getElementById("b-prog").style.width = Math.min(100, n / MINIMO * 100) + "%";
     enviar.setAttribute("aria-disabled", String(falta > 0));
