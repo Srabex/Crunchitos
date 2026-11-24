@@ -24,6 +24,8 @@ Panel para Sebas, Paola (Pao, paolardzmq@gmail.com) y Víctor (victor.hernandez.
 - El WhatsApp y los sabores agotados vienen de `/api/publico` (se cambia el número desde el panel → Ajustes). Si un sabor llega a 0, sale "Agotado por ahora" y el botón cambia a "Avísame cuando haya".
 - Voz de marca: decir "snacks deshidratados" (nunca "botana") y resaltar "deshidratados". No decir "100% natural", "saludable", "sin conservadores" ni "no frito" (NOM-051 / falta confirmar con la fábrica).
 - Imagen para compartir: `public/og.jpg` (fuente editable `diseno/og.html`, captura a 1200×630). Favicons e íconos en `public/`.
+- **Precio y pedido (23 nov 2026):** **sin precio por bolsa en la página** (cada distribuidor pone el suyo; sugerido $55 solo en el PDF y el kit). Solo se muestra el paquete a domicilio: mínimo × precio más alto de Ajustes (10 × $55 = $550). Arma el pedido a domicilio con botones +/− por sabor y barra fija; el botón "Enviar pedido" se activa al llegar al mínimo (`minimo` en Ajustes, 10 bolsas) y manda la lista por WhatsApp. "Dónde encontrar" va justo después del hero. Sección `#vende` "¿Quieres vender Crunchitos?" con beneficios para emprendedores, **sin precios de emprendedor** (se mandan por WhatsApp). La consigna no se publica (solo gente de confianza).
+- Migración `precios_v2`: si los precios seguían en 30/40/50, pasan a Costo / socio 30 · Paquete Mayorista 38.46 · Paquete Emprendedor 40 · Paquete Inicial 41.67 · Consigna 45 · Público / domicilio 55 (iguales al PDF de emprendedores).
 - Carteles QR media carta (tienditas y a domicilio): fuente editable `diseno/cartel.html?tipo=tienda|domicilio`, captura 600×927 a escala 2.75 (≈300 dpi). Sin gramaje (23 nov 2026).
 
 ## Panel (`/admin/`)
@@ -38,7 +40,9 @@ Panel para Sebas, Paola (Pao, paolardzmq@gmail.com) y Víctor (victor.hernandez.
 - **Gastos**: monto, categoría (etiquetas e impresión, envío de la fábrica, gasolina, empaque, publicidad, otro), concepto, quién lo pagó, fecha y nota. Descarga CSV.
 - **Inicio** también muestra gastos del periodo, **ganancia real** (ganancia de las bolsas − gastos), gastos por categoría y quién ha puesto.
 - **Historial**: "Cambiar precio" / "Cambiar costo" en ventas y entradas (para corregir el costo real por paquete).
-- **Ajustes**: precios, costo, aviso de stock bajo, WhatsApp de la página, equipo.
+- **Ajustes**: precios, costo, aviso de stock bajo, pedido mínimo a domicilio, WhatsApp de la página, equipo.
+- **Archivos** (pestaña): lista `DOCS` en admin.js. Lo interno vive en `public/admin/docs/` y el Worker solo lo sirve con sesión del panel (`/admin/docs/*` → 401 sin sesión): PDF Emprende con Crunchitos, tablas (paquetes, con consigna, interna), manual de identidad v3 en PDF. Pendientes de subir: 3 zips de etiquetas para imprenta (sin teléfono, Sebas, Pao). Fuentes de las piezas en `diseno/`.
+- **Kit para distribuidores** `/kit/` (público pero noindex y fuera de robots): estados 1080×1920 sin precio (`diseno/estado.html?tipo=ya|antojo|sabores`), textos para copiar, fotos de los 12 sabores (ZIP), cartel QR para tienditas, logos y Crunchis, reglas de marca y botón para resurtir. Es la liga que se manda a los emprendedores.
 
 ## Datos (D1)
 - 21 nov 2026: lo registrado como "plátano con sal" era plátano natural; se corrigió una sola vez (meta `fix_platano_sal_v1`).

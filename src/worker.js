@@ -13,11 +13,15 @@ const AJUSTES_INICIALES = {
   costo: 30,
   precios: [
     { nombre: "Costo / socio", valor: 30 },
-    { nombre: "Distribuidor", valor: 40 },
-    { nombre: "Público", valor: 50 },
+    { nombre: "Paquete Mayorista", valor: 38.46 },
+    { nombre: "Paquete Emprendedor", valor: 40 },
+    { nombre: "Paquete Inicial", valor: 41.67 },
+    { nombre: "Consigna", valor: 45 },
+    { nombre: "Público / domicilio", valor: 55 },
   ],
   whatsapp: "526142355166",
   stockBajo: 3,
+  minimo: 10, // bolsas mínimas para pedido a domicilio desde la página
 };
 
 // Los sabores (12 desde que se agregó plátano natural). El id coincide con la imagen /img/etiquetas/<id>.webp
@@ -178,6 +182,21 @@ async function db(env) {
         env.DB.prepare("INSERT OR IGNORE INTO equipo (email, nombre, creado) VALUES (?, ?, ?)").bind(email, nombre, Date.now())),
       env.DB.prepare("INSERT OR REPLACE INTO meta (llave, valor) VALUES ('equipo_inicial_v1', '1')"),
     ]);
+  }
+  // 23 nov 2026: precios de los paquetes para emprendedores ($1,500/36, $3,000/75, $5,000/130), consigna $45 y público/domicilio $55 (solo si los precios siguen siendo los de fábrica).
+  const pv2 = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'precios_v2'").first();
+  if (!pv2) {
+    const f = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'ajustes'").first();
+    let a = {};
+    try { a = f ? JSON.parse(f.valor) : {}; } catch {}
+    const viejos = JSON.stringify((a.precios || []).map((x) => x.valor)) === "[30,40,50]";
+    const st = [env.DB.prepare("INSERT OR REPLACE INTO meta (llave, valor) VALUES ('precios_v2', '1')")];
+    if (f && viejos) {
+      a.precios = AJUSTES_INICIALES.precios;
+      if (a.minimo === undefined) a.minimo = AJUSTES_INICIALES.minimo;
+      st.unshift(env.DB.prepare("UPDATE meta SET valor = ? WHERE llave = 'ajustes'").bind(JSON.stringify(a)));
+    }
+    await env.DB.batch(st);
   }
   // Sabores nuevos (p. ej. plátano natural) entran solos a una base que ya existía, con su orden.
   await env.DB.batch(PRODUCTOS.flatMap(([id, base, nb, sabor, color], i) => [
@@ -420,6 +439,11 @@ async function guardarAjustes(D, body) {
     if (w.length < 12 || w.length > 13) return error("El WhatsApp debe tener 10 dígitos.");
     nuevo.whatsapp = w;
   }
+  if (body.minimo !== undefined) {
+    const m = Math.trunc(Number(body.minimo));
+    if (!Number.isFinite(m) || m < 1 || m > 200) return error("El pedido mínimo debe ser de 1 a 200 bolsas.");
+    nuevo.minimo = m;
+  }
   if (body.stockBajo !== undefined) {
     const s = Math.trunc(Number(body.stockBajo));
     if (Number.isFinite(s) && s >= 0 && s < 1000) nuevo.stockBajo = s;
@@ -460,7 +484,8 @@ async function api(req, env, url) {
     const [aj, stock, pts] = await Promise.all([ajustes(D), stockPorProducto(D),
       D.prepare(`SELECT nombre, direccion, mapa, CASE WHEN foto LIKE '/%' THEN foto WHEN foto <> '' THEN '/api/punto-foto/' || id || '?v=' || length(foto) ELSE '' END AS foto
         FROM puntos ORDER BY creado`).all()]);
-    return json({ whatsapp: aj.whatsapp, agotados: Object.keys(stock).filter((k) => stock[k] <= 0), puntos: pts.results }, 200, {
+    const precio = Math.max(0, ...aj.precios.map((p) => Number(p.valor) || 0));
+    return json({ whatsapp: aj.whatsapp, precio, minimo: aj.minimo || 10, agotados: Object.keys(stock).filter((k) => stock[k] <= 0), puntos: pts.results }, 200, {
       "cache-control": "public, max-age=60",
     });
   }
@@ -629,6 +654,11 @@ export default {
       r.headers.set("x-robots-tag", "noindex, nofollow");
       r.headers.set("cache-control", "no-store");
       return r;
+    }
+    // Archivos del equipo (PDF para emprendedores, tablas, carteles): solo con sesión del panel.
+    if (url.pathname.startsWith("/admin/docs/")) {
+      const D = await db(env);
+      if (!(await sesion(req, env, D))) return new Response("Entra al panel para ver este archivo.", { status: 401, headers: { "content-type": "text/plain; charset=utf-8" } });
     }
     const res = await env.ASSETS.fetch(req);
     if (url.pathname.startsWith("/admin")) {

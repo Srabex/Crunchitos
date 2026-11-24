@@ -32,8 +32,8 @@ input:focus,select:focus{outline:none;border-color:var(--tinta)}
 main{max-width:760px;margin:0 auto;padding:16px 14px 120px}
 h2{font-family:"Bubblegum Sans",sans-serif;font-weight:400;font-size:34px;margin:6px 0 12px;line-height:1}
 h3{font-size:16px;margin:0 0 10px}
-.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:#fff;border-top:1px solid var(--linea);display:grid;grid-template-columns:repeat(6,1fr);padding-bottom:env(safe-area-inset-bottom)}
-.tabs button{background:none;border:0;padding:8px 2px 10px;font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;color:var(--suave);min-height:60px}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:#fff;border-top:1px solid var(--linea);display:grid;grid-template-columns:repeat(7,1fr);padding-bottom:env(safe-area-inset-bottom)}
+.tabs button{background:none;border:0;padding:8px 1px 10px;font-size:10.5px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;color:var(--suave);min-height:60px}
 .tabs button svg{width:24px;height:24px}
 .tabs button[aria-current=page]{color:var(--tinta)}
 .tabs button[aria-current=page] svg{background:var(--amarillo);border-radius:999px;padding:2px 10px;width:44px;height:28px}
@@ -83,3 +83,11 @@ tfoot td{font-weight:700;border-top:2px solid var(--tinta)}
 .mov .pie{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px}
 #aviso{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom));background:var(--tinta);color:var(--crema);padding:12px 20px;border-radius:999px;font-weight:600;z-index:20;box-shadow:0 6px 20px rgba(0,0,0,.2);max-width:90vw;text-align:center}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+.doc{display:flex;gap:12px;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid var(--linea)}
+.doc:first-of-type{border-top:0}
+.doc p{margin:2px 0 0}
+.docb{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;flex:none;max-width:55%}
+.doc.falta strong{opacity:.6}
+.pend{flex:none;align-self:flex-start;font-size:12px;font-weight:700;background:#F3E7CF;border-radius:999px;padding:4px 10px}
+@media (max-width:520px){.doc{flex-direction:column;align-items:stretch}.docb{max-width:none;justify-content:flex-start}}
