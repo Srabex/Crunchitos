@@ -76,6 +76,7 @@
     ] },
     { grupo: "Redes de Crunchitos · campaña emprendedores", items: [
       { t: "Todo en un ZIP", d: "4 posts (3:4 para Instagram y Facebook), 4 historias y los textos para publicar. Sin precios.", f: [["ZIP", "redes/crunchitos-redes-emprendedores.zip"]] },
+      { t: "¡Emprende con Crunchitos! (idea de Pao)", d: "Historia completa: beneficios, Así de fácil y WhatsApp.", f: [["Historia", "redes/crunchitos-historia-emprende.jpg"]] },
       { t: "1 · ¡Ya tenemos paquetes para emprendedores!", d: "Con la foto de los 12 sabores.", f: [["Post", "redes/crunchitos-post-1-ya-tenemos-paquetes.jpg"], ["Historia", "redes/crunchitos-historia-1-ya-tenemos-paquetes.jpg"]] },
       { t: "2 · ¿Buscas un ingreso extra?", d: "Fondo café con los 4 Crunchis.", f: [["Post", "redes/crunchitos-post-2-ingreso-extra.jpg"], ["Historia", "redes/crunchitos-historia-2-ingreso-extra.jpg"]] },
       { t: "3 · Listos para surtir tu negocio", d: "Tiendas, gyms, cafeterías y oficinas en Chihuahua.", f: [["Post", "redes/crunchitos-post-3-listos-para-surtir.jpg"], ["Historia", "redes/crunchitos-historia-3-listos-para-surtir.jpg"]] },
