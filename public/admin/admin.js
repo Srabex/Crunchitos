@@ -62,8 +62,31 @@
     gastos: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6M9 12h6M9 16h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>',
     inventario: '<path d="M4 8l8-4 8 4v8l-8 4-8-4V8Zm0 0l8 4 8-4M12 12v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
     historial: '<path d="M12 7v5l3 2M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
-    ajustes: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 5v4M6 15v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'
+    ajustes: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 5v4M6 15v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+    archivos: '<path d="M4 6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>'
   };
+
+  // Archivos del equipo (public/admin/docs/, solo con sesión). falta: true = todavía no se sube.
+  var DOCS = [
+    { grupo: "Para emprendedores", items: [
+      { t: "PDF Emprende con Crunchitos", d: "2 hojas: paquetes, beneficios para emprendedores activos y cómo empezar. Es el que se manda.", f: [["PDF", "crunchitos-emprende.pdf"], ["Hoja 1 (imagen)", "crunchitos-emprende-hoja1.jpg"], ["Hoja 2 (imagen)", "crunchitos-emprende-hoja2.jpg"]] },
+      { t: "Tabla de paquetes", d: "Versión horizontal para WhatsApp, sin precios internos.", f: [["Imagen", "crunchitos-tabla-paquetes.jpg"]] },
+      { t: "Tabla con consigna", d: "Solo para gente de confianza o si ya nos compró. No se publica.", f: [["Imagen", "crunchitos-tabla-consigna.jpg"]] },
+      { t: "Tabla interna", d: "Con nuestra ganancia por paquete. Solo para el equipo.", f: [["Imagen", "crunchitos-tabla-interna.jpg"]] }
+    ] },
+    { grupo: "Para tiendas", items: [
+      { t: "Cartel QR para tienditas", d: "Media carta, \"¡Pídelos aquí en caja!\" con precio a mano. Para el mostrador de cada punto de venta.", f: [["PDF para imprimir", "crunchitos-cartel-qr-tienda.pdf"], ["Imagen", "crunchitos-cartel-qr-tienda.png"]] }
+    ] },
+    { grupo: "Etiquetas para imprenta", items: [
+      { t: "Etiquetas sin teléfono", d: "Hoja A4 de 12 etiquetas de 6 cm. Pedir vinil mate, CMYK y prueba de color.", falta: true },
+      { t: "Etiquetas con el WhatsApp de Sebas", d: "614 235 5166.", falta: true },
+      { t: "Etiquetas con el WhatsApp de Pao", d: "33 1760 8242.", falta: true }
+    ] },
+    { grupo: "Marca", items: [
+      { t: "Manual de identidad (PDF)", d: "Logo, Crunchi, colores, letras, etiqueta y reglas de marca.", falta: true },
+      { t: "Logos y Crunchis", d: "Logo en crema y en café (SVG) y los 4 Crunchis sin fondo (PNG).", f: [["ZIP", "crunchitos-logos-y-crunchis.zip"]] }
+    ] }
+  ];
 
   // ——— cálculos
   function stock() {
@@ -171,7 +194,7 @@
 
   // ——— estructura
   function pintar() {
-    var tabs = [["inicio", "Inicio"], ["vender", "Vender"], ["gastos", "Gastos"], ["inventario", "Inventario"], ["historial", "Historial"], ["ajustes", "Ajustes"]];
+    var tabs = [["inicio", "Inicio"], ["vender", "Vender"], ["gastos", "Gastos"], ["inventario", "Inventario"], ["historial", "Historial"], ["archivos", "Archivos"], ["ajustes", "Ajustes"]];
     app.innerHTML =
       '<header class="top"><img src="/img/logo.svg" alt="Crunchitos"><div class="quien">' + esc(nombrePersona(D.yo)) +
       ' <button class="enlace" id="salir">Salir</button></div></header>' +
@@ -185,7 +208,7 @@
       b.onclick = function () { ir(b.getAttribute("data-v")); };
     });
     var v = document.getElementById("vista");
-    ({ inicio: vInicio, vender: vVender, gastos: vGastos, inventario: vInventario, historial: vHistorial, ajustes: vAjustes, entrada: vVender, liquidar: vLiquidar, remision: vRemision })[vista](v);
+    ({ inicio: vInicio, vender: vVender, gastos: vGastos, inventario: vInventario, historial: vHistorial, archivos: vArchivos, ajustes: vAjustes, entrada: vVender, liquidar: vLiquidar, remision: vRemision })[vista](v);
   }
   function ir(v) {
     vista = v;
@@ -672,6 +695,19 @@
       img.onerror = mal; img.src = url;
     });
   }
+  function vArchivos(v) {
+    var h = "<h2>Archivos</h2><p class=\"vacio\" style=\"margin:-6px 0 14px\">Todo lo que se manda o se imprime, siempre en su última versión. Toca para descargar.</p>";
+    DOCS.forEach(function (g) {
+      h += '<div class="caja"><h3>' + esc(g.grupo) + "</h3>" + g.items.map(function (it) {
+        return '<div class="doc' + (it.falta ? " falta" : "") + '"><div><strong>' + esc(it.t) + '</strong><p class="vacio">' + esc(it.d) + "</p></div>" +
+          (it.falta ? '<span class="pend">Por subir</span>' : '<div class="docb">' + it.f.map(function (f) {
+            return '<a class="btn chico claro" href="/admin/docs/' + f[1] + '" download>' + esc(f[0]) + "</a>";
+          }).join("") + "</div>") + "</div>";
+      }).join("") + "</div>";
+    });
+    v.innerHTML = h;
+  }
+
   function vAjustes(v) {
     var a = D.ajustes;
     var tel = String(a.whatsapp || "").replace(/^52/, "");
@@ -679,7 +715,9 @@
       '<div class="caja"><h3>Precios de venta</h3><p class="vacio" style="margin-bottom:10px">Son los botones que salen al registrar una venta. Los reportes separan lo vendido en cada precio.</p><div id="lprecios">' +
       a.precios.map(filaPrecio).join("") + '</div><button class="enlace" id="addp">+ Agregar precio</button></div>' +
       '<div class="caja"><div class="rejilla2"><label>Costo por bolsa (para nuevas entradas)<input id="acosto" inputmode="decimal" value="' + esc(a.costo) + '"></label>' +
-      '<label>Avisar cuando queden<input id="abajo" inputmode="numeric" value="' + esc(a.stockBajo) + '"></label></div>' +
+      '<label>Avisar cuando queden<input id="abajo" inputmode="numeric" value="' + esc(a.stockBajo) + '"></label>' +
+      '<label>Pedido mínimo a domicilio (bolsas)<input id="amin" inputmode="numeric" value="' + esc(a.minimo || 10) + '"></label></div>' +
+      '<p class="vacio" style="margin-top:6px">La página muestra el precio más alto de la lista como precio al público, y pide el mínimo de bolsas para llevar a domicilio.</p>' +
       '<label style="margin-top:10px">WhatsApp de la página (10 dígitos)<input id="awa" inputmode="tel" value="' + esc(tel) + '"></label>' +
       '<p class="vacio" style="margin-top:6px">A este número llegan los pedidos de crunchitos.mx.</p></div>' +
       '<button class="btn" id="gaj" style="width:100%;margin-bottom:20px">Guardar ajustes</button><p class="error" id="aerr"></p>';
@@ -715,7 +753,7 @@
       var precios = [].map.call(v.querySelectorAll("#lprecios .fila"), function (f) {
         return { nombre: f.querySelector(".pn").value, valor: parseFloat(f.querySelector(".pv").value) };
       }).filter(function (p) { return p.nombre.trim() && !isNaN(p.valor); }).sort(function (a, b) { return a.valor - b.valor; });
-      api("PUT", "/ajustes", { precios: precios, costo: parseFloat(document.getElementById("acosto").value), stockBajo: parseInt(document.getElementById("abajo").value, 10), whatsapp: document.getElementById("awa").value }).then(function (r) {
+      api("PUT", "/ajustes", { precios: precios, costo: parseFloat(document.getElementById("acosto").value), stockBajo: parseInt(document.getElementById("abajo").value, 10), minimo: parseInt(document.getElementById("amin").value, 10), whatsapp: document.getElementById("awa").value }).then(function (r) {
         if (!r.ok) { document.getElementById("aerr").textContent = r.error || "No se pudo guardar."; return; }
         aviso("Ajustes guardados"); cargar();
       });

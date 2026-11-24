@@ -111,6 +111,38 @@ footer{background:var(--tinta);color:var(--crema);padding:28px 0;font-size:14px}
 footer .envoltura{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center}
 footer a{opacity:.85}
 .redes{display:flex;align-items:center;gap:14px}.redes svg{width:26px;height:26px;display:block}.redes a{display:inline-flex;padding:6px}.redes .equipo{font-size:13px;opacity:.6}
+.precio-hero{display:inline-flex;align-items:center;gap:8px;background:var(--tinta);color:var(--crema);border-radius:999px;padding:8px 20px;font-weight:700;font-size:17px;margin:0 0 22px;box-shadow:0 4px 0 var(--sombra)}
+.precio-hero b{color:var(--amarillo);font-size:20px}
+.aviso-min{background:#fff;border-radius:20px;padding:14px 18px;margin:0 0 22px;font-size:16px;line-height:1.45;display:flex;gap:12px;align-items:center;box-shadow:0 2px 0 rgba(59,34,22,.08)}
+.aviso-min svg{flex:none;width:34px;height:34px}
+.sabor .precio{font-weight:700;font-size:15px}
+.contador{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:auto}
+.contador button{width:44px;height:44px;border-radius:50%;border:0;background:var(--amarillo);color:var(--tinta);font:700 24px/1 Poppins,sans-serif;cursor:pointer;box-shadow:0 3px 0 var(--sombra);flex:none}
+.contador button:disabled{opacity:.35;cursor:default}
+.contador output{min-width:34px;text-align:center;font-weight:700;font-size:20px}
+.sabor.agotado .contador{display:none}
+.sabor .avisame{display:none;margin-top:auto;min-height:44px;font-size:14px;padding:0 14px;width:100%;background:var(--tinta);box-shadow:0 4px 0 #000}
+.sabor.agotado .avisame{display:inline-flex}
+.sabor.con-bolsas{outline:3px solid var(--amarillo)}
+.barra{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--tinta);color:var(--crema);padding:12px 16px calc(12px + env(safe-area-inset-bottom));box-shadow:0 -6px 20px rgba(0,0,0,.18);transform:translateY(110%);transition:transform .25s}
+.barra.visible{transform:none}
+.barra .envoltura{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0}
+.barra .cuenta{font-size:15px;line-height:1.3}
+.barra .cuenta strong{display:block;font-size:19px}
+.barra .falta{color:var(--amarillo);font-weight:600}
+.barra .btn{min-height:48px;padding:0 20px;font-size:16px;flex:none}
+.barra .btn[aria-disabled=true]{background:#6b5a4f;box-shadow:none;pointer-events:none}
+.progreso{height:6px;border-radius:9px;background:rgba(255,246,230,.2);margin-top:6px;overflow:hidden}
+.progreso i{display:block;height:100%;width:0;background:var(--amarillo);transition:width .2s}
+body.con-barra{padding-bottom:96px}
+.vende{background:var(--tinta);color:var(--crema)}
+.vende h2{color:var(--amarillo)}
+.vende .intro{color:var(--crema)}
+.beneficios{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:6px 0 28px}
+.beneficio{background:rgba(255,246,230,.08);border:2px solid rgba(255,246,230,.16);border-radius:22px;padding:18px 20px;display:flex;gap:12px;align-items:flex-start;font-size:15.5px;line-height:1.45}
+.beneficio svg{flex:none;width:28px;height:28px}
+.beneficio b{color:var(--amarillo)}
+.vende .nota{font-size:14px;opacity:.75;margin:16px 0 0}
 .oculto{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
 </head>
@@ -118,7 +150,7 @@ footer a{opacity:.85}
 <header class="cabeza">
   <div class="envoltura">
     <a href="#inicio" aria-label="Crunchitos, inicio"><img src="/img/logo.svg" alt="Crunchitos" width="857" height="280"></a>
-    <a class="btn btn-wa" data-wa="Hola, quiero pedir Crunchitos 🙌" href="https://wa.me/526142355166">Pedir</a>
+    <a class="btn btn-wa" href="#sabores">Pedir</a>
   </div>
 </header>
 
@@ -129,12 +161,10 @@ footer a{opacity:.85}
     <p class="descriptor">SNACKS DESHIDRATADOS</p>
     <h1>¡Crujiente de verdad!</h1>
     <p class="sub"><b>Snacks deshidratados</b> de jícama, pepino, camote y plátano, crujientes y con sabor mexicano. Una bolsa para el antojo, la lonchera o la oficina.</p>
+    <p class="precio-hero"><b data-precio>$55</b> por bolsa</p>
     <div class="acciones">
-      <a class="btn btn-wa" data-wa="Hola, quiero pedir Crunchitos. ¿Qué sabores tienes hoy?" href="https://wa.me/526142355166">
-        <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.3-.4.8-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.3c0-.1-.2-.2-.4-.3Z"/></svg>
-        Pídelos por WhatsApp
-      </a>
-      <a class="btn btn-claro" href="#sabores">Ver los 12 sabores</a>
+      <a class="btn btn-wa" href="#sabores">Arma tu pedido</a>
+      <a class="btn btn-claro" href="#donde" id="ir-donde">Dónde comprar</a>
     </div>
     <div class="desfile" aria-hidden="true">
       <img src="/img/crunchi/platano.webp" alt="" width="493" height="520">
@@ -146,10 +176,21 @@ footer a{opacity:.85}
   <svg class="ola" viewBox="0 0 1440 40" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0h1440v8c-240 40-480 40-720 16S240-8 0 24Z" fill="#ECBE48"/><path d="M0 40V24C240-8 480 0 720 24s480 24 720-16v32Z" fill="#FFF6E6"/></svg>
 </section>
 
+<section class="puntos" id="donde" hidden>
+  <div class="envoltura">
+    <h2>Dónde encontrar Crunchitos</h2>
+    <p class="intro">Pásate por tus snacks deshidratados a estos lugares en Chihuahua.</p>
+    <div class="lista-puntos" id="puntos"></div>
+    <p class="mas" style="margin-top:24px;font-weight:600">¿No te queda cerca? <a href="#sabores">Te los llevamos a partir de <span data-minimo>10</span> bolsas</a>.</p>
+    <p class="mas">¿Tienes un negocio? <a href="#vende">Véndelos tú también</a></p>
+  </div>
+</section>
+
 <section id="sabores">
   <div class="envoltura">
     <h2>Escoge tu sabor</h2>
-    <p class="intro">Cuatro bases y doce sabores. El color de la etiqueta te dice cuál es: verde limón, rojo chile, naranja habanero… Toca el que se te antoje y te lo apartamos.</p>
+    <p class="intro">Cuatro bases y doce sabores. El color de la etiqueta te dice cuál es: verde limón, rojo chile, naranja habanero… Arma tu surtido con los botones <b>+</b> y te lo llevamos.</p>
+    <div class="aviso-min"><svg viewBox="0 0 24 24" fill="none" stroke="#3B2216" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8" fill="#ECBE48"/><circle cx="17" cy="17.5" r="1.8" fill="#ECBE48"/></svg><span><b>Te lo llevamos a tu casa u oficina en Chihuahua</b> a partir de <b><span data-minimo>10</span> bolsas</b>, surtidas como quieras. ¿Quieres menos? Búscalos en una de nuestras <a href="#donde">tiendas</a>.</span></div>
     <div class="filtros" role="group" aria-label="Filtrar sabores">
       <button class="filtro" data-base="todos" aria-pressed="true">Todos</button>
       <button class="filtro" data-base="jicama" aria-pressed="false">Jícama</button>
@@ -166,40 +207,35 @@ footer a{opacity:.85}
     <h2>Así llega tu bolsa</h2>
     <p class="intro">Bolsa bien llena, con chips grandes y crujientes. Estos son nuestros 12 sabores.</p>
     <figure class="surtido"><img src="/img/fotos/surtido.webp?v=2" alt="Los 12 sabores de Crunchitos en sus bolsas, sobre una mesa de madera" width="1600" height="1195" loading="lazy" decoding="async"></figure>
-    <div class="acciones" style="margin-top:24px"><a class="btn btn-wa" data-wa="Hola, vi las fotos y se me antojaron 😋 ¿Qué sabores tienes hoy?" href="https://wa.me/526142355166">Quiero una bolsa</a></div>
+    <div class="acciones" style="margin-top:24px"><a class="btn btn-wa" href="#sabores">Arma tu pedido</a></div>
   </div>
 </section>
 
-<section class="puntos" id="donde" hidden>
+
+<section class="vende" id="vende">
   <div class="envoltura">
-    <h2>Dónde encontrar Crunchitos</h2>
-    <p class="intro">Pásate por tus snacks deshidratados a estos lugares en Chihuahua.</p>
-    <div class="lista-puntos" id="puntos"></div>
-    <p class="mas" style="margin-top:24px;font-weight:600">¿No te queda cerca? Te los llevamos.</p>
-    <div class="acciones" style="margin-top:10px"><a class="btn btn-wa" data-wa="Hola, no tengo una tienda cerca 😅 ¿Me pueden llevar Crunchitos?" href="https://wa.me/526142355166">Pídelos por WhatsApp</a></div>
-    <p class="mas">¿Tienes un negocio? <a href="#negocios">Véndelos tú también</a></p>
+    <h2>¿Quieres vender Crunchitos?</h2>
+    <p class="intro">Tenemos paquetes para emprendedores y negocios. No te competimos: te ayudamos a vender.</p>
+    <div class="beneficios">
+      <div class="beneficio"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#ECBE48"/><path d="M7 12.5l3.2 3.2L17 9" stroke="#3B2216" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Aparece en esta página</b> como punto de venta, con tu foto y tu ubicación.</span></div>
+      <div class="beneficio"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#ECBE48"/><path d="M7 12.5l3.2 3.2L17 9" stroke="#3B2216" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Te mandamos clientes</b> de tu zona: a quien nos escriba le decimos que vaya contigo.</span></div>
+      <div class="beneficio"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#ECBE48"/><path d="M7 12.5l3.2 3.2L17 9" stroke="#3B2216" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Cartel con QR</b> para tu mostrador, listo para pegar.</span></div>
+      <div class="beneficio"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#ECBE48"/><path d="M7 12.5l3.2 3.2L17 9" stroke="#3B2216" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Fotos y textos de los 12 sabores</b> para tus estados, tus redes o tu tienda en línea.</span></div>
+      <div class="beneficio"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#ECBE48"/><path d="M7 12.5l3.2 3.2L17 9" stroke="#3B2216" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>No te competimos:</b> respetamos el precio de <span data-precio>$55</span> y no vendemos más barato que tú.</span></div>
+      <div class="beneficio"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#ECBE48"/><path d="M7 12.5l3.2 3.2L17 9" stroke="#3B2216" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Precio especial por paquete</b> para tienda, gym, cafetería, oficina o tienda en línea.</span></div>
+    </div>
+    <a class="btn btn-wa" data-wa="Hola, vengo de crunchitos.mx. Me interesa vender Crunchitos 🙌 ¿Me mandas los paquetes para emprendedores?" href="https://wa.me/526142355166">Quiero los paquetes para emprendedores</a>
+    <p class="nota">Te mandamos por WhatsApp las promociones y cómo empezar.</p>
   </div>
 </section>
 
-<section class="donde" id="negocios">
+<section id="eventos">
   <div class="envoltura">
-    <h2>Para ti, tu negocio o tu evento</h2>
-    <p class="intro">Repartimos en Chihuahua. Escríbenos y te decimos qué sabores hay hoy.</p>
-    <div class="tarjetas">
-      <article class="tarjeta t1">
-        <h3>Para tu antojo</h3>
-        <p>Pide tus bolsas por WhatsApp y quedamos en la entrega. Arma tu combinación de sabores.</p>
-        <a class="btn btn-wa" data-wa="Hola, quiero pedir Crunchitos para mí. ¿Qué sabores tienes?" href="https://wa.me/526142355166">Quiero pedir</a>
-      </article>
-      <article class="tarjeta t2">
-        <h3>Véndelos en tu negocio</h3>
-        <p>Ponlos junto a tu caja: tienda, gym, cafetería u oficina. Te damos precio de distribuidor y te surtimos.</p>
-        <a class="btn btn-wa" data-wa="Hola, tengo un negocio y me interesa vender Crunchitos. ¿Cómo funciona el precio de distribuidor?" href="https://wa.me/526142355166">Quiero venderlos</a>
-      </article>
+    <div class="tarjetas" style="margin-top:0">
       <article class="tarjeta t3">
         <h3>Eventos y regalos</h3>
         <p>Bolsitas para fiestas, posadas, eventos de empresa o detalles para clientes. También con la imagen de tu marca.</p>
-        <a class="btn btn-wa" data-wa="Hola, quiero Crunchitos para un evento. Somos aproximadamente ___ personas, el evento es el ___." href="https://wa.me/526142355166">Cotizar evento</a>
+        <a class="btn btn-wa" data-wa="Hola, vengo de crunchitos.mx. Quiero Crunchitos para un evento. Somos aproximadamente ___ personas, el evento es el ___." href="https://wa.me/526142355166">Cotizar evento</a>
       </article>
     </div>
   </div>
@@ -209,11 +245,18 @@ footer a{opacity:.85}
   <div class="envoltura">
     <img src="/img/crunchi/jicama.webp" alt="" width="511" height="520" loading="lazy">
     <h2>¿Se te antojó?</h2>
-    <p>Mándanos un WhatsApp y te decimos qué hay hoy.</p>
-    <a class="btn btn-wa" data-wa="Hola, se me antojaron unos Crunchitos 😋 ¿Qué sabores tienes?" href="https://wa.me/526142355166">Pedir por WhatsApp</a>
+    <p>Arma tu surtido de <span data-minimo>10</span> bolsas y te lo llevamos.</p>
+    <a class="btn btn-wa" href="#sabores">Arma tu pedido</a>
   </div>
 </section>
 </main>
+
+<div class="barra" id="barra" aria-live="polite">
+  <div class="envoltura">
+    <div class="cuenta"><strong id="b-total">0 bolsas · $0</strong><span id="b-falta" class="falta"></span><div class="progreso"><i id="b-prog"></i></div></div>
+    <a class="btn btn-wa" id="b-enviar" href="#" aria-disabled="true">Enviar pedido</a>
+  </div>
+</div>
 
 <footer>
   <div class="envoltura">
@@ -246,7 +289,10 @@ footer a{opacity:.85}
   var CON_FOTO = ["jicama-limon", "jicama-chile", "jicama-rancherito", "jicama-esquite", "jicama-habanero", "pepino-limon", "pepino-adobado",
     "camote-limon", "camote-adobado", "platano-natural", "platano-sal", "platano-canela"];
   var wa = "526142355166";
+  var PRECIO = 55, MINIMO = 10;
+  var pedido = {};
   var rejilla = document.getElementById("rejilla");
+  var fmt = new Intl.NumberFormat("es-MX");
   document.getElementById("anio").textContent = new Date().getFullYear();
 
   function liga(msg) { return "https://wa.me/" + wa + "?text=" + encodeURIComponent(msg); }
@@ -261,11 +307,52 @@ footer a{opacity:.85}
         ? '<img class="bolsa" src="/img/bolsas/' + s[0] + '.webp?v=4" alt="Bolsa de Crunchitos ' + nombre + '" width="600" height="800" loading="lazy" decoding="async">'
         : '<img src="/img/etiquetas/' + s[0] + '.webp" alt="Etiqueta Crunchitos ' + nombre + '" width="560" height="560" loading="lazy" decoding="async">') +
       '<h3>' + s[2] + '<span>' + s[3] + '</span></h3>' +
+      '<span class="precio"><span data-precio>$55</span> la bolsa</span>' +
       '<span class="estado">Agotado por ahora</span>' +
-      '<a class="btn btn-wa pedir" data-wa="Hola, quiero Crunchitos de ' + nombre + ' 🙌 ¿Cuántos tienes?" href="#">Lo quiero</a>' +
+      '<div class="contador"><button type="button" data-menos aria-label="Quitar una bolsa de ' + nombre + '" disabled>−</button><output aria-label="Bolsas de ' + nombre + '">0</output><button type="button" data-mas aria-label="Agregar una bolsa de ' + nombre + '">+</button></div>' +
+      '<a class="btn btn-wa avisame" data-wa="Hola, avísame cuando vuelva a haber Crunchitos de ' + nombre + ' 🙏" href="#">Avísame cuando haya</a>' +
       '</article>';
   }).join("");
   pintarLigas();
+
+  function pintarDatos() {
+    document.querySelectorAll("[data-precio]").forEach(function (e) { e.textContent = "$" + fmt.format(PRECIO); });
+    document.querySelectorAll("[data-minimo]").forEach(function (e) { e.textContent = MINIMO; });
+  }
+  function pintarPedido() {
+    var n = 0, lineas = [];
+    SABORES.forEach(function (s) {
+      var k = pedido[s[0]] || 0;
+      var c = rejilla.querySelector('[data-id="' + s[0] + '"]');
+      c.querySelector("output").textContent = k;
+      c.querySelector("[data-menos]").disabled = k === 0;
+      c.classList.toggle("con-bolsas", k > 0);
+      if (k) { n += k; lineas.push("• " + k + " " + s[2] + " " + s[3]); }
+    });
+    var barra = document.getElementById("barra"), enviar = document.getElementById("b-enviar");
+    barra.classList.toggle("visible", n > 0);
+    document.body.classList.toggle("con-barra", n > 0);
+    document.getElementById("b-total").textContent = n + (n === 1 ? " bolsa" : " bolsas") + " · $" + fmt.format(n * PRECIO);
+    var falta = MINIMO - n;
+    document.getElementById("b-falta").textContent = falta > 0 ? "Te " + (falta === 1 ? "falta 1 bolsa" : "faltan " + falta + " bolsas") + " para el envío" : "¡Listo para enviar!";
+    document.getElementById("b-prog").style.width = Math.min(100, n / MINIMO * 100) + "%";
+    enviar.setAttribute("aria-disabled", String(falta > 0));
+    enviar.href = falta > 0 ? "#" : liga("Hola, vengo de crunchitos.mx 🙌 Quiero este pedido a domicilio:\n" + lineas.join("\n") +
+      "\n\nTotal: " + n + " bolsas · $" + fmt.format(n * PRECIO) + "\nMi colonia es: ");
+  }
+  rejilla.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-mas],[data-menos]");
+    if (!b) return;
+    var id = b.closest(".sabor").getAttribute("data-id");
+    pedido[id] = Math.max(0, (pedido[id] || 0) + (b.hasAttribute("data-mas") ? 1 : -1));
+    if (!pedido[id]) delete pedido[id];
+    pintarPedido();
+  });
+  document.getElementById("b-enviar").addEventListener("click", function (e) {
+    if (this.getAttribute("aria-disabled") === "true") e.preventDefault();
+  });
+  pintarDatos();
+  pintarPedido();
 
   document.querySelectorAll(".filtro").forEach(function (b) {
     b.addEventListener("click", function () {
@@ -280,14 +367,16 @@ footer a{opacity:.85}
   fetch("/api/publico").then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
     if (!d) return;
     if (d.whatsapp) wa = d.whatsapp;
+    if (d.precio > 0) PRECIO = d.precio;
+    if (d.minimo > 0) MINIMO = d.minimo;
     (d.agotados || []).forEach(function (id) {
       var c = rejilla.querySelector('[data-id="' + id + '"]');
       if (!c) return;
       c.classList.add("agotado");
-      var a = c.querySelector(".pedir");
-      a.textContent = "Avísame cuando haya";
-      a.setAttribute("data-wa", "Hola, avísame cuando vuelva a haber Crunchitos de " + c.querySelector("img").alt.replace("Etiqueta Crunchitos ", "") + " 🙏");
+      delete pedido[id];
     });
+    pintarDatos();
+    pintarPedido();
     var pts = d.puntos || [];
     if (pts.length) {
       var esc = function (s) { return String(s || "").replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
@@ -297,6 +386,9 @@ footer a{opacity:.85}
           '<a class="btn btn-claro" href="' + esc(mapa) + '" target="_blank" rel="noopener">Cómo llegar</a></article>';
       }).join("");
       document.getElementById("donde").hidden = false;
+    } else {
+      document.getElementById("ir-donde").href = "#vende";
+      document.getElementById("ir-donde").textContent = "Véndelos tú";
     }
     pintarLigas();
   }).catch(function () {});
