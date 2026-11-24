@@ -86,9 +86,9 @@
       { t: "Cartel QR para tienditas", d: "Media carta, \"¡Pídelos aquí en caja!\" con precio a mano. Para el mostrador de cada punto de venta.", f: [["PDF para imprimir", "/kit/crunchitos-cartel-qr-tienda.pdf"], ["Imagen", "/kit/crunchitos-cartel-qr-tienda.png"]] }
     ] },
     { grupo: "Etiquetas para imprenta", items: [
-      { t: "Etiquetas sin teléfono", d: "Hoja A4 de 12 etiquetas de 6 cm. Pedir vinil mate, CMYK y prueba de color.", falta: true },
-      { t: "Etiquetas con el WhatsApp de Sebas", d: "614 235 5166.", falta: true },
-      { t: "Etiquetas con el WhatsApp de Pao", d: "33 1760 8242.", falta: true }
+      { t: "Etiquetas sin teléfono", d: "Etiqueta v2. Las 12 en PDF y PNG, hoja A4 (3 × 4) y línea de corte de 6 cm. Pedir vinil mate, CMYK y prueba de color.", f: [["ZIP para imprenta", "etiquetas/Crunchitos-imprenta-sin-telefono.zip"]] },
+      { t: "Etiquetas con el WhatsApp de Sebas", d: "614 235 5166. Mismo contenido que la de sin teléfono.", f: [["ZIP para imprenta", "etiquetas/Crunchitos-imprenta-tel-sebas.zip"]] },
+      { t: "Etiquetas con el WhatsApp de Pao", d: "33 1760 8242. Mismo contenido que la de sin teléfono.", f: [["ZIP para imprenta", "etiquetas/Crunchitos-imprenta-tel-pao.zip"]] }
     ] },
     { grupo: "Marca", items: [
       { t: "Manual de identidad (PDF)", d: "Versión 3: logo, Crunchi, colores, letras, etiqueta, carteles y reglas de marca.", f: [["PDF", "crunchitos-manual-de-identidad.pdf"]] },
