@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Redes · emprendedores</title>
+<!-- Posts (1080x1440, ?f=post) e historias (1080x1920, ?f=historia) de la campaña para emprendedores. ?v=1..4. Sin precios. -->
+<style>
+@font-face{font-family:"Bubblegum Sans";src:url(../public/fonts/BubblegumSans.woff) format("woff")}
+@font-face{font-family:"Gochi Hand";src:url(../public/fonts/GochiHand.woff) format("woff")}
+@font-face{font-family:"Poppins";src:url(../public/fonts/Poppins-Medium.woff) format("woff");font-weight:500}
+@font-face{font-family:"Poppins";src:url(../public/fonts/Poppins-Bold.woff) format("woff");font-weight:700}
+*{box-sizing:border-box;margin:0}
+body{width:1080px;overflow:hidden;font-family:Poppins,sans-serif;color:#3B2216;text-align:center;
+  background:#ECBE48 repeating-conic-gradient(from 0deg at 50% 45%,rgba(255,246,230,.17) 0deg 7deg,rgba(255,246,230,0) 7deg 14deg)}
+body.oscuro{background:#3B2216 repeating-conic-gradient(from 0deg at 50% 45%,rgba(236,190,72,.07) 0deg 7deg,rgba(236,190,72,0) 7deg 14deg);color:#FFF6E6}
+.w{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:80px 70px}
+.historia .w{padding:200px 70px 230px}
+.top{display:flex;flex-direction:column;align-items:center}
+.logo{width:380px;filter:drop-shadow(0 6px 0 #9A6A25)}
+.desc{font-weight:700;font-size:22px;letter-spacing:5px;margin-top:6px}
+.tag{display:inline-block;background:#3B2216;color:#ECBE48;font-weight:700;font-size:26px;letter-spacing:3px;padding:12px 30px;border-radius:40px;margin-top:30px}
+.oscuro .tag{background:#ECBE48;color:#3B2216}
+.h{font-family:"Gochi Hand";font-size:96px;line-height:1.02;color:#FFF6E6;text-shadow:0 6px 0 #9A6A25,3px 6px 0 #9A6A25,-3px 6px 0 #9A6A25;margin-top:22px}
+.oscuro .h{color:#ECBE48;text-shadow:0 6px 0 #000}
+.sub{font-size:36px;font-weight:500;line-height:1.35;margin-top:22px;max-width:900px}
+.foto{width:900px;border-radius:40px;border:10px solid #FFF6E6;box-shadow:0 12px 0 #9A6A25}
+.post .foto{width:640px}
+.chs{display:flex;justify-content:center;gap:6px}.chs img{width:220px}
+.post .chs img{width:190px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;width:720px}
+.post .grid{width:780px;grid-template-columns:repeat(6,1fr)}
+.grid img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:18px;border:5px solid #FFF6E6}
+.lista{display:flex;flex-direction:column;gap:18px;width:900px;text-align:left}
+.post .lista{gap:14px}
+.it{display:flex;gap:20px;align-items:center;background:#FFF6E6;color:#3B2216;border-radius:28px;padding:22px 28px;font-size:34px;line-height:1.25;font-weight:500}
+.post .it{font-size:30px;padding:18px 26px}
+.it b{font-weight:700}
+.it svg{flex:none;width:54px;height:54px}
+.chips{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;max-width:920px}
+.chip{background:#FFF6E6;color:#3B2216;border-radius:40px;padding:14px 28px;font-size:32px;font-weight:700}
+.cta{display:flex;flex-direction:column;align-items:center;gap:16px}
+.wa{display:inline-flex;align-items:center;gap:14px;background:#1F9D55;color:#fff;font-weight:700;font-size:40px;padding:20px 44px;border-radius:60px;box-shadow:0 8px 0 #167A41}
+.wa svg{width:44px;height:44px}
+.web{font-weight:700;font-size:26px;letter-spacing:5px}
+</style>
+</head>
+<body>
+<div class="w" id="w"></div>
+<script>
+var q = new URLSearchParams(location.search), v = q.get("v") || "1", f = q.get("f") || "post";
+var H = f === "historia" ? 1920 : 1440;
+document.body.style.height = H + "px"; document.documentElement.style.height = H + "px";
+document.getElementById("w").style.height = H + "px";
+document.body.classList.add(f);
+var CHK = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#ECBE48"/><path d="M7 12.5l3.2 3.2L17 9" stroke="#3B2216" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+var WA = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.3-.4.8-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.3c0-.1-.2-.2-.4-.3Z"/></svg>';
+function cabeza(tag, h, sub, logo) {
+  return '<div class="top">' + (logo === false ? "" : '<img class="logo" src="../public/img/logo.svg" alt=""><div class="desc">SNACKS DESHIDRATADOS</div>') +
+    (tag ? '<div class="tag">' + tag + "</div>" : "") + '<div class="h">' + h + "</div>" + (sub ? '<p class="sub">' + sub + "</p>" : "") + "</div>";
+}
+var cta = '<div class="cta"><div class="wa">' + WA + "614 235 5166</div><div class=\"web\">CRUNCHITOS.MX</div></div>";
+var chs = '<div class="chs"><img src="../public/img/crunchi/platano.webp"><img src="../public/img/crunchi/jicama.webp"><img src="../public/img/crunchi/camote.webp"><img src="../public/img/crunchi/pepino.webp"></div>';
+var ids = ["jicama-limon", "jicama-chile", "jicama-rancherito", "jicama-esquite", "jicama-habanero", "pepino-limon", "pepino-adobado", "camote-limon", "camote-adobado", "platano-natural", "platano-sal", "platano-canela"];
+var html;
+if (v === "1") {
+  html = cabeza("NUEVO", "¡Ya tenemos paquetes para emprendedores!", "Vende snacks deshidratados en tu negocio, tu oficina o con tus conocidos.") +
+    '<img class="foto" src="../public/img/fotos/surtido.webp" alt="">' + cta;
+} else if (v === "2") {
+  document.body.classList.add("oscuro");
+  html = cabeza("", "¿Buscas un ingreso extra?", "Vende Crunchitos: un snack que se antoja con solo verlo.") + chs +
+    '<div class="chips"><span class="chip">12 sabores</span><span class="chip">Tú pones tu precio</span><span class="chip">Te surtimos en Chihuahua</span></div>' + cta;
+} else if (v === "3") {
+  html = cabeza("CHIHUAHUA", "Listos para surtir tu negocio", "Tiendas, gyms, cafeterías, oficinas y emprendedores.") +
+    '<div class="grid">' + ids.map(function (i) { return '<img src="../public/img/bolsas/' + i + '.webp">'; }).join("") + "</div>" + cta;
+} else {
+  html = cabeza("EMPRENDEDORES", "No te competimos: te ayudamos a vender", "") +
+    '<div class="lista">' + [
+      "<b>Te ponemos en crunchitos.mx</b> como punto de venta",
+      "<b>Te mandamos clientes</b> de tu zona",
+      "<b>Cartel con QR</b> para tu mostrador",
+      "<b>Fotos y textos</b> para tus estados y redes"
+    ].map(function (t) { return '<div class="it">' + CHK + "<span>" + t + "</span></div>"; }).join("") + "</div>" + cta;
+}
+document.getElementById("w").innerHTML = html;
+</script>
+</body>
+</html>

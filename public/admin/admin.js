@@ -74,6 +74,13 @@
       { t: "Tabla con consigna", d: "Solo para gente de confianza o si ya nos compró. No se publica.", f: [["Imagen", "crunchitos-tabla-consigna.jpg"]] },
       { t: "Tabla interna", d: "Con nuestra ganancia por paquete. Solo para el equipo.", f: [["Imagen", "crunchitos-tabla-interna.jpg"]] }
     ] },
+    { grupo: "Redes de Crunchitos · campaña emprendedores", items: [
+      { t: "Todo en un ZIP", d: "4 posts (3:4 para Instagram y Facebook), 4 historias y los textos para publicar. Sin precios.", f: [["ZIP", "redes/crunchitos-redes-emprendedores.zip"]] },
+      { t: "1 · ¡Ya tenemos paquetes para emprendedores!", d: "Con la foto de los 12 sabores.", f: [["Post", "redes/crunchitos-post-1-ya-tenemos-paquetes.jpg"], ["Historia", "redes/crunchitos-historia-1-ya-tenemos-paquetes.jpg"]] },
+      { t: "2 · ¿Buscas un ingreso extra?", d: "Fondo café con los 4 Crunchis.", f: [["Post", "redes/crunchitos-post-2-ingreso-extra.jpg"], ["Historia", "redes/crunchitos-historia-2-ingreso-extra.jpg"]] },
+      { t: "3 · Listos para surtir tu negocio", d: "Tiendas, gyms, cafeterías y oficinas en Chihuahua.", f: [["Post", "redes/crunchitos-post-3-listos-para-surtir.jpg"], ["Historia", "redes/crunchitos-historia-3-listos-para-surtir.jpg"]] },
+      { t: "4 · No te competimos: te ayudamos a vender", d: "Los beneficios para emprendedores.", f: [["Post", "redes/crunchitos-post-4-te-ayudamos-a-vender.jpg"], ["Historia", "redes/crunchitos-historia-4-te-ayudamos-a-vender.jpg"]] }
+    ] },
     { grupo: "Kit para distribuidores", items: [
       { t: "Página del kit (crunchitos.mx/kit)", d: "Mándales esta liga a los distribuidores: estados para WhatsApp, fotos de los 12 sabores, textos para copiar, cartel con QR y logos.", f: [["Abrir el kit", "/kit/"]] },
       { t: "Cartel QR para tienditas", d: "Media carta, \"¡Pídelos aquí en caja!\" con precio a mano. Para el mostrador de cada punto de venta.", f: [["PDF para imprimir", "/kit/crunchitos-cartel-qr-tienda.pdf"], ["Imagen", "/kit/crunchitos-cartel-qr-tienda.png"]] }
