@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Imagen para vendedor</title>
+<!-- Imagen con los 12 sabores y el precio del vendedor: ?precio=50&f=historia|post (1080x1920 / 1080x1440). -->
+<style>
+@font-face{font-family:"Bubblegum Sans";src:url(../public/fonts/BubblegumSans.woff) format("woff")}
+@font-face{font-family:"Gochi Hand";src:url(../public/fonts/GochiHand.woff) format("woff")}
+@font-face{font-family:"Poppins";src:url(../public/fonts/Poppins-Medium.woff) format("woff");font-weight:500}
+@font-face{font-family:"Poppins";src:url(../public/fonts/Poppins-Bold.woff) format("woff");font-weight:700}
+*{box-sizing:border-box;margin:0}
+body{width:1080px;overflow:hidden;font-family:Poppins,sans-serif;color:#3B2216;text-align:center;
+  background:#ECBE48 repeating-conic-gradient(from 0deg at 50% 30%,rgba(255,246,230,.17) 0deg 7deg,rgba(255,246,230,0) 7deg 14deg)}
+.w{display:flex;flex-direction:column;align-items:center;justify-content:space-between}
+.historia .w{padding:170px 50px 190px}
+.post .w{padding:56px 50px 60px}
+.logo{width:420px;filter:drop-shadow(0 6px 0 #9A6A25)}
+.post .logo{width:330px}
+.desc{font-weight:700;font-size:26px;letter-spacing:6px;margin-top:8px}
+.post .desc{font-size:22px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;width:980px}
+.post .grid{gap:12px}
+.s{background:#FFF6E6;border-radius:24px;padding:10px 10px 12px;display:flex;flex-direction:column;align-items:center}
+.s img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:16px}
+.post .s img{aspect-ratio:4/3}
+.s .b{font-weight:700;font-size:21px;margin-top:8px;line-height:1.1}
+.s .n{font-family:"Gochi Hand";font-size:27px;line-height:1.05}
+.post .s .b{font-size:18px;margin-top:6px}.post .s .n{font-size:23px}
+.precio{display:inline-flex;align-items:baseline;gap:16px;background:#3B2216;color:#FFF6E6;border-radius:90px;padding:18px 60px 22px;box-shadow:0 10px 0 #9A6A25}
+.precio b{font-family:"Bubblegum Sans";font-weight:400;font-size:110px;line-height:1;color:#ECBE48}
+.precio span{font-size:40px;font-weight:700}
+.post .precio b{font-size:86px}.post .precio span{font-size:34px}
+</style>
+</head>
+<body>
+<div class="w" id="w"></div>
+<script>
+var q = new URLSearchParams(location.search), f = q.get("f") || "historia", precio = q.get("precio") || "50";
+var H = f === "post" ? 1440 : 1920;
+document.body.classList.add(f); document.body.style.height = H + "px"; document.getElementById("w").style.height = H + "px";
+var S = [["jicama-limon","Jícama","limón y sal"],["jicama-chile","Jícama","con chile"],["jicama-rancherito","Jícama","rancherito"],["jicama-esquite","Jícama","esquite"],
+  ["jicama-habanero","Jícama","habanero y miel"],["pepino-limon","Pepino","limón y sal"],["pepino-adobado","Pepino","adobado"],["camote-limon","Camote","limón y sal"],
+  ["camote-adobado","Camote","adobado"],["platano-natural","Plátano","natural"],["platano-sal","Plátano","con sal"],["platano-canela","Plátano","azúcar y canela"]];
+document.getElementById("w").innerHTML =
+  '<div><img class="logo" src="../public/img/logo.svg" alt=""><div class="desc">SNACKS DESHIDRATADOS</div></div>' +
+  '<div class="grid">' + S.map(function (s) {
+    return '<div class="s"><img src="../public/img/bolsas/' + s[0] + '.webp" alt=""><div class="b">' + s[1] + '</div><div class="n">' + s[2] + "</div></div>";
+  }).join("") + "</div>" +
+  '<div class="precio"><b>$' + precio + "</b><span>la bolsa</span></div>";
+</script>
+</body>
+</html>
