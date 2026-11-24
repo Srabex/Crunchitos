@@ -358,7 +358,7 @@
   // ——— vender / registrar movimiento
   function nuevoForm(tipo) {
     var precios = D.ajustes.precios;
-    var def = precios.find(function (p) { return /distrib/i.test(p.nombre); }) || precios[0];
+    var def = precios.find(function (p) { return /emprendedor|distrib/i.test(p.nombre); }) || precios[0];
     return { tipo: tipo, items: {}, precio: tipo === "entrada" ? Number(D.ajustes.costo) : (def ? Number(def.valor) : 0), cliente: "", nota: "", fecha: D.hoy, enviando: false };
   }
   function vVender(v) {
@@ -387,7 +387,7 @@
       var esCons = f.tipo === "consigna";
       if (esCons) h += '<p class="vacio" style="margin:0 0 10px">Las bolsas salen de tu inventario pero no cuentan como vendidas. Cuando pases a cobrar, en Inventario → En consigna marcas cuántas se vendieron.</p>';
       h += "<h3>" + (esCons ? "Precio acordado por bolsa" : "¿A cuánto la vendiste?") + "</h3><div class=\"chips\" style=\"margin-bottom:10px\">" + D.ajustes.precios.map(function (p) {
-        return '<button class="chip" type="button" data-precio="' + Number(p.valor) + '" aria-pressed="' + (Number(p.valor) === Number(f.precio)) + '">' + pesos(p.valor) + " · " + esc(p.nombre) + "</button>";
+        return '<button class="chip" type="button" data-precio="' + Number(p.valor) + '" aria-pressed="' + (Number(p.valor) === Number(f.precio)) + '">' + (Number(p.valor) % 1 ? "$" + Number(p.valor).toFixed(2) : pesos(p.valor)) + " · " + esc(p.nombre) + "</button>";
       }).join("") + "</div>" +
         '<div class="rejilla2"><label>Precio por bolsa<input id="fprecio" inputmode="decimal" value="' + (f.precio || "") + '"></label>' +
         '<label>Total cobrado<input id="ftotal" inputmode="decimal" value="' + (totalBolsas() && f.precio ? redondo(totalBolsas() * f.precio) : "") + '" placeholder="$0"></label></div>' +

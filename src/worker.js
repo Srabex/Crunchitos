@@ -13,9 +13,11 @@ const AJUSTES_INICIALES = {
   costo: 30,
   precios: [
     { nombre: "Costo / socio", valor: 30 },
-    { nombre: "Paquete", valor: 40 },
+    { nombre: "Paquete Mayorista", valor: 38.46 },
+    { nombre: "Paquete Emprendedor", valor: 40 },
+    { nombre: "Paquete Inicial", valor: 41.67 },
     { nombre: "Consigna", valor: 45 },
-    { nombre: "Público", valor: 55 },
+    { nombre: "Público / domicilio", valor: 55 },
   ],
   whatsapp: "526142355166",
   stockBajo: 3,
@@ -181,7 +183,7 @@ async function db(env) {
       env.DB.prepare("INSERT OR REPLACE INTO meta (llave, valor) VALUES ('equipo_inicial_v1', '1')"),
     ]);
   }
-  // 23 nov 2026: público a $55, consigna $45, paquetes ~$40 (solo si los precios siguen siendo los de fábrica).
+  // 23 nov 2026: precios de los paquetes para emprendedores ($1,500/36, $3,000/75, $5,000/130), consigna $45 y público/domicilio $55 (solo si los precios siguen siendo los de fábrica).
   const pv2 = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'precios_v2'").first();
   if (!pv2) {
     const f = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'ajustes'").first();
