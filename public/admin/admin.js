@@ -517,7 +517,7 @@
   // ——— inventario
   function vInventario(v) {
     var st = stock(), cp = costoPromedio(), cs = consignas();
-    var t = { e: 0, v: 0, t: 0, m: 0, c: 0 };
+    var t = { e: 0, v: 0, t: 0, m: 0, c: 0 }, inv = [];
     var filas = D.productos.map(function (p) {
       var r = { e: 0, v: 0, t: 0, m: 0 };
       D.movimientos.forEach(function (m) {
@@ -528,6 +528,7 @@
       r.c = 0; cs.forEach(function (c) { r.c += c.items[p.id] || 0; }); t.c += r.c;
       Object.keys(t).forEach(function (k) { t[k] += r[k]; });
       var bajo = r.e > 0 && st[p.id] <= (D.ajustes.stockBajo || 0);
+      inv.push({ nombre: p.nombre_base + " " + p.sabor, color: p.color, e: r.e, v: r.v, c: r.c, q: st[p.id], bajo: bajo });
       return "<tr><td><span class=\"punto\" style=\"background:" + esc(p.color) + "\"></span>" + esc(p.nombre_base + " " + p.sabor) + "</td><td class=num>" + r.e + "</td><td class=num>" + (r.v || "–") + "</td><td class=num>" + ((r.t + r.m) || "–") + "</td><td class=num>" + (r.c || "–") + '</td><td class="num' + (bajo ? " bajo" : "") + '"><strong>' + st[p.id] + "</strong></td></tr>";
     }).join("");
     var quedan = 0; D.productos.forEach(function (p) { quedan += st[p.id]; });
@@ -537,14 +538,92 @@
       '<div class="kpi"><span>Si se venden a público</span><strong>' + pesos(quedan * precioPublico()) + "</strong><small>" + pesos(precioPublico()) + " por bolsa</small></div>" +
       '<div class="kpi"><span>Han llegado</span><strong>' + num(t.e) + "</strong><small>bolsas en total</small></div></div>" +
       vConsignas(cs) +
-      '<h2 style="margin-top:20px">Por sabor</h2><div class="caja" style="overflow-x:auto"><table><thead><tr><th>Sabor</th><th class=num>Llegó</th><th class=num>Vend.</th><th class=num title="Tomadas y merma">Otras</th><th class=num title="A consigna en tiendas">Tiendas</th><th class=num title="En bodega">Quedan</th></tr></thead><tbody>' + filas +
+      '<div class="fila entre" style="margin-top:20px;align-items:center"><h2 style="margin:0">Por sabor</h2><button class="btn chico verde" id="invimg">Compartir como imagen</button></div><div class="caja" style="margin-top:10px;overflow-x:auto"><table><thead><tr><th>Sabor</th><th class=num>Llegó</th><th class=num>Vend.</th><th class=num title="Tomadas y merma">Otras</th><th class=num title="A consigna en tiendas">Tiendas</th><th class=num title="En bodega">Quedan</th></tr></thead><tbody>' + filas +
       "</tbody><tfoot><tr><td>Total</td><td class=num>" + t.e + "</td><td class=num>" + t.v + "</td><td class=num>" + (t.t + t.m) + "</td><td class=num>" + t.c + "</td><td class=num>" + quedan + "</td></tr></tfoot></table></div>" +
       '<p class="vacio">Quedan = en tu bodega. Tiendas = dejadas a consigna. Otras = bolsas que se tomaron o se echaron a perder. En rojo: sabores con ' + (D.ajustes.stockBajo || 0) + " bolsas o menos. Para corregir un conteo, registra una merma o una entrada con la diferencia.</p>";
     document.getElementById("llego").onclick = function () { ir("entrada"); };
+    document.getElementById("invimg").onclick = function () { imagenInventario(inv, t, quedan, cs, this); };
     v.querySelectorAll("[data-cobrar]").forEach(function (b) { b.onclick = function () { lform = null; ltienda = b.getAttribute("data-cobrar"); ir("liquidar"); }; });
     v.querySelectorAll("[data-recibo]").forEach(function (b) { b.onclick = function () { rgrupo = b.getAttribute("data-recibo"); ir("remision"); }; });
     var nc = document.getElementById("nuevacons"); if (nc) nc.onclick = function () { ir("vender"); form.tipo = "consigna"; pintar(); };
   }
+  // Imagen del inventario para mandar por WhatsApp (canvas → compartir o descargar).
+  function imagenInventario(inv, t, quedan, cs, btn) {
+    var txt = btn.textContent; btn.textContent = "Armando imagen…"; btn.disabled = true;
+    var W = 1080, fila = 78, cab = 450, tab = 90, pie = 150 + (cs.length ? 70 + cs.length * 46 : 0);
+    var H = cab + tab + inv.length * fila + 90 + pie;
+    var cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    var g = cv.getContext("2d");
+    var logo = new Image(); logo.src = "/img/logo.svg";
+    var listo = function () {
+      g.fillStyle = "#FFF6E6"; g.fillRect(0, 0, W, H);
+      g.fillStyle = "#ECBE48"; g.fillRect(0, 0, W, 300);
+      try { g.drawImage(logo, (W - 420) / 2, 34, 420, 137); } catch (e) {}
+      g.textAlign = "center"; g.fillStyle = "#3B2216";
+      g.font = "700 26px Poppins, sans-serif"; g.fillText("I N V E N T A R I O", W / 2, 212);
+      var ahora = new Date();
+      g.font = "500 30px Poppins, sans-serif";
+      g.fillText(ahora.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" }) + " · " + ahora.toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" }), W / 2, 258);
+      // tarjetas
+      var k = [["Quedan", quedan], ["En tiendas", t.c], ["Vendidas", t.v]];
+      k.forEach(function (x, i) {
+        var bx = 60 + i * 330, by = 320;
+        g.fillStyle = i === 0 ? "#3B2216" : "#fff"; rr(g, bx, by, 300, 110, 24); g.fill();
+        g.fillStyle = i === 0 ? "#ECBE48" : "#3B2216"; g.font = "400 56px 'Bubblegum Sans', sans-serif"; g.fillText(String(x[1]), bx + 150, by + 62);
+        g.fillStyle = i === 0 ? "#FFF6E6" : "#3B2216"; g.font = "700 22px Poppins, sans-serif"; g.fillText(x[0].toUpperCase(), bx + 150, by + 94);
+      });
+      // encabezado de tabla
+      var y = cab + 60, cols = [590, 720, 850, 975];
+      g.font = "700 22px Poppins, sans-serif"; g.fillStyle = "#9A6A25";
+      g.textAlign = "left"; g.fillText("SABOR", 70, y);
+      g.textAlign = "center"; ["LLEGÓ", "VEND.", "TIENDAS", "QUEDAN"].forEach(function (h, i) { g.fillText(h, cols[i], y); });
+      y += 24;
+      inv.forEach(function (r, i) {
+        if (i % 2 === 0) { g.fillStyle = "#fff"; rr(g, 40, y, W - 80, fila - 6, 18); g.fill(); }
+        var cy = y + fila / 2 + 4;
+        g.fillStyle = r.color || "#ccc"; g.beginPath(); g.arc(82, cy - 9, 13, 0, 7); g.fill();
+        g.fillStyle = "#3B2216"; g.textAlign = "left"; g.font = "500 29px Poppins, sans-serif"; g.fillText(r.nombre, 108, cy);
+        g.textAlign = "center"; g.font = "500 29px Poppins, sans-serif";
+        [r.e, r.v || "–", r.c || "–"].forEach(function (x, j) { g.fillText(String(x), cols[j], cy); });
+        g.font = "400 40px 'Bubblegum Sans', sans-serif"; g.fillStyle = r.bajo ? "#C0392B" : "#3B2216"; g.fillText(String(r.q), cols[3], cy + 3);
+        y += fila;
+      });
+      g.fillStyle = "#3B2216"; rr(g, 40, y + 6, W - 80, 70, 18); g.fill();
+      g.fillStyle = "#FFF6E6"; g.textAlign = "left"; g.font = "700 28px Poppins, sans-serif"; g.fillText("Total", 70, y + 52);
+      g.textAlign = "center"; [t.e, t.v, t.c].forEach(function (x, j) { g.fillText(String(x), cols[j], y + 52); });
+      g.fillStyle = "#ECBE48"; g.font = "400 40px 'Bubblegum Sans', sans-serif"; g.fillText(String(quedan), cols[3], y + 55);
+      y += 120;
+      if (cs.length) {
+        g.textAlign = "left"; g.fillStyle = "#3B2216"; g.font = "400 38px 'Bubblegum Sans', sans-serif"; g.fillText("En tiendas", 60, y + 20); y += 66;
+        g.font = "500 27px Poppins, sans-serif";
+        cs.forEach(function (c) { g.fillText("• " + c.tienda + ": " + c.bolsas + (c.bolsas === 1 ? " bolsa" : " bolsas") + " (hace " + diasDesde(c.ultima) + " días)", 70, y); y += 46; });
+        y += 10;
+      }
+      g.textAlign = "center"; g.fillStyle = "#9A6A25"; g.font = "500 24px Poppins, sans-serif";
+      g.fillText("En rojo: sabores con " + (D.ajustes.stockBajo || 0) + " bolsas o menos  ·  crunchitos.mx", W / 2, H - 50);
+      cv.toBlob(function (b) {
+        btn.textContent = txt; btn.disabled = false;
+        var nombre = "Crunchitos inventario " + hoyLocal() + ".png";
+        var file = null; try { file = new File([b], nombre, { type: "image/png" }); } catch (e) {}
+        if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+          navigator.share({ files: [file], title: "Inventario Crunchitos" }).catch(function () {});
+        } else {
+          var a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = nombre; document.body.appendChild(a); a.click();
+          setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+        }
+      }, "image/png");
+    };
+    var go = function () {
+      var f = document.fonts;
+      if (!f || !f.load) return listo();
+      Promise.all(["500 29px Poppins", "700 28px Poppins", "400 40px 'Bubblegum Sans'"].map(function (x) { return f.load(x).catch(function () {}); })).then(listo, listo);
+    };
+    if (logo.complete) go(); else { logo.onload = go; logo.onerror = go; }
+  }
+  function rr(g, x, y, w, h, r) {
+    g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+  }
+
   function vConsignas(cs) {
     var h = '<div class="fila entre" style="margin:20px 0 10px"><h2 style="margin:0">En consigna</h2><button class="btn chico" id="nuevacons">+ Dejar a consigna</button></div>';
     if (!cs.length) return h + '<p class="vacio" style="margin-bottom:16px">No hay bolsas dejadas en tiendas.</p>';
