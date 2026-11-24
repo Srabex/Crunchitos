@@ -189,7 +189,7 @@ body.con-barra{padding-bottom:96px}
   <div class="envoltura">
     <h2>Escoge tu sabor</h2>
     <p class="intro">Cuatro bases y doce sabores. El color de la etiqueta te dice cuál es: verde limón, rojo chile, naranja habanero… Arma tu surtido con los botones <b>+</b> y te lo llevamos.</p>
-    <div class="aviso-min"><svg viewBox="0 0 24 24" fill="none" stroke="#3B2216" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8" fill="#ECBE48"/><circle cx="17" cy="17.5" r="1.8" fill="#ECBE48"/></svg><span><b><span data-minimo>10</span> bolsas surtidas a tu casa u oficina: <span data-paquete>$550</span>.</b> Arma tu combinación de sabores. ¿Quieres menos? Búscalos en una de nuestras <a href="#donde">tiendas</a>.</span></div>
+    <div class="aviso-min"><svg viewBox="0 0 24 24" fill="none" stroke="#3B2216" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8" fill="#ECBE48"/><circle cx="17" cy="17.5" r="1.8" fill="#ECBE48"/></svg><span><b>¿No hay tienda cerca? Te los llevamos</b> a partir de <b><span data-minimo>10</span> bolsas surtidas</b>. Arma tu combinación y te mandamos el precio por WhatsApp. ¿Quieres menos? Búscalos en una de nuestras <a href="#donde">tiendas</a>.</span></div>
     <div class="filtros" role="group" aria-label="Filtrar sabores">
       <button class="filtro" data-base="todos" aria-pressed="true">Todos</button>
       <button class="filtro" data-base="jicama" aria-pressed="false">Jícama</button>
@@ -253,7 +253,7 @@ body.con-barra{padding-bottom:96px}
 <div class="barra" id="barra" aria-live="polite">
   <div class="envoltura">
     <div class="cuenta"><strong id="b-total">0 bolsas · $0</strong><span id="b-falta" class="falta"></span><div class="progreso"><i id="b-prog"></i></div></div>
-    <a class="btn btn-wa" id="b-enviar" href="#" aria-disabled="true">Enviar pedido</a>
+    <a class="btn btn-wa" id="b-enviar" href="#" aria-disabled="true">Pedir precio</a>
   </div>
 </div>
 
@@ -314,7 +314,6 @@ body.con-barra{padding-bottom:96px}
   pintarLigas();
 
   function pintarDatos() {
-    document.querySelectorAll("[data-paquete]").forEach(function (e) { e.textContent = "$" + fmt.format(PRECIO * MINIMO); });
     document.querySelectorAll("[data-minimo]").forEach(function (e) { e.textContent = MINIMO; });
   }
   function pintarPedido() {
@@ -331,12 +330,12 @@ body.con-barra{padding-bottom:96px}
     barra.classList.toggle("visible", n > 0);
     document.body.classList.toggle("con-barra", n > 0);
     var falta = MINIMO - n;
-    document.getElementById("b-total").textContent = falta > 0 ? n + " de " + MINIMO + " bolsas" : n + " bolsas · $" + fmt.format(n * PRECIO);
+    document.getElementById("b-total").textContent = falta > 0 ? n + " de " + MINIMO + " bolsas" : n + " bolsas";
     document.getElementById("b-falta").textContent = falta > 0 ? "Te " + (falta === 1 ? "falta 1 bolsa" : "faltan " + falta + " bolsas") + " para el envío" : "¡Listo para enviar!";
     document.getElementById("b-prog").style.width = Math.min(100, n / MINIMO * 100) + "%";
     enviar.setAttribute("aria-disabled", String(falta > 0));
     enviar.href = falta > 0 ? "#" : liga("Hola, vengo de crunchitos.mx 🙌 Quiero este pedido a domicilio:\n" + lineas.join("\n") +
-      "\n\nTotal: " + n + " bolsas · $" + fmt.format(n * PRECIO) + "\nMi colonia es: ");
+      "\n\nTotal: " + n + " bolsas. ¿Me pasas el precio con entrega?\nMi colonia es: ");
   }
   rejilla.addEventListener("click", function (e) {
     var b = e.target.closest("[data-mas],[data-menos]");
