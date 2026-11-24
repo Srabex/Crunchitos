@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Mis pedidos · Crunchitos</title>
+<meta name="theme-color" content="#ECBE48">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:title" content="Mis pedidos · Crunchitos">
+<meta property="og:description" content="Anota tus pedidos de Crunchitos y mándalos por WhatsApp.">
+<meta property="og:image" content="https://crunchitos.mx/og.jpg?v=2">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+:root{--tinta:#3B2216;--crema:#FFF6E6;--sombra:#9A6A25;--amarillo:#ECBE48;--wa:#1F9D55;--linea:#EADBC0}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;font-family:Poppins,system-ui,sans-serif;color:var(--tinta);background:var(--crema);-webkit-font-smoothing:antialiased;padding-bottom:110px}
+.env{max-width:640px;margin:0 auto;padding:0 16px}
+header{background:var(--amarillo);text-align:center;padding:18px 0 22px}
+header img{width:200px;margin:0 auto;display:block;height:auto}
+header h1{font-family:"Gochi Hand",cursive;font-weight:400;font-size:40px;line-height:1;color:var(--crema);text-shadow:2px 3px 0 var(--sombra);margin:10px 0 4px}
+header p{margin:0;font-size:14px}
+h2{font-family:"Bubblegum Sans",sans-serif;font-weight:400;font-size:28px;margin:24px 0 10px}
+.caja{background:#fff;border-radius:20px;padding:16px;box-shadow:0 2px 0 rgba(59,34,22,.08);margin-bottom:12px}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:4px}
+input[type=text],input[type=tel],input[inputmode]{width:100%;font:500 16px Poppins,sans-serif;padding:12px 14px;border:2px solid var(--linea);border-radius:14px;background:#fff;color:var(--tinta)}
+input:focus{outline:none;border-color:var(--amarillo)}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border-radius:999px;font:700 15px Poppins,sans-serif;text-decoration:none;border:0;cursor:pointer;background:var(--tinta);color:var(--crema);box-shadow:0 4px 0 #000}
+.btn.claro{background:#fff;color:var(--tinta);box-shadow:0 3px 0 var(--linea);border:2px solid var(--linea)}
+.btn.wa{background:var(--wa);color:#fff;box-shadow:0 4px 0 #146b39}
+.btn.amarillo{background:var(--amarillo);color:var(--tinta);box-shadow:0 4px 0 var(--sombra)}
+.btn.ancho{width:100%}
+.btn:focus-visible,button:focus-visible{outline:3px solid var(--tinta);outline-offset:2px}
+.sabores{display:flex;flex-direction:column}
+.sab{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--linea)}
+.sab:first-child{border-top:0}
+.sab .pto{width:14px;height:14px;border-radius:50%;flex:none}
+.sab .nom{flex:1;font-size:15px;line-height:1.2}
+.sab .nom small{display:block;font-size:12px;opacity:.65}
+.cnt{display:flex;align-items:center;gap:6px}
+.cnt button{width:40px;height:40px;border-radius:50%;border:0;background:var(--amarillo);font:700 22px/1 Poppins,sans-serif;color:var(--tinta);cursor:pointer;box-shadow:0 2px 0 var(--sombra)}
+.cnt button:disabled{opacity:.3;cursor:default}
+.cnt output{min-width:28px;text-align:center;font-weight:700;font-size:18px}
+.sab.con{background:#FFF8E3;margin:0 -16px;padding-left:16px;padding-right:16px}
+.checks{display:flex;gap:18px;margin:12px 0 4px;flex-wrap:wrap}
+.checks label{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:500;margin:0}
+.checks input{width:22px;height:22px;accent-color:var(--wa)}
+.ped{border-top:1px solid var(--linea);padding:12px 0}
+.ped:first-child{border-top:0;padding-top:0}
+.ped .cab{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.ped .cab strong{font-size:17px}
+.ped .det{font-size:14px;margin:4px 0 8px;line-height:1.45}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.tag{font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px;background:#F3E7CF}
+.tag.si{background:#DFF2E6;color:#14653A}
+.acc{display:flex;gap:8px;flex-wrap:wrap}
+.acc button{min-height:38px;font-size:13px;padding:0 14px}
+.res{width:100%;border-collapse:collapse;font-size:15px}
+.res td{padding:6px 0;border-top:1px solid var(--linea)}
+.res td:last-child{text-align:right;font-weight:700}
+.res tr.tot td{font-weight:700;border-top:2px solid var(--tinta)}
+.vacio{opacity:.7;font-size:14px;margin:0}
+.barra{position:fixed;left:0;right:0;bottom:0;background:var(--tinta);padding:12px 16px calc(12px + env(safe-area-inset-bottom));z-index:9}
+.barra .env{display:flex;gap:10px;padding:0}
+.barra .btn{flex:1}
+.aviso{font-size:13px;opacity:.75;text-align:center;margin:18px 0 0}
+</style>
+</head>
+<body>
+<header>
+  <div class="env">
+    <img src="/img/logo.svg" alt="Crunchitos" width="857" height="280">
+    <h1>Mis pedidos</h1>
+    <p>Anota los pedidos de tus clientes y mándanoslos por WhatsApp.</p>
+  </div>
+</header>
+
+<main class="env">
+  <div class="caja" style="margin-top:16px">
+    <div class="dos">
+      <div><label for="vend">Tu nombre</label><input type="text" id="vend" autocomplete="name" placeholder="Ej. Cecy"></div>
+      <div><label for="precio">Tu precio por bolsa (opcional)</label><input id="precio" inputmode="decimal" placeholder="Ej. 50"></div>
+    </div>
+  </div>
+
+  <h2 id="tform">Nuevo pedido</h2>
+  <div class="caja">
+    <div class="dos">
+      <div><label for="cli">Cliente</label><input type="text" id="cli" placeholder="Nombre"></div>
+      <div><label for="tel">Teléfono (opcional)</label><input type="tel" id="tel" inputmode="tel" placeholder="614…"></div>
+    </div>
+    <div class="sabores" id="sabores" style="margin-top:12px"></div>
+    <div style="margin-top:12px"><label for="nota">Nota (opcional)</label><input type="text" id="nota" placeholder="Ej. entregar el viernes"></div>
+    <div class="checks">
+      <label><input type="checkbox" id="pago"> Ya pagó</label>
+      <label><input type="checkbox" id="entregado"> Ya se entregó</label>
+    </div>
+    <p id="msg" class="vacio" style="color:#B3261E;margin-top:8px" hidden></p>
+    <div style="display:flex;gap:10px;margin-top:12px">
+      <button class="btn amarillo ancho" id="guardar">Guardar pedido</button>
+      <button class="btn claro" id="cancelar" hidden>Cancelar</button>
+    </div>
+  </div>
+
+  <h2>Pedidos <span id="npeds" style="font-family:Poppins;font-size:16px;opacity:.6"></span></h2>
+  <div class="caja" id="lista"></div>
+
+  <h2>Total por sabor</h2>
+  <div class="caja" id="resumen"></div>
+
+  <button class="btn claro ancho" id="nueva" style="margin-top:6px">Empezar una lista nueva</button>
+  <p class="aviso">Tus pedidos se guardan en este celular. <a href="/kit/">← Volver al kit</a></p>
+</main>
+
+<div class="barra"><div class="env">
+  <a class="btn wa" id="enviar" href="#">Mandar por WhatsApp</a>
+</div></div>
+
+<script>
+(function () {
+  var WA = "526142355166";
+  var SABORES = [
+    ["jicama-limon", "Jícama", "limón y sal", "#5E9A2A"], ["jicama-chile", "Jícama", "con chile", "#D33A2A"],
+    ["jicama-rancherito", "Jícama", "rancherito", "#D9572A"], ["jicama-esquite", "Jícama", "esquite", "#E9B91E"],
+    ["jicama-habanero", "Jícama", "habanero y miel", "#EE8A1C"], ["pepino-limon", "Pepino", "limón y sal", "#82A85B"],
+    ["pepino-adobado", "Pepino", "adobado", "#91B25B"], ["camote-limon", "Camote", "limón y sal", "#C2875D"],
+    ["camote-adobado", "Camote", "adobado", "#C88A5F"], ["platano-natural", "Plátano", "natural", "#EEC14A"],
+    ["platano-sal", "Plátano", "con sal", "#ECBE48"], ["platano-canela", "Plátano", "azúcar y canela", "#F2C54C"]
+  ];
+  var K = "crunchitos-pedidos-v1";
+  var st = { vendedor: "", precio: "", pedidos: [] };
+  try { var g = JSON.parse(localStorage.getItem(K) || "null"); if (g && g.pedidos) st = g; } catch (e) {}
+  function guardarSt() { try { localStorage.setItem(K, JSON.stringify(st)); } catch (e) {} }
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (t) { return String(t == null ? "" : t).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+  var nombre = function (id) { var s = SABORES.filter(function (x) { return x[0] === id; })[0]; return s ? s[1] + " " + s[2] : id; };
+  var precio = function () { var n = parseFloat(String(st.precio).replace(/[^0-9.]/g, "")); return n > 0 ? n : 0; };
+  var pesos = function (n) { return "$" + n.toLocaleString("es-MX", { maximumFractionDigits: 2 }); };
+  var bolsas = function (p) { var n = 0; Object.keys(p.items).forEach(function (k) { n += p.items[k]; }); return n; };
+
+  var form = {}, editando = null;
+  $("vend").value = st.vendedor || ""; $("precio").value = st.precio || "";
+  $("vend").oninput = function () { st.vendedor = this.value; guardarSt(); pintar(); };
+  $("precio").oninput = function () { st.precio = this.value; guardarSt(); pintar(); };
+
+  $("sabores").innerHTML = SABORES.map(function (s) {
+    return '<div class="sab" data-id="' + s[0] + '"><span class="pto" style="background:' + s[3] + '"></span><span class="nom">' + s[1] + "<small>" + s[2] + "</small></span>" +
+      '<span class="cnt"><button type="button" data-d="-1" aria-label="Quitar ' + s[1] + " " + s[2] + '">−</button><output>0</output><button type="button" data-d="1" aria-label="Agregar ' + s[1] + " " + s[2] + '">+</button></span></div>';
+  }).join("");
+  $("sabores").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-d]"); if (!b) return;
+    var id = b.closest(".sab").getAttribute("data-id");
+    form[id] = Math.max(0, (form[id] || 0) + Number(b.getAttribute("data-d")));
+    if (!form[id]) delete form[id];
+    pintarForm();
+  });
+  function pintarForm() {
+    document.querySelectorAll(".sab").forEach(function (r) {
+      var id = r.getAttribute("data-id"), n = form[id] || 0;
+      r.querySelector("output").textContent = n; r.querySelector('[data-d="-1"]').disabled = !n; r.classList.toggle("con", n > 0);
+    });
+  }
+  function limpiar() {
+    form = {}; editando = null; $("cli").value = ""; $("tel").value = ""; $("nota").value = ""; $("pago").checked = false; $("entregado").checked = false;
+    $("tform").textContent = "Nuevo pedido"; $("guardar").textContent = "Guardar pedido"; $("cancelar").hidden = true; $("msg").hidden = true; pintarForm();
+  }
+  $("cancelar").onclick = limpiar;
+  $("guardar").onclick = function () {
+    var cli = $("cli").value.trim(), n = 0; Object.keys(form).forEach(function (k) { n += form[k]; });
+    var m = $("msg");
+    if (!cli) { m.textContent = "Escribe el nombre del cliente."; m.hidden = false; $("cli").focus(); return; }
+    if (!n) { m.textContent = "Agrega al menos una bolsa con el botón +."; m.hidden = false; return; }
+    var p = { id: editando || String(Date.now()), cliente: cli, tel: $("tel").value.trim(), nota: $("nota").value.trim(), items: JSON.parse(JSON.stringify(form)),
+      pago: $("pago").checked, entregado: $("entregado").checked, fecha: new Date().toISOString() };
+    if (editando) st.pedidos = st.pedidos.map(function (x) { if (x.id === editando) { p.fecha = x.fecha; return p; } return x; });
+    else st.pedidos.push(p);
+    guardarSt(); limpiar(); pintar();
+    $("lista").scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  function pintar() {
+    var L = $("lista"), pr = precio();
+    $("npeds").textContent = st.pedidos.length ? "(" + st.pedidos.length + ")" : "";
+    if (!st.pedidos.length) L.innerHTML = '<p class="vacio">Todavía no hay pedidos. Anota el primero arriba.</p>';
+    else L.innerHTML = st.pedidos.map(function (p) {
+      var n = bolsas(p);
+      return '<div class="ped"><div class="cab"><strong>' + esc(p.cliente) + "</strong><span>" + n + (n === 1 ? " bolsa" : " bolsas") + (pr ? " · " + pesos(n * pr) : "") + "</span></div>" +
+        '<div class="det">' + Object.keys(p.items).map(function (k) { return p.items[k] + " " + esc(nombre(k)); }).join(" · ") + (p.tel ? "<br>📞 " + esc(p.tel) : "") + (p.nota ? "<br>📝 " + esc(p.nota) : "") + "</div>" +
+        '<div class="tags"><span class="tag' + (p.pago ? " si" : "") + '">' + (p.pago ? "Pagó" : "Falta pago") + '</span><span class="tag' + (p.entregado ? " si" : "") + '">' + (p.entregado ? "Entregado" : "Por entregar") + "</span></div>" +
+        '<div class="acc"><button class="btn claro" data-a="pago" data-id="' + p.id + '">' + (p.pago ? "Quitar pagado" : "Marcar pagado") + '</button><button class="btn claro" data-a="ent" data-id="' + p.id + '">' + (p.entregado ? "Quitar entregado" : "Marcar entregado") + '</button><button class="btn claro" data-a="edit" data-id="' + p.id + '">Editar</button><button class="btn claro" data-a="del" data-id="' + p.id + '">Borrar</button></div></div>';
+    }).join("");
+    // resumen
+    var tot = {}, n = 0, pend = 0, cobrar = 0;
+    st.pedidos.forEach(function (p) { var b = bolsas(p); n += b; if (!p.entregado) pend += b; if (!p.pago) cobrar += b; Object.keys(p.items).forEach(function (k) { tot[k] = (tot[k] || 0) + p.items[k]; }); });
+    var R = $("resumen");
+    if (!n) R.innerHTML = '<p class="vacio">Aquí verás cuántas bolsas de cada sabor llevas.</p>';
+    else R.innerHTML = '<table class="res">' + SABORES.filter(function (s) { return tot[s[0]]; }).map(function (s) {
+      return '<tr><td><span class="pto" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:' + s[3] + ';margin-right:8px"></span>' + s[1] + " " + s[2] + "</td><td>" + tot[s[0]] + "</td></tr>";
+    }).join("") + '<tr class="tot"><td>Total</td><td>' + n + " bolsas" + (pr ? " · " + pesos(n * pr) : "") + "</td></tr></table>" +
+      '<p class="vacio" style="margin-top:10px">Por entregar: <b>' + pend + "</b> · Falta cobrar: <b>" + cobrar + "</b>" + (pr && cobrar ? " (" + pesos(cobrar * pr) + ")" : "") + "</p>";
+    $("enviar").href = "https://wa.me/" + WA + "?text=" + encodeURIComponent(mensaje(tot, n));
+    $("enviar").setAttribute("aria-disabled", String(!n));
+  }
+  function mensaje(tot, n) {
+    var pr = precio(), l = [];
+    l.push("🧾 *Pedidos Crunchitos*" + (st.vendedor ? " · " + st.vendedor : ""));
+    l.push(new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" }));
+    l.push("");
+    st.pedidos.forEach(function (p, i) {
+      var b = bolsas(p);
+      l.push("*" + (i + 1) + ". " + p.cliente + "* — " + b + (b === 1 ? " bolsa" : " bolsas") + (pr ? " · " + pesos(b * pr) : "") + (p.pago ? " ✅ pagó" : " ⏳ falta pago") + (p.entregado ? " · entregado" : ""));
+      Object.keys(p.items).forEach(function (k) { l.push("   • " + p.items[k] + " " + nombre(k)); });
+      if (p.nota) l.push("   📝 " + p.nota);
+    });
+    l.push(""); l.push("*Total por sabor*");
+    SABORES.forEach(function (s) { if (tot[s[0]]) l.push("• " + tot[s[0]] + " " + s[1] + " " + s[2]); });
+    l.push("*Total: " + n + " bolsas*" + (pr ? " · " + pesos(n * pr) : ""));
+    return l.join("\n");
+  }
+  $("enviar").addEventListener("click", function (e) { if (this.getAttribute("aria-disabled") === "true") { e.preventDefault(); alertaVacia(); } });
+  function alertaVacia() { var m = $("msg"); m.textContent = "Primero anota al menos un pedido."; m.hidden = false; $("cli").focus(); }
+  $("lista").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-a]"); if (!b) return;
+    var id = b.getAttribute("data-id"), a = b.getAttribute("data-a"), p = st.pedidos.filter(function (x) { return x.id === id; })[0]; if (!p) return;
+    if (a === "pago") p.pago = !p.pago;
+    else if (a === "ent") p.entregado = !p.entregado;
+    else if (a === "del") {
+      if (b.getAttribute("data-ok") !== "1") { b.setAttribute("data-ok", "1"); b.textContent = "¿Seguro? Toca otra vez"; return; }
+      st.pedidos = st.pedidos.filter(function (x) { return x.id !== id; });
+    } else if (a === "edit") {
+      editando = id; form = JSON.parse(JSON.stringify(p.items)); $("cli").value = p.cliente; $("tel").value = p.tel || ""; $("nota").value = p.nota || "";
+      $("pago").checked = !!p.pago; $("entregado").checked = !!p.entregado; $("tform").textContent = "Editar pedido"; $("guardar").textContent = "Guardar cambios"; $("cancelar").hidden = false;
+      pintarForm(); $("tform").scrollIntoView({ behavior: "smooth" }); return;
+    }
+    guardarSt(); pintar();
+  });
+  $("nueva").onclick = function () {
+    if (!st.pedidos.length) return;
+    if (this.getAttribute("data-ok") !== "1") { this.setAttribute("data-ok", "1"); this.textContent = "¿Borrar todos los pedidos? Toca otra vez"; var b = this; setTimeout(function () { b.removeAttribute("data-ok"); b.textContent = "Empezar una lista nueva"; }, 4000); return; }
+    st.pedidos = []; guardarSt(); this.removeAttribute("data-ok"); this.textContent = "Empezar una lista nueva"; limpiar(); pintar();
+  };
+  pintarForm(); pintar();
+})();
+</script>
+</body>
+</html>
