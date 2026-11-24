@@ -41,7 +41,8 @@ Panel para Sebas, Paola (Pao, paolardzmq@gmail.com) y Víctor (victor.hernandez.
 - **Inicio** también muestra gastos del periodo, **ganancia real** (ganancia de las bolsas − gastos), gastos por categoría y quién ha puesto.
 - **Historial**: "Cambiar precio" / "Cambiar costo" en ventas y entradas (para corregir el costo real por paquete).
 - **Ajustes**: precios, costo, aviso de stock bajo, pedido mínimo a domicilio, WhatsApp de la página, equipo.
-- **Archivos** (pestaña): descargas del equipo en `public/admin/docs/` (lista `DOCS` en admin.js). El Worker solo las sirve con sesión del panel (`/admin/docs/*` → 401 sin sesión). PDF Emprende con Crunchitos, tablas (paquetes, con consigna, interna), cartel QR para tienditas, logos y Crunchis. Pendientes de subir: 3 zips de etiquetas para imprenta (sin teléfono, Sebas, Pao) y PDF del manual de identidad. Fuentes de las piezas en `diseno/`.
+- **Archivos** (pestaña): lista `DOCS` en admin.js. Lo interno vive en `public/admin/docs/` y el Worker solo lo sirve con sesión del panel (`/admin/docs/*` → 401 sin sesión): PDF Emprende con Crunchitos, tablas (paquetes, con consigna, interna), manual de identidad v3 en PDF. Pendientes de subir: 3 zips de etiquetas para imprenta (sin teléfono, Sebas, Pao). Fuentes de las piezas en `diseno/`.
+- **Kit para distribuidores** `/kit/` (público pero noindex y fuera de robots): estados 1080×1920 (`diseno/estado.html?tipo=ya|antojo|sabores`), textos para copiar, fotos de los 12 sabores (ZIP), cartel QR para tienditas, logos y Crunchis, reglas de marca y botón para resurtir. Es la liga que se manda a los emprendedores.
 
 ## Datos (D1)
 - 21 nov 2026: lo registrado como "plátano con sal" era plátano natural; se corrigió una sola vez (meta `fix_platano_sal_v1`).

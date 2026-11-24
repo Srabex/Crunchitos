@@ -74,8 +74,9 @@
       { t: "Tabla con consigna", d: "Solo para gente de confianza o si ya nos compró. No se publica.", f: [["Imagen", "crunchitos-tabla-consigna.jpg"]] },
       { t: "Tabla interna", d: "Con nuestra ganancia por paquete. Solo para el equipo.", f: [["Imagen", "crunchitos-tabla-interna.jpg"]] }
     ] },
-    { grupo: "Para tiendas", items: [
-      { t: "Cartel QR para tienditas", d: "Media carta, \"¡Pídelos aquí en caja!\" con precio a mano. Para el mostrador de cada punto de venta.", f: [["PDF para imprimir", "crunchitos-cartel-qr-tienda.pdf"], ["Imagen", "crunchitos-cartel-qr-tienda.png"]] }
+    { grupo: "Kit para distribuidores", items: [
+      { t: "Página del kit (crunchitos.mx/kit)", d: "Mándales esta liga a los distribuidores: estados para WhatsApp, fotos de los 12 sabores, textos para copiar, cartel con QR y logos.", f: [["Abrir el kit", "/kit/"]] },
+      { t: "Cartel QR para tienditas", d: "Media carta, \"¡Pídelos aquí en caja!\" con precio a mano. Para el mostrador de cada punto de venta.", f: [["PDF para imprimir", "/kit/crunchitos-cartel-qr-tienda.pdf"], ["Imagen", "/kit/crunchitos-cartel-qr-tienda.png"]] }
     ] },
     { grupo: "Etiquetas para imprenta", items: [
       { t: "Etiquetas sin teléfono", d: "Hoja A4 de 12 etiquetas de 6 cm. Pedir vinil mate, CMYK y prueba de color.", falta: true },
@@ -83,8 +84,8 @@
       { t: "Etiquetas con el WhatsApp de Pao", d: "33 1760 8242.", falta: true }
     ] },
     { grupo: "Marca", items: [
-      { t: "Manual de identidad (PDF)", d: "Logo, Crunchi, colores, letras, etiqueta y reglas de marca.", falta: true },
-      { t: "Logos y Crunchis", d: "Logo en crema y en café (SVG) y los 4 Crunchis sin fondo (PNG).", f: [["ZIP", "crunchitos-logos-y-crunchis.zip"]] }
+      { t: "Manual de identidad (PDF)", d: "Versión 3: logo, Crunchi, colores, letras, etiqueta, carteles y reglas de marca.", f: [["PDF", "crunchitos-manual-de-identidad.pdf"]] },
+      { t: "Logos y Crunchis", d: "Logo en crema y en café (SVG) y los 4 Crunchis sin fondo (PNG).", f: [["ZIP", "/kit/crunchitos-logos-y-crunchis.zip"]] }
     ] }
   ];
 
@@ -701,7 +702,8 @@
       h += '<div class="caja"><h3>' + esc(g.grupo) + "</h3>" + g.items.map(function (it) {
         return '<div class="doc' + (it.falta ? " falta" : "") + '"><div><strong>' + esc(it.t) + '</strong><p class="vacio">' + esc(it.d) + "</p></div>" +
           (it.falta ? '<span class="pend">Por subir</span>' : '<div class="docb">' + it.f.map(function (f) {
-            return '<a class="btn chico claro" href="/admin/docs/' + f[1] + '" download>' + esc(f[0]) + "</a>";
+            var url = f[1].charAt(0) === "/" ? f[1] : "/admin/docs/" + f[1];
+            return '<a class="btn chico claro" href="' + url + '"' + (/\/$/.test(url) ? ' target="_blank" rel="noopener"' : " download") + ">" + esc(f[0]) + "</a>";
           }).join("") + "</div>") + "</div>";
       }).join("") + "</div>";
     });

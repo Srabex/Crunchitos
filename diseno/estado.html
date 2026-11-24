@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Estado para WhatsApp</title>
+<!-- Estados 1080x1920 para distribuidores: ?tipo=ya | antojo | sabores. Captura a escala 1. -->
+<style>
+@font-face{font-family:"Bubblegum Sans";src:url(../public/fonts/BubblegumSans.woff) format("woff")}
+@font-face{font-family:"Gochi Hand";src:url(../public/fonts/GochiHand.woff) format("woff")}
+@font-face{font-family:"Poppins";src:url(../public/fonts/Poppins-Medium.woff) format("woff");font-weight:500}
+@font-face{font-family:"Poppins";src:url(../public/fonts/Poppins-Bold.woff) format("woff");font-weight:700}
+*{box-sizing:border-box;margin:0}
+html,body{width:1080px;height:1920px;overflow:hidden}
+body{font-family:Poppins,sans-serif;color:#3B2216;background:#ECBE48 repeating-conic-gradient(from 0deg at 50% 40%,rgba(255,246,230,.17) 0deg 7deg,rgba(255,246,230,0) 7deg 14deg);text-align:center;position:relative}
+.logo{width:560px;margin-top:190px;filter:drop-shadow(0 8px 0 #9A6A25)}
+.desc{font-weight:700;font-size:30px;letter-spacing:6px;margin-top:10px}
+.h{font-family:"Gochi Hand";font-size:118px;line-height:1;color:#FFF6E6;text-shadow:0 7px 0 #9A6A25,4px 7px 0 #9A6A25,-4px 7px 0 #9A6A25;margin-top:50px;padding:0 60px}
+.sub{font-size:42px;font-weight:500;margin:34px auto 0;max-width:860px;line-height:1.35}
+.pill{display:inline-block;background:#3B2216;color:#FFF6E6;border-radius:80px;padding:22px 54px;font-weight:700;font-size:50px;box-shadow:0 10px 0 #9A6A25;margin-top:44px}
+.pill b{color:#ECBE48}
+.desfile{position:absolute;left:0;right:0;bottom:250px;display:flex;justify-content:center;gap:10px}
+.desfile img{width:240px}
+.foto{width:900px;border-radius:44px;border:10px solid #FFF6E6;margin-top:50px;box-shadow:0 14px 0 #9A6A25}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;width:960px;margin:60px auto 0}
+.grid img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:24px;border:6px solid #FFF6E6}
+.pie{position:absolute;left:0;right:0;bottom:130px;font-weight:700;font-size:40px}
+.pie span{display:inline-block;background:#FFF6E6;border-radius:60px;padding:18px 46px}
+</style>
+</head>
+<body>
+<div id="c"></div>
+<script>
+var t = new URLSearchParams(location.search).get("tipo") || "ya";
+var L = '<img class="logo" src="../public/img/logo.svg" alt=""><div class="desc">SNACKS DESHIDRATADOS</div>';
+var CH = '<div class="desfile"><img src="../public/img/crunchi/platano.webp"><img src="../public/img/crunchi/jicama.webp"><img src="../public/img/crunchi/camote.webp"><img src="../public/img/crunchi/pepino.webp"></div>';
+var PIE = '<div class="pie"><span>¡Pídemelos aquí! 👇</span></div>';
+var html = "";
+if (t === "ya") {
+  html = L + '<div class="h">¡Ya tengo Crunchitos!</div><p class="sub">Jícama, pepino, camote y plátano en 12 sabores, crujientes de verdad.</p><div class="pill"><b>$55</b> la bolsa</div>' + CH + PIE;
+} else if (t === "antojo") {
+  html = L.replace('margin-top:190px', '') + '<div class="h" style="margin-top:36px">¿Se te antojó?</div><img class="foto" src="../public/img/fotos/surtido.webp" alt=""><div class="pill"><b>$55</b> la bolsa · 12 sabores</div>' + PIE;
+} else {
+  var ids = ["jicama-limon", "jicama-chile", "jicama-rancherito", "jicama-esquite", "jicama-habanero", "pepino-limon", "pepino-adobado", "camote-limon", "camote-adobado", "platano-natural", "platano-sal", "platano-canela"];
+  html = L + '<div class="h" style="font-size:100px;margin-top:36px">Escoge tu sabor</div><div class="grid">' + ids.map(function (i) { return '<img src="../public/img/bolsas/' + i + '.webp">'; }).join("") + '</div>' + PIE;
+}
+document.getElementById("c").innerHTML = html;
+if (t !== "ya") document.querySelector(".logo").style.marginTop = "110px";
+</script>
+</body>
+</html>
