@@ -52,6 +52,7 @@
     return p ? p.nombre_base + " " + p.sabor : id;
   }
   function nombrePersona(email) {
+    if (email === "caja") return "La caja";
     if (email === D.dueno) return "Sebas";
     var e = D.equipo.find(function (x) { return x.email === email; });
     return e && e.nombre ? e.nombre : String(email).split("@")[0];
@@ -257,6 +258,18 @@
         return '<button class="chip" data-p="' + p[0] + '" aria-pressed="' + (periodo === p[0]) + '">' + p[1] + "</button>";
       }).join("") + "</div>";
     if (bajos.length) h += '<div class="alerta"><strong>Se están acabando:</strong> ' + bajos.map(function (p) { return esc(p.nombre_base + " " + p.sabor) + " (" + st[p.id] + ")"; }).join(", ") + "</div>";
+    // Dinero de hoy (siempre todo el historial, no depende del periodo)
+    var cobrado = 0, deCaja = 0, debe = {};
+    D.movimientos.forEach(function (m) { if (m.tipo === "venta") cobrado += m.cantidad * m.precio; });
+    (D.gastos || []).forEach(function (g) { if (g.pago === "caja") deCaja += g.monto; else debe[g.pago] = (debe[g.pago] || 0) + g.monto; });
+    var pc = 0, pcB = 0, pcT = consignas(); pcT.forEach(function (c) { pcB += c.bolsas; pc += c.bolsas * c.precio; });
+    var deudas = Object.keys(debe);
+    var cajaH = '<div class="kpis" style="margin-bottom:16px">' +
+      '<div class="kpi verde"><span>En caja (en teoría)</span><strong>' + pesos(cobrado - deCaja) + "</strong><small>cobrado " + pesos(cobrado) + " − gastos de caja " + pesos(deCaja) + "</small></div>" +
+      '<div class="kpi"><span>Por cobrar</span><strong>' + pesos(pc) + "</strong><small>" + (pcB ? num(pcB) + " bolsas a consigna en " + pcT.length + (pcT.length === 1 ? " tienda" : " tiendas") : "nada pendiente") + "</small></div>" +
+      (deudas.length ? '<div class="kpi" style="grid-column:1/-1"><span>Se le debe por gastos que pagó de su bolsa</span><small style="font-size:15px">' + deudas.map(function (k) { return esc(nombrePersona(k)) + ": <b>" + pesos(debe[k]) + "</b>"; }).join(" · ") + "</small></div>" : "") +
+      "</div>";
+    h = h.replace('<div class="chips" role="group" aria-label="Periodo"', cajaH + '<div class="chips" role="group" aria-label="Periodo"');
     h += '<div class="kpis">' +
       '<div class="kpi amarillo"><span>Vendido</span><strong>' + pesos(dinero) + "</strong><small>" + num(bolsas) + " bolsas" + (bolsas ? " · prom. " + pesos(dinero / bolsas) : "") + "</small></div>" +
       '<div class="kpi"><span>Ganancia de las bolsas</span><strong>' + pesos(gananciaBolsas) + "</strong><small>costo " + pesos(cp) + " por bolsa</small></div>" +
@@ -309,9 +322,9 @@
   var CAT = { etiquetas: "Etiquetas e impresión", envio: "Envío de la fábrica", gasolina: "Gasolina", empaque: "Empaque", publicidad: "Publicidad", otro: "Otro" };
   var gform = null;
   function vGastos(v) {
-    if (!gform) gform = { monto: "", concepto: "", categoria: "envio", pago: D.yo, fecha: D.hoy, nota: "" };
+    if (!gform) gform = { monto: "", concepto: "", categoria: "envio", pago: "caja", fecha: D.hoy, nota: "" };
     var g = gform;
-    var personas = [D.dueno].concat(D.equipo.map(function (e) { return e.email; }));
+    var personas = ["caja", D.dueno].concat(D.equipo.map(function (e) { return e.email; }));
     var h = "<h2>Gastos</h2>" +
       '<form class="caja" id="fg" novalidate>' +
       '<label>Monto<input id="gmonto" inputmode="decimal" placeholder="$0" value="' + esc(g.monto) + '" style="font-size:24px;font-weight:700"></label>' +

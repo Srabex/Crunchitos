@@ -183,6 +183,14 @@ async function db(env) {
       env.DB.prepare("INSERT OR REPLACE INTO meta (llave, valor) VALUES ('equipo_inicial_v1', '1')"),
     ]);
   }
+  // 25 nov 2026: los gastos que ya había se pagaron de la caja (lo dijo Sebas).
+  const gc = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'gastos_caja_v1'").first();
+  if (!gc) {
+    await env.DB.batch([
+      env.DB.prepare("UPDATE gastos SET pago = 'caja'"),
+      env.DB.prepare("INSERT OR REPLACE INTO meta (llave, valor) VALUES ('gastos_caja_v1', '1')"),
+    ]);
+  }
   // 23 nov 2026: precios de los paquetes para emprendedores ($1,500/36, $3,000/75, $5,000/130), consigna $45 y público/domicilio $55 (solo si los precios siguen siendo los de fábrica).
   const pv2 = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'precios_v2'").first();
   if (!pv2) {
