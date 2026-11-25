@@ -8,6 +8,9 @@
 <meta name="theme-color" content="#3B2216">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Crunchitos">
 <link rel="stylesheet" href="/fonts/fonts.css">
 <link rel="stylesheet" href="/admin/admin.css">
 </head>
@@ -16,5 +19,6 @@
 <div id="aviso" role="status" hidden></div>
 <script src="/admin/qrcode.js"></script>
 <script src="/admin/admin.js"></script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});</script>
 </body>
 </html>

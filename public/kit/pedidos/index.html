@@ -8,6 +8,9 @@
 <meta name="theme-color" content="#ECBE48">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mis pedidos">
 <meta property="og:title" content="Mis pedidos · Crunchitos">
 <meta property="og:description" content="Anota tus pedidos de Crunchitos y mándalos por WhatsApp.">
 <meta property="og:image" content="https://crunchitos.mx/og.jpg?v=2">
@@ -245,5 +248,6 @@ input:focus{outline:none;border-color:var(--amarillo)}
   pintarForm(); pintar();
 })();
 </script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});</script>
 </body>
 </html>

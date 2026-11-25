@@ -1,0 +1,25 @@
+{
+ "id": "/kit/pedidos/",
+ "name": "Mis pedidos · Crunchitos",
+ "short_name": "Mis pedidos",
+ "start_url": "/kit/pedidos/",
+ "scope": "/kit/pedidos/",
+ "display": "standalone",
+ "background_color": "#FFF6E6",
+ "theme_color": "#ECBE48",
+ "lang": "es-MX",
+ "icons": [
+  {
+   "src": "/icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "/icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  }
+ ]
+}
