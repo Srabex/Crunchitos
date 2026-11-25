@@ -206,7 +206,7 @@
     var tabs = [["inicio", "Inicio"], ["vender", "Vender"], ["gastos", "Gastos"], ["inventario", "Inventario"], ["historial", "Historial"], ["archivos", "Archivos"], ["ajustes", "Ajustes"]];
     app.innerHTML =
       '<header class="top"><img src="/img/logo.svg" alt="Crunchitos"><div class="quien">' + esc(nombrePersona(D.yo)) +
-      ' <a class="enlace" href="/kit/" target="_blank" rel="noopener">Kit</a> <button class="enlace" id="salir">Salir</button></div></header>' +
+      ' <a class="enlace" href="/" target="_blank" rel="noopener">Página</a> <a class="enlace" href="/kit/" target="_blank" rel="noopener">Kit</a> <button class="enlace" id="salir">Salir</button></div></header>' +
       '<main id="vista"></main>' +
       '<nav class="tabs" aria-label="Secciones">' + tabs.map(function (t) {
         var actual = vista === "liquidar" || vista === "entrada" || vista === "remision" ? "inventario" : vista;
