@@ -55,7 +55,7 @@ const SEMILLA = [
   ["platano-natural", 9, 1, 0], // se registró como "con sal" por error; era natural
 ];
 
-const TIPOS = ["entrada", "venta", "tomada", "merma", "consigna", "devolucion"];
+const TIPOS = ["entrada", "venta", "tomada", "merma", "consigna", "devolucion", "apartado"];
 const CATEGORIAS = ["etiquetas", "envio", "gasolina", "empaque", "publicidad", "otro"];
 
 // Acceso inicial del equipo (se agrega una sola vez; después se maneja en Ajustes → Equipo).
@@ -368,8 +368,9 @@ async function guardarMovimiento(D, yo, body) {
   const tipo = String(body.tipo);
   if (!TIPOS.includes(tipo)) return error("Tipo de movimiento no válido.");
   const fecha = esFecha(body.fecha) ? body.fecha : hoyChihuahua();
-  const precio = ["venta", "entrada", "consigna"].includes(tipo) ? Number(body.precio) : 0;
+  const precio = ["venta", "entrada", "consigna", "apartado"].includes(tipo) ? Number(body.precio) || 0 : 0;
   if (tipo === "consigna" && !texto(body.cliente, 80)) return error("Pon a qué tienda o persona se le dejó.");
+  if (tipo === "apartado" && !texto(body.cliente, 80)) return error("Pon para quién es el apartado.");
   if (!Number.isFinite(precio) || precio < 0 || precio > 100000) return error("Revisa el precio.");
   if ((tipo === "venta") && precio === 0 && !body.sinCobro) return error("Pon el precio por bolsa.");
   const { results: prods } = await D.prepare("SELECT id FROM productos").all();
@@ -555,11 +556,26 @@ async function api(req, env, url) {
     await D.prepare("DELETE FROM movimientos WHERE grupo = ?").bind(mBorrar[1]).run();
     return json({ ok: true });
   }
+  // Apartado → se entrega como venta o como consigna (mismo grupo, cambia el tipo).
+  const mEnt = /^\/movimientos\/(g-[\w-]+)\/entregar$/.exec(ruta);
+  if (mEnt && metodo === "POST") {
+    const como = body.como === "consigna" ? "consigna" : "venta";
+    const fecha = esFecha(body.fecha) ? body.fecha : hoyChihuahua();
+    const st = [D.prepare("UPDATE movimientos SET tipo = ?, fecha = ? WHERE grupo = ? AND tipo = 'apartado'").bind(como, fecha, mEnt[1])];
+    if (body.precio !== undefined) {
+      const precio = Number(body.precio);
+      if (!Number.isFinite(precio) || precio < 0 || precio > 100000) return error("Revisa el precio.");
+      st.push(D.prepare("UPDATE movimientos SET precio = ? WHERE grupo = ?").bind(precio, mEnt[1]));
+    }
+    if (como === "consigna") st.push(D.prepare("INSERT OR IGNORE INTO remisiones (grupo, telefono, creado) VALUES (?, '', ?)").bind(mEnt[1], Date.now()));
+    await D.batch(st);
+    return json({ ok: true, grupo: mEnt[1] });
+  }
   const mPrecio = /^\/movimientos\/(g-[\w-]+)$/.exec(ruta);
   if (mPrecio && metodo === "PUT") {
     const precio = Number(body.precio);
     if (!Number.isFinite(precio) || precio < 0 || precio > 100000) return error("Revisa el precio.");
-    await D.prepare("UPDATE movimientos SET precio = ? WHERE grupo = ? AND tipo IN ('venta','entrada','consigna')").bind(precio, mPrecio[1]).run();
+    await D.prepare("UPDATE movimientos SET precio = ? WHERE grupo = ? AND tipo IN ('venta','entrada','consigna','apartado')").bind(precio, mPrecio[1]).run();
     return json({ ok: true });
   }
   if (ruta === "/gastos" && metodo === "POST") {

@@ -263,10 +263,11 @@
     D.movimientos.forEach(function (m) { if (m.tipo === "venta") cobrado += m.cantidad * m.precio; });
     (D.gastos || []).forEach(function (g) { if (g.pago === "caja") deCaja += g.monto; else debe[g.pago] = (debe[g.pago] || 0) + g.monto; });
     var pc = 0, pcB = 0, pcT = consignas(); pcT.forEach(function (c) { pcB += c.bolsas; pc += c.bolsas * c.precio; });
+    var apB = 0, apV = 0; D.movimientos.forEach(function (m) { if (m.tipo === "apartado") { apB += m.cantidad; apV += m.cantidad * m.precio; } });
     var deudas = Object.keys(debe);
     var cajaH = '<div class="kpis" style="margin-bottom:16px">' +
       '<div class="kpi verde"><span>En caja (en teoría)</span><strong>' + pesos(cobrado - deCaja) + "</strong><small>cobrado " + pesos(cobrado) + " − gastos de caja " + pesos(deCaja) + "</small></div>" +
-      '<div class="kpi"><span>Por cobrar</span><strong>' + pesos(pc) + "</strong><small>" + (pcB ? num(pcB) + " bolsas a consigna en " + pcT.length + (pcT.length === 1 ? " tienda" : " tiendas") : "nada pendiente") + "</small></div>" +
+      '<div class="kpi"><span>Por cobrar</span><strong>' + pesos(pc + apV) + "</strong><small>" + (pcB ? num(pcB) + " bolsas a consigna en " + pcT.length + (pcT.length === 1 ? " tienda" : " tiendas") : "nada a consigna") + (apB ? " · " + num(apB) + " apartadas" : "") + "</small></div>" +
       (deudas.length ? '<div class="kpi" style="grid-column:1/-1"><span>Se le debe por gastos que pagó de su bolsa</span><small style="font-size:15px">' + deudas.map(function (k) { return esc(nombrePersona(k)) + ": <b>" + pesos(debe[k]) + "</b>"; }).join(" · ") + "</small></div>" : "") +
       "</div>";
     h = h.replace('<div class="chips" role="group" aria-label="Periodo"', cajaH + '<div class="chips" role="group" aria-label="Periodo"');
@@ -385,10 +386,10 @@
   function vVender(v) {
     if (!form) form = nuevoForm(vista === "entrada" ? "entrada" : "venta");
     var st = stock(), f = form, esEntrada = f.tipo === "entrada";
-    var titulos = { venta: "Registrar venta", consigna: "Dejar a consigna", entrada: "Llegó mercancía", tomada: "Bolsas que se tomaron", merma: "Merma (rotas o caducadas)" };
+    var titulos = { venta: "Registrar venta", consigna: "Dejar a consigna", apartado: "Apartar bolsas", entrada: "Llegó mercancía", tomada: "Bolsas que se tomaron", merma: "Merma (rotas o caducadas)" };
     var h = "<h2>" + titulos[f.tipo] + "</h2>";
     if (!esEntrada) {
-      h += '<div class="chips" role="group" aria-label="Tipo" style="margin-bottom:14px">' + [["venta", "Venta"], ["consigna", "Consigna"], ["tomada", "Me llevé / regalo"], ["merma", "Merma"]].map(function (t) {
+      h += '<div class="chips" role="group" aria-label="Tipo" style="margin-bottom:14px">' + [["venta", "Venta"], ["apartado", "Apartar"], ["consigna", "Consigna"], ["tomada", "Me llevé / regalo"], ["merma", "Merma"]].map(function (t) {
         return '<button class="chip" data-t="' + t[0] + '" aria-pressed="' + (f.tipo === t[0]) + '">' + t[1] + "</button>";
       }).join("") + "</div>";
     } else {
@@ -404,20 +405,21 @@
     }).join("") + "</div>";
 
     h += '<div class="caja" style="margin-top:14px">';
-    if (f.tipo === "venta" || f.tipo === "consigna") {
-      var esCons = f.tipo === "consigna";
+    if (f.tipo === "venta" || f.tipo === "consigna" || f.tipo === "apartado") {
+      var esCons = f.tipo === "consigna", esAp = f.tipo === "apartado";
+      if (esAp) h += '<p class="vacio" style="margin:0 0 10px">Las bolsas quedan separadas para esa persona: ya no cuentan como disponibles, pero todavía no son venta. Cuando las entregues, en Inventario → Apartados tocas "Entregar".</p>';
       if (esCons) h += '<p class="vacio" style="margin:0 0 10px">Las bolsas salen de tu inventario pero no cuentan como vendidas. Cuando pases a cobrar, en Inventario → En consigna marcas cuántas se vendieron.</p>';
-      h += "<h3>" + (esCons ? "Precio acordado por bolsa" : "¿A cuánto la vendiste?") + "</h3><div class=\"chips\" style=\"margin-bottom:10px\">" + D.ajustes.precios.map(function (p) {
+      h += "<h3>" + (esCons || esAp ? "Precio acordado por bolsa" : "¿A cuánto la vendiste?") + "</h3><div class=\"chips\" style=\"margin-bottom:10px\">" + D.ajustes.precios.map(function (p) {
         return '<button class="chip" type="button" data-precio="' + Number(p.valor) + '" aria-pressed="' + (Number(p.valor) === Number(f.precio)) + '">' + (Number(p.valor) % 1 ? "$" + Number(p.valor).toFixed(2) : pesos(p.valor)) + " · " + esc(p.nombre) + "</button>";
       }).join("") + "</div>" +
         '<div class="rejilla2"><label>Precio por bolsa<input id="fprecio" inputmode="decimal" value="' + (f.precio || "") + '"></label>' +
-        '<label>Total cobrado<input id="ftotal" inputmode="decimal" value="' + (totalBolsas() && f.precio ? redondo(totalBolsas() * f.precio) : "") + '" placeholder="$0"></label></div>' +
+        '<label>' + (esAp ? "Total" : "Total cobrado") + '<input id="ftotal" inputmode="decimal" value="' + (totalBolsas() && f.precio ? redondo(totalBolsas() * f.precio) : "") + '" placeholder="$0"></label></div>' +
         '<p class="vacio" style="margin-top:6px;font-size:13px">Toca un precio o escribe el tuyo ($35, $45, $47…). Si diste un trato (ej. 3 por $100), pon el total y se calcula solo.</p>';
       var nombres = {}; D.movimientos.forEach(function (m) { if (m.cliente && (!esCons || m.tipo === "consigna")) nombres[m.cliente] = 1; });
       var conocidas = esCons ? Object.keys(nombres) : [];
       if (conocidas.length) h += '<p style="margin:12px 0 6px;font-size:14px;font-weight:600">Tiendas que ya tienes (toca una):</p><div class="chips" id="tiendas">' +
         conocidas.map(function (n) { return '<button type="button" class="chip" data-tienda="' + esc(n) + '" aria-pressed="' + (f.cliente === n) + '">' + esc(n) + "</button>"; }).join("") + "</div>";
-      h += '<div class="rejilla2" style="margin-top:10px"><label>' + (esCons ? (conocidas.length ? "O escribe una nueva" : "Tienda o persona") : "Cliente (opcional)") + '<input id="fcliente" list="lclientes" value="' + esc(f.cliente) + '" placeholder="' + (esCons ? "Ej. Abarrotes Doña Mary" : "Ej. Gym Fuerza") + '"></label>' +
+      h += '<div class="rejilla2" style="margin-top:10px"><label>' + (esAp ? "¿Para quién?" : esCons ? (conocidas.length ? "O escribe una nueva" : "Tienda o persona") : "Cliente (opcional)") + '<input id="fcliente" list="lclientes" value="' + esc(f.cliente) + '" placeholder="' + (esCons ? "Ej. Abarrotes Doña Mary" : "Ej. Gym Fuerza") + '"></label>' +
         '<label>Fecha<input type="date" id="ffecha" value="' + esc(f.fecha) + '" max="' + esc(D.hoy) + '"></label></div>' +
         (esCons ? '<label style="margin-top:10px">WhatsApp de la tienda (opcional, para mandarle el recibo)<input id="ftel" inputmode="tel" value="' + esc(f.telefono || "") + '" placeholder="10 dígitos"></label>' : "") +
         '<datalist id="lclientes">' + Object.keys(nombres).map(function (n) { return '<option value="' + esc(n) + '">'; }).join("") + "</datalist>";
@@ -430,7 +432,7 @@
     h += '<label style="margin-top:10px">Nota (opcional)<input id="fnota" value="' + esc(f.nota) + '" placeholder="' + (f.tipo === "venta" ? "Ej. me pagó por transferencia" : esEntrada ? "Ej. segundo envío de la fábrica" : "Ej. muestras para un café") + '"></label>';
     h += '<p class="error" id="ferr" role="alert" style="margin-top:10px"></p></div>';
     if (esEntrada) h += '<button class="enlace" id="cancelar">Cancelar</button>';
-    h += '<div class="barra"><button class="btn ' + (f.tipo === "venta" ? "verde" : f.tipo === "consigna" ? "morado" : "") + '" id="guardar"></button></div>';
+    h += '<div class="barra"><button class="btn ' + (f.tipo === "venta" ? "verde" : f.tipo === "consigna" || f.tipo === "apartado" ? "morado" : "") + '" id="guardar"></button></div>';
     v.innerHTML = h;
     v.querySelectorAll("[data-tienda]").forEach(function (b) {
       b.onclick = function () {
@@ -499,8 +501,8 @@
   function resumenBoton() {
     var b = document.getElementById("guardar"); if (!b) return;
     var n = totalBolsas();
-    var etiqueta = { venta: "Guardar venta", consigna: "Dejar a consigna", entrada: "Guardar entrada", tomada: "Guardar", merma: "Guardar merma" }[form.tipo];
-    b.textContent = n ? etiqueta + " · " + n + (n === 1 ? " bolsa" : " bolsas") + (form.tipo === "venta" || form.tipo === "consigna" ? " · " + pesos(n * form.precio) : "") : "Elige las bolsas";
+    var etiqueta = { venta: "Guardar venta", apartado: "Apartar", consigna: "Dejar a consigna", entrada: "Guardar entrada", tomada: "Guardar", merma: "Guardar merma" }[form.tipo];
+    b.textContent = n ? etiqueta + " · " + n + (n === 1 ? " bolsa" : " bolsas") + (form.tipo === "venta" || form.tipo === "consigna" || form.tipo === "apartado" ? " · " + pesos(n * form.precio) : "") : "Elige las bolsas";
     b.disabled = !n || form.enviando;
   }
   function enviar(forzar) {
@@ -519,10 +521,10 @@
       }
       if (!r.ok) { err.textContent = r.error || "No se pudo guardar."; return; }
       var tipo = form.tipo;
-      aviso({ venta: "Venta guardada 🙌", consigna: "Consigna guardada", entrada: "Entrada guardada", tomada: "Guardado", merma: "Merma guardada" }[tipo]);
+      aviso({ venta: "Venta guardada 🙌", apartado: "Apartado guardado", consigna: "Consigna guardada", entrada: "Entrada guardada", tomada: "Guardado", merma: "Merma guardada" }[tipo]);
       return cargar().then(function () {
         if (tipo === "consigna") { rgrupo = r.grupo; vista = "remision"; form = null; pintar(); }
-        else if (tipo === "entrada") { vista = "inventario"; form = null; pintar(); }
+        else if (tipo === "entrada" || tipo === "apartado") { vista = "inventario"; form = null; pintar(); window.scrollTo(0, 0); }
         else { form = nuevoForm(tipo); pintar(); }
       });
     });
@@ -551,15 +553,48 @@
       '<div class="kpi"><span>Valor a costo</span><strong>' + pesos(quedan * cp) + "</strong><small>" + pesos(cp) + " por bolsa</small></div>" +
       '<div class="kpi"><span>Si se venden a público</span><strong>' + pesos(quedan * precioPublico()) + "</strong><small>" + pesos(precioPublico()) + " por bolsa</small></div>" +
       '<div class="kpi"><span>Han llegado</span><strong>' + num(t.e) + "</strong><small>bolsas en total</small></div></div>" +
-      vConsignas(cs) +
+      vApartados() + vConsignas(cs) +
       '<div class="fila entre" style="margin-top:20px;align-items:center"><h2 style="margin:0">Por sabor</h2><button class="btn chico verde" id="invimg">Compartir como imagen</button></div><div class="caja" style="margin-top:10px;overflow-x:auto"><table><thead><tr><th>Sabor</th><th class=num>Llegó</th><th class=num>Vend.</th><th class=num title="Tomadas y merma">Otras</th><th class=num title="A consigna en tiendas">Tiendas</th><th class=num title="En bodega">Quedan</th></tr></thead><tbody>' + filas +
       "</tbody><tfoot><tr><td>Total</td><td class=num>" + t.e + "</td><td class=num>" + t.v + "</td><td class=num>" + (t.t + t.m) + "</td><td class=num>" + t.c + "</td><td class=num>" + quedan + "</td></tr></tfoot></table></div>" +
-      '<p class="vacio">Quedan = en tu bodega. Tiendas = dejadas a consigna. Otras = bolsas que se tomaron o se echaron a perder. En rojo: sabores con ' + (D.ajustes.stockBajo || 0) + " bolsas o menos. Para corregir un conteo, registra una merma o una entrada con la diferencia.</p>";
+      '<p class="vacio">Quedan = disponibles en tu bodega (sin contar las apartadas). Tiendas = dejadas a consigna. Otras = bolsas que se tomaron o se echaron a perder. En rojo: sabores con ' + (D.ajustes.stockBajo || 0) + " bolsas o menos. Para corregir un conteo, registra una merma o una entrada con la diferencia.</p>";
     document.getElementById("llego").onclick = function () { ir("entrada"); };
     document.getElementById("invimg").onclick = function () { imagenInventario(inv, t, quedan, cs, this); };
     v.querySelectorAll("[data-cobrar]").forEach(function (b) { b.onclick = function () { lform = null; ltienda = b.getAttribute("data-cobrar"); ir("liquidar"); }; });
     v.querySelectorAll("[data-recibo]").forEach(function (b) { b.onclick = function () { rgrupo = b.getAttribute("data-recibo"); ir("remision"); }; });
     var nc = document.getElementById("nuevacons"); if (nc) nc.onclick = function () { ir("vender"); form.tipo = "consigna"; pintar(); };
+    var na = document.getElementById("nuevoap"); if (na) na.onclick = function () { ir("vender"); form.tipo = "apartado"; pintar(); };
+    v.querySelectorAll("[data-entregar]").forEach(function (b) {
+      b.onclick = function () {
+        var como = b.getAttribute("data-como"); b.disabled = true;
+        api("POST", "/movimientos/" + b.getAttribute("data-entregar") + "/entregar", { como: como, fecha: D.hoy }).then(function (r) {
+          if (!r.ok) { b.disabled = false; aviso(r.error || "No se pudo."); return; }
+          aviso(como === "venta" ? "Entregado y registrado como venta 🙌" : "Entregado a consigna");
+          cargar().then(function () { if (como === "consigna") { rgrupo = r.grupo; vista = "remision"; pintar(); } });
+        });
+      };
+    });
+    v.querySelectorAll("[data-quitarap]").forEach(function (b) {
+      b.onclick = function () {
+        if (!b.classList.contains("seguro")) { b.classList.add("seguro"); b.textContent = "¿Seguro? Toca otra vez"; setTimeout(function () { b.classList.remove("seguro"); b.textContent = "Cancelar"; }, 4000); return; }
+        api("DELETE", "/movimientos/" + b.getAttribute("data-quitarap")).then(function () { aviso("Apartado cancelado; las bolsas regresan a disponibles"); cargar(); });
+      };
+    });
+  }
+  function vApartados() {
+    var gs = grupos(D.movimientos).filter(function (g) { return g.tipo === "apartado"; });
+    var h = '<div class="fila entre" style="margin:20px 0 10px"><h2 style="margin:0">Apartados</h2><button class="btn chico" id="nuevoap">+ Apartar</button></div>';
+    if (!gs.length) return h + '<p class="vacio" style="margin-bottom:16px">No hay bolsas apartadas.</p>';
+    return h + gs.map(function (g) {
+      var n = 0; g.items.forEach(function (m) { n += m.cantidad; });
+      var d = diasDesde(g.fecha);
+      return '<div class="mov"><div class="cab"><span style="font-weight:700;color:var(--tinta);font-size:16px">' + esc(g.cliente || "Sin nombre") + "</span><span>" + (d ? "hace " + d + (d === 1 ? " día" : " días") : "hoy") + "</span></div>" +
+        "<ul>" + g.items.map(function (m) { return "<li>" + m.cantidad + " × " + esc(nombreProd(m.producto_id)) + "</li>"; }).join("") + "</ul>" +
+        (g.nota ? '<div style="font-size:13px;color:var(--suave);margin-bottom:8px">' + esc(g.nota) + "</div>" : "") +
+        '<div class="pie"><span><strong>' + n + (n === 1 ? " bolsa" : " bolsas") + "</strong>" + (g.precio ? " · " + pesos(g.precio) + " c/u · <strong>" + pesos(n * g.precio) + "</strong>" : "") + "</span></div>" +
+        '<div class="fila" style="gap:6px;margin-top:10px;flex-wrap:wrap"><button class="btn chico verde" data-entregar="' + esc(g.grupo) + '" data-como="venta">Entregar como venta</button>' +
+        '<button class="btn chico claro" data-entregar="' + esc(g.grupo) + '" data-como="consigna">Entregar a consigna</button>' +
+        '<button class="btn chico peligro" data-quitarap="' + esc(g.grupo) + '">Cancelar</button></div></div>';
+    }).join("");
   }
   // Imagen del inventario para mandar por WhatsApp (canvas → compartir o descargar).
   function imagenInventario(inv, t, quedan, cs, btn) {
@@ -734,13 +769,13 @@
 
   // ——— historial
   function vHistorial(v) {
-    var tipos = [["todos", "Todo"], ["venta", "Ventas"], ["consigna", "Consigna"], ["entrada", "Entradas"], ["tomada", "Tomadas"], ["merma", "Merma"]];
+    var tipos = [["todos", "Todo"], ["venta", "Ventas"], ["apartado", "Apartados"], ["consigna", "Consigna"], ["entrada", "Entradas"], ["tomada", "Tomadas"], ["merma", "Merma"]];
     var gs = grupos(D.movimientos).filter(function (g) {
       if (filtroHist === "todos") return true;
       if (filtroHist === "consigna") return g.tipo === "consigna" || g.consigna;
       return g.tipo === filtroHist;
     });
-    var nombres = { venta: "Venta", entrada: "Entrada", tomada: "Tomada", merma: "Merma", consigna: "Consigna", devolucion: "Regresó" };
+    var nombres = { venta: "Venta", apartado: "Apartado", entrada: "Entrada", tomada: "Tomada", merma: "Merma", consigna: "Consigna", devolucion: "Regresó" };
     var h = '<div class="fila entre"><h2>Historial</h2><a class="btn chico claro" href="/api/movimientos.csv">Descargar Excel</a></div>' +
       '<div class="chips" style="margin-bottom:14px">' + tipos.map(function (t) {
         return '<button class="chip" data-f="' + t[0] + '" aria-pressed="' + (filtroHist === t[0]) + '">' + t[1] + "</button>";
@@ -751,8 +786,8 @@
         (g.cliente ? '<div style="font-weight:600;margin-top:6px">' + esc(g.cliente) + "</div>" : "") +
         "<ul>" + g.items.map(function (m) { return "<li>" + m.cantidad + " × " + esc(nombreProd(m.producto_id)) + "</li>"; }).join("") + "</ul>" +
         (g.nota ? '<div style="font-size:13px;color:var(--suave);margin-bottom:8px">' + esc(g.nota) + "</div>" : "") +
-        '<div class="pie"><span><strong>' + n + (n === 1 ? " bolsa" : " bolsas") + "</strong>" + (g.tipo === "venta" || g.tipo === "consigna" ? " · " + pesos(g.precio) + " c/u · <strong>" + pesos(n * g.precio) + "</strong>" : g.tipo === "entrada" && g.precio ? " · costo " + pesos(g.precio) : "") + "</span>" +
-        '<span class="fila" style="gap:6px">' + (g.tipo === "venta" || g.tipo === "entrada" || g.tipo === "consigna" ? '<button class="btn chico claro" data-precio-g="' + esc(g.grupo) + '" data-actual="' + g.precio + '" data-t="' + g.tipo + '">' + (g.tipo === "entrada" ? "Cambiar costo" : "Cambiar precio") + "</button>" : "") +
+        '<div class="pie"><span><strong>' + n + (n === 1 ? " bolsa" : " bolsas") + "</strong>" + (g.tipo === "venta" || g.tipo === "consigna" || g.tipo === "apartado" ? " · " + pesos(g.precio) + " c/u · <strong>" + pesos(n * g.precio) + "</strong>" : g.tipo === "entrada" && g.precio ? " · costo " + pesos(g.precio) : "") + "</span>" +
+        '<span class="fila" style="gap:6px">' + (g.tipo === "venta" || g.tipo === "entrada" || g.tipo === "consigna" || g.tipo === "apartado" ? '<button class="btn chico claro" data-precio-g="' + esc(g.grupo) + '" data-actual="' + g.precio + '" data-t="' + g.tipo + '">' + (g.tipo === "entrada" ? "Cambiar costo" : "Cambiar precio") + "</button>" : "") +
         (g.tipo === "consigna" ? '<button class="btn chico claro" data-recibo="' + esc(g.grupo) + '">Recibo</button>' : "") +
         '<button class="btn chico peligro" data-borrar="' + esc(g.grupo) + '">Borrar</button></span></div>' +
         (g.tipo === "consigna" ? '<div style="font-size:13px;margin-top:8px">' + estadoRemision(g.grupo) + "</div>" : "") + "</div>";
