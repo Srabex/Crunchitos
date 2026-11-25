@@ -806,7 +806,9 @@
       '<div class="caja"><div class="rejilla2"><label>Costo por bolsa (para nuevas entradas)<input id="acosto" inputmode="decimal" value="' + esc(a.costo) + '"></label>' +
       '<label>Avisar cuando queden<input id="abajo" inputmode="numeric" value="' + esc(a.stockBajo) + '"></label>' +
       '<label>Pedido mínimo a domicilio (bolsas)<input id="amin" inputmode="numeric" value="' + esc(a.minimo || 10) + '"></label></div>' +
-      '<p class="vacio" style="margin-top:6px">La página muestra el precio más alto de la lista como precio al público, y pide el mínimo de bolsas para llevar a domicilio.</p>' +
+      '<p class="vacio" style="margin-top:6px">La página pide este mínimo de bolsas para pedir a domicilio.</p>' +
+      '<label style="display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:500"><input type="checkbox" id="aagot" style="width:22px;height:22px"' + (a.mostrarAgotados ? " checked" : "") + '> Marcar en la página los sabores agotados</label>' +
+      '<p class="vacio" style="margin-top:4px">Apagado: todos los sabores salen disponibles y tú confirmas por WhatsApp qué hay.</p>' +
       '<label style="margin-top:10px">WhatsApp de la página (10 dígitos)<input id="awa" inputmode="tel" value="' + esc(tel) + '"></label>' +
       '<p class="vacio" style="margin-top:6px">A este número llegan los pedidos de crunchitos.mx.</p></div>' +
       '<button class="btn" id="gaj" style="width:100%;margin-bottom:20px">Guardar ajustes</button><p class="error" id="aerr"></p>';
@@ -842,7 +844,7 @@
       var precios = [].map.call(v.querySelectorAll("#lprecios .fila"), function (f) {
         return { nombre: f.querySelector(".pn").value, valor: parseFloat(f.querySelector(".pv").value) };
       }).filter(function (p) { return p.nombre.trim() && !isNaN(p.valor); }).sort(function (a, b) { return a.valor - b.valor; });
-      api("PUT", "/ajustes", { precios: precios, costo: parseFloat(document.getElementById("acosto").value), stockBajo: parseInt(document.getElementById("abajo").value, 10), minimo: parseInt(document.getElementById("amin").value, 10), whatsapp: document.getElementById("awa").value }).then(function (r) {
+      api("PUT", "/ajustes", { precios: precios, costo: parseFloat(document.getElementById("acosto").value), stockBajo: parseInt(document.getElementById("abajo").value, 10), minimo: parseInt(document.getElementById("amin").value, 10), mostrarAgotados: document.getElementById("aagot").checked, whatsapp: document.getElementById("awa").value }).then(function (r) {
         if (!r.ok) { document.getElementById("aerr").textContent = r.error || "No se pudo guardar."; return; }
         aviso("Ajustes guardados"); cargar();
       });

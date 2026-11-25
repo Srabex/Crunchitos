@@ -433,6 +433,7 @@ async function guardarAjustes(D, body) {
     if (!p.length) return error("Deja al menos un precio.");
     nuevo.precios = p;
   }
+  if (body.mostrarAgotados !== undefined) nuevo.mostrarAgotados = !!body.mostrarAgotados;
   if (body.whatsapp !== undefined) {
     let w = String(body.whatsapp).replace(/\D/g, "");
     if (w.length === 10) w = "52" + w;
@@ -485,7 +486,7 @@ async function api(req, env, url) {
       D.prepare(`SELECT nombre, direccion, mapa, CASE WHEN foto LIKE '/%' THEN foto WHEN foto <> '' THEN '/api/punto-foto/' || id || '?v=' || length(foto) ELSE '' END AS foto
         FROM puntos ORDER BY creado`).all()]);
     const precio = Math.max(0, ...aj.precios.map((p) => Number(p.valor) || 0));
-    return json({ whatsapp: aj.whatsapp, precio, minimo: aj.minimo || 10, agotados: Object.keys(stock).filter((k) => stock[k] <= 0), puntos: pts.results }, 200, {
+    return json({ whatsapp: aj.whatsapp, precio, minimo: aj.minimo || 10, agotados: aj.mostrarAgotados ? Object.keys(stock).filter((k) => stock[k] <= 0) : [], puntos: pts.results }, 200, {
       "cache-control": "public, max-age=60",
     });
   }
