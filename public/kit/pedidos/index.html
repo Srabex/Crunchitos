@@ -21,7 +21,8 @@
 [hidden]{display:none!important}
 body{margin:0;font-family:Poppins,system-ui,sans-serif;color:var(--tinta);background:var(--crema);-webkit-font-smoothing:antialiased;padding-bottom:110px}
 .env{max-width:640px;margin:0 auto;padding:0 16px}
-header{background:var(--amarillo);text-align:center;padding:18px 0 22px}
+header{background:var(--amarillo);text-align:center;padding:18px 0 22px;position:relative}
+.volver{position:absolute;left:14px;top:14px;display:inline-flex;align-items:center;gap:4px;background:var(--crema);color:var(--tinta);text-decoration:none;font-weight:700;font-size:14px;border-radius:999px;padding:8px 14px;box-shadow:0 2px 0 var(--sombra)}
 header img{width:200px;margin:0 auto;display:block;height:auto}
 header h1{font-family:"Gochi Hand",cursive;font-weight:400;font-size:40px;line-height:1;color:var(--crema);text-shadow:2px 3px 0 var(--sombra);margin:10px 0 4px}
 header p{margin:0;font-size:14px}
@@ -74,6 +75,7 @@ input:focus{outline:none;border-color:var(--amarillo)}
 </head>
 <body>
 <header>
+  <a class="volver" href="/kit/">‹ Mi kit</a>
   <div class="env">
     <img src="/img/logo.svg" alt="Crunchitos" width="857" height="280">
     <h1>Mis pedidos</h1>
@@ -119,6 +121,7 @@ input:focus{outline:none;border-color:var(--amarillo)}
 </main>
 
 <div class="barra"><div class="env">
+  <a class="btn claro" href="/kit/" style="flex:0 0 auto">Mi kit</a>
   <a class="btn wa" id="enviar" href="#">Mandar por WhatsApp</a>
 </div></div>
 

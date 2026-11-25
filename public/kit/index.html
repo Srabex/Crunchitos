@@ -23,6 +23,9 @@ header img{width:min(320px,70%);margin:0 auto}
 header .d{font-weight:700;letter-spacing:.2em;font-size:13px;margin-top:6px}
 header h1{font-family:"Gochi Hand",cursive;font-weight:400;font-size:clamp(36px,8vw,52px);line-height:1;color:var(--crema);text-shadow:3px 3px 0 var(--sombra);margin:18px 0 8px}
 header p{margin:0 auto;max-width:520px;font-size:16px;line-height:1.5}
+.acciones{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:18px}
+.btn.grande{min-height:54px;font-size:17px;padding:0 24px}
+.btn svg{width:22px;height:22px}
 section{padding:30px 0 6px}
 h2{font-family:"Bubblegum Sans",sans-serif;font-weight:400;font-size:34px;margin:0 0 4px}
 .i{margin:0 0 16px;font-size:15.5px;line-height:1.5;opacity:.85}
@@ -53,16 +56,16 @@ footer .btn{margin-bottom:14px}
     <img src="/img/logo.svg" alt="Crunchitos" width="857" height="280">
     <div class="d">SNACKS DESHIDRATADOS</div>
     <h1>Kit para distribuidores</h1>
-    <p>Todo lo que necesitas para vender Crunchitos: estados, fotos, textos listos y tu cartel para el mostrador. Descarga lo que quieras y úsalo cuantas veces quieras.</p>
+    <p>Tu herramienta para vender Crunchitos: anota tus pedidos, descarga estados, catálogo, fotos y tu cartel.</p>
+    <div class="acciones">
+      <a class="btn grande" href="/kit/pedidos/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6M9 4a2 2 0 0 0-2 2H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1a2 2 0 0 0-2-2M9 12h6M9 16h4"/></svg>Arma tu pedido</a>
+      <a class="btn claro grande" href="#material">Material para vender</a>
+    </div>
   </div>
 </header>
 
 <main class="env">
-<section>
-  <div class="tarjeta" style="background:var(--tinta);color:var(--crema)"><div><h3 style="color:var(--amarillo)">Anota tus pedidos</h3><p style="opacity:.9">Apunta lo que te pide cada cliente desde tu celular, ve cuántas bolsas llevas de cada sabor y mándanos todo por WhatsApp con un botón.</p><div class="bs"><a class="btn wa" href="/kit/pedidos/">Abrir mis pedidos</a></div></div></div>
-</section>
-
-<section>
+<section id="material">
   <h2>Estados para WhatsApp</h2>
   <p class="i">Descárgalos y súbelos a tus estados o historias. No traen precio: pon el tuyo en el texto.</p>
   <div class="estados">
