@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Catálogo Crunchitos</title>
+<!-- Catálogo de los 12 sabores, carta 816x1056, sin precio (sirve para cualquier vendedor). Exportar como imagen a escala 3 → PDF. -->
+<style>
+@font-face{font-family:"Bubblegum Sans";src:url(../public/fonts/BubblegumSans.woff) format("woff")}
+@font-face{font-family:"Gochi Hand";src:url(../public/fonts/GochiHand.woff) format("woff")}
+@font-face{font-family:"Poppins";src:url(../public/fonts/Poppins-Regular.woff) format("woff");font-weight:400}
+@font-face{font-family:"Poppins";src:url(../public/fonts/Poppins-Medium.woff) format("woff");font-weight:500}
+@font-face{font-family:"Poppins";src:url(../public/fonts/Poppins-Bold.woff) format("woff");font-weight:700}
+*{box-sizing:border-box;margin:0}
+html,body{width:816px;height:1056px;overflow:hidden}
+body{font-family:Poppins,sans-serif;color:#3B2216;background:#FFF6E6}
+.top{height:168px;background:#ECBE48 repeating-conic-gradient(from 0deg at 50% 0%,rgba(255,246,230,.18) 0deg 7deg,rgba(255,246,230,0) 7deg 14deg);display:flex;align-items:center;justify-content:space-between;padding:0 36px;position:relative}
+.logo{width:250px;filter:drop-shadow(0 4px 0 #9A6A25)}
+.tt{text-align:right}
+.tt .h{font-family:"Gochi Hand";font-size:46px;line-height:1;color:#FFF6E6;text-shadow:0 3px 0 #9A6A25,2px 3px 0 #9A6A25,-2px 3px 0 #9A6A25}
+.tt .d{font-weight:700;font-size:13px;letter-spacing:3px;margin-top:8px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:18px 26px 0}
+.s{background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 3px 0 #E6D3AE;display:flex;flex-direction:column}
+.s img{width:100%;height:150px;object-fit:cover;object-position:center 40%}
+.s .tx{padding:8px 10px 10px;border-top:5px solid var(--c)}
+.s .b{font-weight:700;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--c)}
+.s .n{font-family:"Gochi Hand";font-size:22px;line-height:1.02}
+.s p{font-size:11px;line-height:1.35;margin-top:4px;opacity:.85}
+.pie{position:absolute;left:26px;right:26px;bottom:22px;background:#3B2216;color:#FFF6E6;border-radius:20px;padding:14px 22px;display:flex;align-items:center;justify-content:space-between}
+.pie .q{font-family:"Gochi Hand";font-size:28px;line-height:1.05;color:#ECBE48}
+.pie .r{text-align:right;font-size:13px;line-height:1.5}
+.pie .r b{font-size:15px;letter-spacing:2px}
+.linea{display:inline-block;width:220px;border-bottom:2px solid #FFF6E6;margin-left:6px;transform:translateY(-4px)}
+</style>
+</head>
+<body>
+<div class="top">
+  <img class="logo" src="../public/img/logo.svg" alt="Crunchitos">
+  <div class="tt"><div class="h">Nuestros 12 sabores</div><div class="d">SNACKS DESHIDRATADOS · CRUJIENTES DE VERDAD</div></div>
+</div>
+<div class="grid" id="g"></div>
+<div class="pie">
+  <div class="q">¿Cuál se te antoja?</div>
+  <div class="r">Pídelos con:<span class="linea"></span><br><b>CRUNCHITOS.MX</b> · @mxcrunchitos</div>
+</div>
+<script>
+var S = [
+  ["jicama-limon", "Jícama", "Limón y sal", "#5E9A2A", "Fresca y crujiente, con el clásico limón y sal."],
+  ["jicama-chile", "Jícama", "Con chile", "#D33A2A", "Con chile en polvo, para enchilarse tantito."],
+  ["jicama-rancherito", "Jícama", "Rancherito", "#D9572A", "Sazón rancherito: saladita y con un toque picosito."],
+  ["jicama-esquite", "Jícama", "Esquite", "#C99A12", "Sabor a esquite, con limón y chilito."],
+  ["jicama-habanero", "Jícama", "Habanero y miel", "#E07B10", "Dulce y picosa: miel con un toque de habanero."],
+  ["pepino-limon", "Pepino", "Limón y sal", "#5E9A2A", "Ácido, saladito y muy crujiente."],
+  ["pepino-adobado", "Pepino", "Adobado", "#8C2C20", "Con adobo rojo, sabroso y picosito."],
+  ["camote-limon", "Camote", "Limón y sal", "#5E9A2A", "Lo dulce del camote con limón y sal."],
+  ["camote-adobado", "Camote", "Adobado", "#8C2C20", "Dulce, salado y picosito a la vez."],
+  ["platano-natural", "Plátano", "Natural", "#2F7D5B", "Plátano solito: dulce y crujiente."],
+  ["platano-sal", "Plátano", "Con sal", "#7A5A3A", "Crujiente y saladito."],
+  ["platano-canela", "Plátano", "Azúcar y canela", "#A8703F", "Dulce con canela, para el antojo de algo dulce."]
+];
+document.getElementById("g").innerHTML = S.map(function (s) {
+  return '<div class="s" style="--c:' + s[3] + '"><img src="../public/img/bolsas/' + s[0] + '.webp" alt=""><div class="tx"><div class="b">' + s[1] + '</div><div class="n">' + s[2] + "</div><p>" + s[4] + "</p></div></div>";
+}).join("");
+</script>
+</body>
+</html>
