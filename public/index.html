@@ -189,7 +189,7 @@ body.con-barra{padding-bottom:96px}
   <div class="envoltura">
     <h2>Escoge tu sabor</h2>
     <p class="intro">Cuatro bases y doce sabores. El color de la etiqueta te dice cuál es: verde limón, rojo chile, naranja habanero… Arma tu surtido con los botones <b>+</b> y te lo llevamos.</p>
-    <div class="aviso-min"><svg viewBox="0 0 24 24" fill="none" stroke="#3B2216" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8" fill="#ECBE48"/><circle cx="17" cy="17.5" r="1.8" fill="#ECBE48"/></svg><span><b>¿No hay tienda cerca? Te los llevamos</b> a partir de <b><span data-minimo>10</span> bolsas surtidas</b>. Arma tu combinación y te mandamos el precio por WhatsApp. ¿Quieres menos? Búscalos en una de nuestras <a href="#donde">tiendas</a>.</span></div>
+    <div class="aviso-min"><svg viewBox="0 0 24 24" fill="none" stroke="#3B2216" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8" fill="#ECBE48"/><circle cx="17" cy="17.5" r="1.8" fill="#ECBE48"/></svg><span><b>¿No hay tienda cerca? Te los llevamos</b> a partir de <b><span data-minimo>10</span> bolsas surtidas</b>. Arma tu combinación y te mandamos por WhatsApp el precio y el costo del envío según tu colonia. ¿Quieres menos, o prefieres no pagar envío? Búscalos en una de nuestras <a href="#donde">tiendas</a>.</span></div>
     <div class="filtros" role="group" aria-label="Filtrar sabores">
       <button class="filtro" data-base="todos" aria-pressed="true">Todos</button>
       <button class="filtro" data-base="jicama" aria-pressed="false">Jícama</button>
@@ -336,7 +336,7 @@ body.con-barra{padding-bottom:96px}
     document.getElementById("b-prog").style.width = Math.min(100, n / MINIMO * 100) + "%";
     enviar.setAttribute("aria-disabled", String(falta > 0));
     enviar.href = falta > 0 ? "#" : liga("Hola, vengo de crunchitos.mx 🙌 Quiero este pedido a domicilio:\n" + lineas.join("\n") +
-      "\n\nTotal: " + n + " bolsas. ¿Me pasas el precio con entrega?\nMi colonia es: ");
+      "\n\nTotal: " + n + " bolsas. ¿Me pasas el precio y el costo del envío?\nMi colonia es: ");
   }
   rejilla.addEventListener("click", function (e) {
     var b = e.target.closest("[data-mas],[data-menos]");
