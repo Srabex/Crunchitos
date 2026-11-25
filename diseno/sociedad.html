@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Crunchitos — Propuesta de sociedad</title>
+<!-- Documento INTERNO (Sebas, Pao, Víctor). 3 hojas carta 816x1056; exportar cada .hoja como imagen a escala 3 → PDF. -->
+<style>
+@font-face{font-family:"Bubblegum Sans";src:url(../public/fonts/BubblegumSans.woff) format("woff")}
+@font-face{font-family:"Gochi Hand";src:url(../public/fonts/GochiHand.woff) format("woff")}
+@font-face{font-family:"Poppins";src:url(../public/fonts/Poppins-Regular.woff) format("woff");font-weight:400}
+@font-face{font-family:"Poppins";src:url(../public/fonts/Poppins-Medium.woff) format("woff");font-weight:500}
+@font-face{font-family:"Poppins";src:url(../public/fonts/Poppins-Bold.woff) format("woff");font-weight:700}
+*{box-sizing:border-box;margin:0}
+body{background:#888;font-family:Poppins,sans-serif;color:#3B2216}
+.hoja{width:816px;height:1056px;background:#FFF6E6;position:relative;overflow:hidden;margin:0 auto 20px;padding:0 0 60px}
+.cab{background:#ECBE48;height:76px;display:flex;align-items:center;justify-content:space-between;padding:0 44px}
+.cab img{height:44px}
+.cab span{font-weight:700;font-size:11px;letter-spacing:2.5px}
+.cuerpo{padding:20px 48px 0}
+h1{font-family:"Bubblegum Sans";font-weight:400;font-size:46px;line-height:1}
+h2{font-family:"Bubblegum Sans";font-weight:400;font-size:27px;line-height:1.05;margin:14px 0 7px;display:flex;align-items:center;gap:10px}
+h2 .n{background:#3B2216;color:#ECBE48;width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:19px;flex:none}
+p,li{font-size:13.5px;line-height:1.45}
+td:first-child{white-space:nowrap}
+.sub{font-size:15px;margin-top:8px;max-width:640px}
+.chip{display:inline-block;background:#3B2216;color:#FFF6E6;font-weight:700;font-size:10.5px;letter-spacing:2px;border-radius:999px;padding:5px 12px;margin-bottom:12px}
+.caja{background:#fff;border-radius:18px;padding:14px 18px;box-shadow:0 2px 0 #E6D3AE}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.caja h3{font-size:14px;font-weight:700;margin-bottom:4px}
+.caja ul{padding-left:18px}
+.tres{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px}
+.idea{background:#fff;border-radius:18px;padding:14px;border-top:6px solid var(--c)}
+.idea b{display:block;font-size:14px;margin-bottom:4px}
+.idea p{font-size:12.5px}
+table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 0 #E6D3AE;font-size:12.5px}
+th{background:#3B2216;color:#FFF6E6;font-weight:700;text-align:left;padding:8px 10px;font-size:11.5px}
+td{padding:5px 10px;border-top:1px solid #F1E4CB}
+td.m,th.m{text-align:right;white-space:nowrap}
+tr.tot td{font-weight:700;background:#FDF1D3}
+.verde{color:#1F7A44;font-weight:700}
+.nota{font-size:12px;opacity:.8;margin-top:6px}
+.flujo{display:flex;flex-direction:column;gap:6px}
+.paso{display:flex;align-items:center;gap:12px;background:#fff;border-radius:14px;padding:8px 14px;box-shadow:0 2px 0 #E6D3AE}
+.paso .k{font-family:"Bubblegum Sans";font-size:22px;width:28px;text-align:center;color:#9A6A25}
+.paso p{font-size:13px}
+.flecha{text-align:center;font-size:14px;line-height:1;opacity:.5}
+.check li{list-style:none;padding-left:26px;position:relative;margin:3px 0}
+.check li::before{content:"";position:absolute;left:0;top:3px;width:15px;height:15px;border:2px solid #3B2216;border-radius:4px}
+.firmas{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:30px}
+.firmas div{border-top:2px solid #3B2216;padding-top:6px;text-align:center;font-weight:700;font-size:13px}
+.pie{position:absolute;left:48px;right:48px;bottom:22px;display:flex;justify-content:space-between;font-size:10.5px;opacity:.7}
+.ejemplo{background:#3B2216;color:#FFF6E6;border-radius:18px;padding:14px 18px}
+.ejemplo b{color:#ECBE48}
+</style>
+</head>
+<body>
+
+<!-- HOJA 1 -->
+<section class="hoja">
+  <div class="cab"><img src="../public/img/logo.svg" alt="Crunchitos"><span>DOCUMENTO INTERNO · SOCIOS</span></div>
+  <div class="cuerpo">
+    <div class="chip">BORRADOR PARA PLATICAR · NOV 2026</div>
+    <h1>Propuesta de sociedad</h1>
+    <p class="sub">Cómo nos repartimos el trabajo, el dinero y las decisiones de Crunchitos entre <b>Paola, Víctor y Sebas</b>. La idea es tenerlo claro desde el principio y por escrito; sobre esta base hacemos los cambios que acordemos.</p>
+
+    <h2>La idea en tres partes</h2>
+    <div class="tres">
+      <div class="idea" style="--c:#5E9A2A"><b>1. La inversión regresa</b><p>El costo de cada bolsa vendida regresa al fondo de quien puso el dinero. La inversión no se pierde ni se reparte.</p></div>
+      <div class="idea" style="--c:#E07B10"><b>2. El trabajo se paga</b><p>El que vende y entrega gana como distribuidor. Así cada quien cubre su gasolina y su tiempo.</p></div>
+      <div class="idea" style="--c:#D33A2A"><b>3. La ganancia, en tercios</b><p>Lo que gana la sociedad, menos los gastos comunes, se reparte en partes iguales.</p></div>
+    </div>
+
+    <h2><span class="n">1</span>Qué pone cada quien</h2>
+    <div class="dos">
+      <div class="caja"><h3>Paola y Víctor</h3><ul>
+        <li>Inversión en mercancía.</li>
+        <li>Pedido a la fábrica y envío GDL–Chihuahua.</li>
+        <li>Etiquetas (las bolsas llegarán etiquetadas).</li>
+        <li>Ventas y entregas cuando les toque.</li>
+      </ul></div>
+      <div class="caja"><h3>Sebas</h3><ul>
+        <li>Página crunchitos.mx, panel e inventario.</li>
+        <li>Marca, diseño y kit de distribuidores.</li>
+        <li>Estrategia y atención a distribuidores.</li>
+        <li>Ventas, entregas y etiquetado.</li>
+      </ul></div>
+    </div>
+    <p class="nota">Por eso la ganancia va en tercios: unos aportan capital y logística, el otro plataforma, marca y ventas. Lo que cuesta mantener la página (dominio, servicios) es gasto común.</p>
+
+    <h2><span class="n">2</span>Los precios que usamos</h2>
+    <table>
+      <tr><th>Precio</th><th class="m">Por bolsa</th><th>Para quién</th></tr>
+      <tr><td>Costo</td><td class="m">$30</td><td>Lo que nos cuesta la bolsa (se ajusta al costo real)</td></tr>
+      <tr><td>Paquete Mayorista</td><td class="m">$38.46</td><td>130 bolsas por $5,000</td></tr>
+      <tr><td>Paquete Emprendedor</td><td class="m">$40</td><td>75 bolsas por $3,000 · precio interno entre socios</td></tr>
+      <tr><td>Paquete Inicial</td><td class="m">$41.67</td><td>36 bolsas por $1,500</td></tr>
+      <tr><td>Tienda</td><td class="m">$45</td><td>Tienditas, de contado o a consigna (ellas venden a $55)</td></tr>
+      <tr><td>Público sugerido</td><td class="m">$55</td><td>Venta directa y a domicilio (mínimo 10 bolsas)</td></tr>
+    </table>
+  </div>
+  <div class="pie"><span>Crunchitos · Propuesta de sociedad · Borrador</span><span>1 / 3</span></div>
+</section>
+
+<!-- HOJA 2 -->
+<section class="hoja">
+  <div class="cab"><img src="../public/img/logo.svg" alt="Crunchitos"><span>DOCUMENTO INTERNO · SOCIOS</span></div>
+  <div class="cuerpo">
+    <h2 style="margin-top:0"><span class="n">3</span>A dónde va el dinero de cada bolsa</h2>
+    <table>
+      <tr><th>Cómo se vendió</th><th class="m">Precio</th><th class="m">Al fondo (costo)</th><th class="m">A quien la llevó</th><th class="m">A la sociedad</th></tr>
+      <tr><td>Cliente propio, entrega directa</td><td class="m">$55</td><td class="m">$30</td><td class="m verde">$15</td><td class="m">$10</td></tr>
+      <tr><td>Cliente que llegó por la página o redes</td><td class="m">$55</td><td class="m">$30</td><td class="m verde">$10</td><td class="m">$15</td></tr>
+      <tr><td>Tienda (quien la surte y le cobra)</td><td class="m">$45</td><td class="m">$30</td><td class="m verde">$5</td><td class="m">$10</td></tr>
+      <tr><td>Paquete Emprendedor a distribuidor</td><td class="m">$40</td><td class="m">$30</td><td class="m">—</td><td class="m">$10</td></tr>
+      <tr><td>Paquete Mayorista a distribuidor</td><td class="m">$38.46</td><td class="m">$30</td><td class="m">—</td><td class="m">$8.46</td></tr>
+    </table>
+    <p class="nota"><b>Cliente propio:</b> lo conseguiste tú (tu contacto, tu red). <b>Cliente de la marca:</b> llegó por crunchitos.mx, el WhatsApp de la página o las redes de Crunchitos. Lo que recibe quien la llevó cubre su gasolina y su tiempo; no se cobra aparte.</p>
+
+    <div class="ejemplo" style="margin-top:12px"><p><b>Ejemplo: me piden 10 bolsas por la página y yo las llevo.</b><br>Se cobran $550 → <b>$300</b> regresan al fondo · <b>$100</b> para mí por la entrega · <b>$150</b> para la sociedad.<br>Si el cliente es mío: <b>$300</b> al fondo · <b>$150</b> para mí · <b>$100</b> para la sociedad.</p></div>
+
+    <h2><span class="n">4</span>El orden del dinero cada mes</h2>
+    <div class="flujo">
+      <div class="paso"><span class="k">1</span><p><b>Ventas del mes</b>: todo lo que se cobró, registrado en el panel.</p></div>
+      <div class="flecha">▼</div>
+      <div class="paso"><span class="k">2</span><p><b>Costo de las bolsas vendidas</b> regresa al fondo de inversión (Paola y Víctor). Con eso se paga el siguiente pedido.</p></div>
+      <div class="flecha">▼</div>
+      <div class="paso"><span class="k">3</span><p><b>Comisiones</b> a quien vendió y entregó, según la tabla de arriba.</p></div>
+      <div class="flecha">▼</div>
+      <div class="paso"><span class="k">4</span><p><b>Gastos comunes</b>: etiquetas, envío de la fábrica, publicidad, dominio, empaque.</p></div>
+      <div class="flecha">▼</div>
+      <div class="paso"><span class="k">5</span><p><b>Fondo de crecimiento</b> (propuesta 40% de lo que queda): pedidos más grandes, nuevos sabores, publicidad.</p></div>
+      <div class="flecha">▼</div>
+      <div class="paso" style="background:#ECBE48"><span class="k" style="color:#3B2216">6</span><p><b>El resto se reparte en tercios</b>: Paola, Víctor y Sebas.</p></div>
+    </div>
+    <p class="nota">El fondo de inversión es de quien lo puso: se usa para resurtir y, si deciden retirarlo, se les devuelve.</p>
+  </div>
+  <div class="pie"><span>Crunchitos · Propuesta de sociedad · Borrador</span><span>2 / 3</span></div>
+</section>
+
+<!-- HOJA 3 -->
+<section class="hoja">
+  <div class="cab"><img src="../public/img/logo.svg" alt="Crunchitos"><span>DOCUMENTO INTERNO · SOCIOS</span></div>
+  <div class="cuerpo">
+    <h2 style="margin-top:0"><span class="n">5</span>Ejemplo de un mes con 300 bolsas</h2>
+    <table>
+      <tr><th>Cómo se vendió</th><th class="m">Bolsas</th><th class="m">Se cobró</th><th class="m">Al fondo</th><th class="m">Comisiones</th><th class="m">Sociedad</th></tr>
+      <tr><td>Clientes propios a $55</td><td class="m">90</td><td class="m">$4,950</td><td class="m">$2,700</td><td class="m">$1,350</td><td class="m">$900</td></tr>
+      <tr><td>Clientes de la página a $55</td><td class="m">60</td><td class="m">$3,300</td><td class="m">$1,800</td><td class="m">$600</td><td class="m">$900</td></tr>
+      <tr><td>Paquetes Emprendedor a $40</td><td class="m">120</td><td class="m">$4,800</td><td class="m">$3,600</td><td class="m">—</td><td class="m">$1,200</td></tr>
+      <tr><td>Tiendas a $45</td><td class="m">30</td><td class="m">$1,350</td><td class="m">$900</td><td class="m">$150</td><td class="m">$300</td></tr>
+      <tr class="tot"><td>Total</td><td class="m">300</td><td class="m">$14,400</td><td class="m">$9,000</td><td class="m">$2,100</td><td class="m">$3,300</td></tr>
+    </table>
+    <div class="dos" style="margin-top:12px">
+      <div class="caja"><h3>Lo de la sociedad</h3>
+        <p>Ganancia de la sociedad: <b>$3,300</b><br>− Gastos comunes (etiquetas $500, publicidad $300): <b>$800</b><br>= Ganancia real: <b>$2,500</b><br>− Fondo de crecimiento 40%: <b>$1,000</b><br>= <b>$1,500 a repartir → $500 por socio</b></p></div>
+      <div class="caja"><h3>Lo que recibe cada quien</h3>
+        <p>Cada socio: <b>$500</b> de ganancia <b>+</b> sus comisiones por lo que vendió y entregó.<br>Paola y Víctor además recuperan <b>$9,000</b> en su fondo de inversión, listo para el siguiente pedido.</p></div>
+    </div>
+    <p class="nota">Números de ejemplo; el reparto real sale del panel (Inicio → ganancia real).</p>
+
+    <h2><span class="n">6</span>Reglas del día a día</h2>
+    <div class="caja"><ul>
+      <li><b>Todo va al panel</b>: cada venta con quién la hizo, cada gasto con quién lo pagó. Lo que no está registrado no entra al corte.</li>
+      <li><b>Corte mensual</b> en los primeros 5 días del mes, con los números del panel a la vista de los tres.</li>
+      <li><b>Precios</b>: los cambiamos solo de acuerdo los tres. Nadie vende abajo del precio de la tabla sin avisar.</li>
+      <li><b>Distribuidores y tiendas</b> son de Crunchitos, no de un socio, aunque los haya conseguido uno.</li>
+    </ul></div>
+
+    <h2><span class="n">7</span>Por definir juntos</h2>
+    <ul class="check">
+      <li>¿Aceptamos los tercios? ¿Y las comisiones de $15, $10 y $5?</li>
+      <li>¿Qué porcentaje va al fondo de crecimiento? (propuesta: 40%)</li>
+      <li>¿A nombre de quién se registra la marca Crunchitos?</li>
+      <li>Si alguien se sale: qué se le paga (su fondo, su parte del inventario) y qué pasa con la marca, la página y el sistema.</li>
+      <li>¿Cada cuánto revisamos este acuerdo? (propuesta: cada 3 meses)</li>
+    </ul>
+
+    <div class="firmas"><div>Paola</div><div>Víctor</div><div>Sebas</div></div>
+    <p class="nota" style="margin-top:14px">Documento interno de trabajo, no es un contrato. Si se registra la marca o se formaliza la sociedad, conviene revisarlo con un abogado.</p>
+  </div>
+  <div class="pie"><span>Crunchitos · Propuesta de sociedad · Borrador</span><span>3 / 3</span></div>
+</section>
+
+</body>
+</html>
