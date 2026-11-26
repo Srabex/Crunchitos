@@ -1025,15 +1025,22 @@
     var hecho = false, go = function () { if (hecho) return; hecho = true; (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(listo); };
     logo.onload = go; logo.onerror = go; setTimeout(go, 1500);
   }
-  // En el cel: menú de compartir (WhatsApp) solo con el archivo, sin título ni texto (con título, WhatsApp de la Mac
-  // pegaba la imagen dos veces). En la compu: se descarga y se arrastra al chat.
+  // En el cel: menú de compartir solo con el archivo (sin título). En la compu: se copia la imagen
+  // para pegarla en WhatsApp con ⌘V (no se guarda nada); si el navegador no deja copiar, menú de compartir y, al final, descarga.
   function entregarImagen(b, nombre) {
     var cel = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
     var file = null; try { file = new File([b], nombre, { type: "image/png" }); } catch (e) {}
-    if (cel && file && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file] }).catch(function () {}); return; }
-    var a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = nombre; document.body.appendChild(a); a.click();
-    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-    aviso("Imagen descargada: arrástrala al chat de WhatsApp");
+    var compartir = function () {
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file] }).catch(function () {}); return; }
+      var a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = nombre; document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      aviso("Imagen descargada");
+    };
+    if (!cel && navigator.clipboard && window.ClipboardItem) {
+      navigator.clipboard.write([new ClipboardItem({ "image/png": b })]).then(function () { aviso("Imagen copiada ✓ Pégala en WhatsApp con ⌘V"); }, compartir);
+      return;
+    }
+    compartir();
   }
   function compartirCanvas(cv, nombre, titulo, fin) {
     cv.toBlob(function (b) {
