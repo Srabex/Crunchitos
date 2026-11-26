@@ -1058,6 +1058,12 @@
     }
     compartir();
   }
+  // WhatsApp de la compu (Mac) convierte los emojis de una liga wa.me en "�". En la compu se mandan sin emojis.
+  function esCel() { return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent)); }
+  function textoWa(t) {
+    if (esCel()) return t;
+    return t.replace(/✅/g, "✓").replace(/[\p{Extended_Pictographic}\u{FE0F}\u{20E3}\u{200D}]/gu, "").split("\n").map(function (l) { return l.replace(/(\S) {2,}/g, "$1 ").replace(/^ (?=\S)/, "").replace(/\* /g, "*").replace(/\s+$/, ""); }).join("\n");
+  }
   function compartirCanvas(cv, nombre, titulo, fin) {
     cv.toBlob(function (b) {
       fin();
@@ -1091,7 +1097,7 @@
     movs.forEach(function (m) { n += m.cantidad; });
     var tienda = movs[0].cliente, folio = rgrupo.replace(/-/g, "").slice(-6).toUpperCase();
     var msg = "Hola, te dejo el recibo de los Crunchitos que dejamos a consigna (" + n + " bolsas, folio " + folio + "). Ábrelo y toca \"Confirmo que recibí\" 🙌 " + liga;
-    var wa = "https://wa.me/" + (r.telefono || "") + "?text=" + encodeURIComponent(msg);
+    var wa = "https://wa.me/" + (r.telefono || "") + "?text=" + encodeURIComponent(textoWa(msg));
     var qr = "";
     try { var q = qrcode(0, "M"); q.addData(liga); q.make(); qr = q.createSvgTag({ cellSize: 6, margin: 2, scalable: true }); } catch (e) { qr = ""; }
     v.innerHTML = '<button class="enlace" id="volver">← Inventario</button><h2>Recibo de consigna</h2>' +
@@ -1268,7 +1274,7 @@
         api("DELETE", "/abonos/" + b.getAttribute("data-borraabono")).then(function (r) { if (!r.ok) { aviso(r.error || "No se pudo.", true); return; } aviso("Abono borrado"); cargar(); });
       };
     });
-    v.querySelectorAll("[data-ctxt]").forEach(function (b) { b.onclick = function () { var t = cuentasTienda[b.getAttribute("data-ctxt")]; if (!t) return; window.open("https://wa.me/" + telTienda(t) + "?text=" + encodeURIComponent(textoCuenta(t)), "_blank"); }; });
+    v.querySelectorAll("[data-ctxt]").forEach(function (b) { b.onclick = function () { var t = cuentasTienda[b.getAttribute("data-ctxt")]; if (!t) return; window.open("https://wa.me/" + telTienda(t) + "?text=" + encodeURIComponent(textoWa(textoCuenta(t))), "_blank"); }; });
     v.querySelectorAll("[data-cimg]").forEach(function (b) { b.onclick = function () { var t = cuentasTienda[b.getAttribute("data-cimg")]; if (t) imagenCuenta(t, b); }; });
     v.querySelectorAll("[data-precio-g]").forEach(function (b) {
       b.onclick = function () {
