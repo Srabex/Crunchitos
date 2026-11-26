@@ -129,6 +129,45 @@
       r.bolsas = n; return r;
     }).filter(function (r) { return r.bolsas > 0; }).sort(function (a, b) { return (a.ultima || "").localeCompare(b.ultima || ""); });
   }
+  // Estado de cobro de cada consigna: lo vendido, regresado o merma de una tienda se reparte
+  // primero a la consigna más vieja (por sabor). Así cada recibo dice si ya se cobró o falta.
+  function cobroConsignas() {
+    var porTienda = {}, salidas = {}, out = {};
+    D.movimientos.slice().reverse().forEach(function (m) {
+      var k = (m.cliente || "Sin nombre").trim();
+      if (m.tipo === "consigna") { (porTienda[k] = porTienda[k] || []).push(m); return; }
+      if (!m.consigna || (m.tipo !== "venta" && m.tipo !== "devolucion" && m.tipo !== "merma")) return;
+      var s = salidas[k] = salidas[k] || {}, p = s[m.producto_id] = s[m.producto_id] || { venta: [], devolucion: 0, merma: 0 };
+      if (m.tipo === "venta") p.venta.push({ n: m.cantidad, precio: m.precio, fecha: m.fecha }); else p[m.tipo] += m.cantidad;
+    });
+    Object.keys(porTienda).forEach(function (k) {
+      var s = salidas[k] || {};
+      porTienda[k].forEach(function (m) {
+        var e = out[m.grupo] = out[m.grupo] || { dejadas: 0, cobradas: 0, cobrado: 0, regresaron: 0, merma: 0, faltan: 0, precio: m.precio, tienda: k, ultimoCobro: null };
+        var falta = m.cantidad, p = s[m.producto_id] || { venta: [], devolucion: 0, merma: 0 };
+        e.dejadas += m.cantidad;
+        while (falta > 0 && p.venta.length) {
+          var v = p.venta[0], t = Math.min(falta, v.n);
+          e.cobradas += t; e.cobrado += t * v.precio; falta -= t; v.n -= t;
+          if (!e.ultimoCobro || v.fecha > e.ultimoCobro) e.ultimoCobro = v.fecha;
+          if (!v.n) p.venta.shift();
+        }
+        var d = Math.min(falta, p.devolucion); e.regresaron += d; p.devolucion -= d; falta -= d;
+        var mm = Math.min(falta, p.merma); e.merma += mm; p.merma -= mm; falta -= mm;
+        e.faltan += falta;
+      });
+    });
+    return out;
+  }
+  function estadoCobro(c) {
+    if (!c) return "";
+    var extra = (c.regresaron ? " · regresaron " + c.regresaron : "") + (c.merma ? " · merma " + c.merma : "");
+    var cobr = c.cobradas ? "cobradas " + c.cobradas + " (" + pesos(c.cobrado) + ")" : "";
+    if (!c.faltan) return '<div class="cobro ok">✅ <b>Ya se cobró todo</b>' + (cobr ? " · " + cobr : " · no se vendió ninguna") + extra + (c.ultimoCobro ? " · " + esc(fechaBonita(c.ultimoCobro)) : "") + "</div>";
+    var pend = c.faltan + (c.faltan === 1 ? " bolsa sigue" : " bolsas siguen") + " en la tienda (" + pesos(c.faltan * c.precio) + ")";
+    if (!c.cobradas && !c.regresaron && !c.merma) return '<div class="cobro pend">⏳ <b>Pendiente de cobrar</b> · ' + pend + "</div>";
+    return '<div class="cobro parcial">🟡 <b>Cobrada en parte</b> · ' + cobr + extra + " · ⏳ " + pend + "</div>";
+  }
   function remision(grupo) { return (D.remisiones || []).find(function (r) { return r.grupo === grupo; }) || {}; }
   function ligaRemision(grupo) { return location.origin + "/r/" + grupo; }
   function estadoRemision(grupo) {
@@ -993,6 +1032,7 @@
       if (filtroHist === "consigna") return g.tipo === "consigna" || g.consigna;
       return g.tipo === filtroHist;
     });
+    var cob = cobroConsignas();
     var nombres = { venta: "Venta", apartado: "Apartado", ajuste: "Ajuste de conteo", traspaso: "Traspaso", entrada: "Entrada", tomada: "Tomada", merma: "Merma", consigna: "Consigna", devolucion: "Regresó" };
     var h = '<div class="fila entre"><h2>Historial</h2><a class="btn chico claro" href="/api/movimientos.csv">Descargar Excel</a></div>' +
       '<div class="chips" style="margin-bottom:14px">' + tipos.map(function (t) {
@@ -1008,11 +1048,13 @@
         '<span class="fila" style="gap:6px">' + (g.tipo === "venta" || g.tipo === "entrada" || g.tipo === "consigna" || g.tipo === "apartado" ? '<button class="btn chico claro" data-precio-g="' + esc(g.grupo) + '" data-actual="' + g.precio + '" data-t="' + g.tipo + '">' + (g.tipo === "entrada" ? "Cambiar costo" : "Cambiar precio") + "</button>" : "") +
         (g.tipo === "consigna" ? '<button class="btn chico claro" data-recibo="' + esc(g.grupo) + '">Recibo</button>' : "") +
         '<button class="btn chico peligro" data-borrar="' + esc(g.grupo) + '">Borrar</button></span></div>' +
-        (g.tipo === "consigna" ? '<div style="font-size:13px;margin-top:8px">' + estadoRemision(g.grupo) + "</div>" : "") + "</div>";
+        (g.tipo === "consigna" ? estadoCobro(cob[g.grupo]) + (cob[g.grupo] && cob[g.grupo].faltan ? '<button class="btn chico verde" style="margin-top:8px" data-cobrar="' + esc(cob[g.grupo].tienda) + '">Pasar a cobrar</button>' : "") +
+          '<div style="font-size:13px;margin-top:8px">' + estadoRemision(g.grupo) + "</div>" : "") + "</div>";
     }).join("") : '<p class="vacio">No hay movimientos.</p>';
     v.innerHTML = h;
     v.querySelectorAll("[data-f]").forEach(function (b) { b.onclick = function () { filtroHist = b.getAttribute("data-f"); pintar(); }; });
     v.querySelectorAll("[data-recibo]").forEach(function (b) { b.onclick = function () { rgrupo = b.getAttribute("data-recibo"); ir("remision"); }; });
+    v.querySelectorAll("[data-cobrar]").forEach(function (b) { b.onclick = function () { lform = null; ltienda = b.getAttribute("data-cobrar"); ir("liquidar"); }; });
     v.querySelectorAll("[data-precio-g]").forEach(function (b) {
       b.onclick = function () {
         var t = b.getAttribute("data-t") === "entrada" ? "Nuevo costo por bolsa" : "Nuevo precio por bolsa";

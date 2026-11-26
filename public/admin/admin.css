@@ -99,3 +99,8 @@ input.falta{border-color:var(--rojo)!important;background:#FDECEA}
 
 .ciudadbar{display:flex;align-items:center;justify-content:center;gap:10px;background:#ECBE48;padding:8px 16px;font-weight:700;font-size:14px;color:#3B2216}
 .ciudadbar select{font:700 15px Poppins,sans-serif;border:2px solid #3B2216;border-radius:999px;padding:6px 14px;background:#FFF6E6;color:#3B2216}
+
+.cobro{font-size:13px;margin-top:10px;padding:8px 10px;border-radius:10px;line-height:1.4}
+.cobro.ok{background:#E3F3E6;color:#1E6B34}
+.cobro.pend{background:#FDECEA;color:#9A2A1F}
+.cobro.parcial{background:#FFF3CF;color:#6B4A0F}
