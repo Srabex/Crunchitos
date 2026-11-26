@@ -197,8 +197,8 @@
   function grupos(movs) {
     var g = {}, orden = [];
     movs.forEach(function (m) {
-      if (!g[m.grupo]) { g[m.grupo] = { grupo: m.grupo, tipo: m.tipo, consigna: m.consigna, fecha: m.fecha, quien: m.quien, cliente: m.cliente, nota: m.nota, precio: m.precio, creado: m.creado, items: [] }; orden.push(m.grupo); }
-      g[m.grupo].items.push(m);
+      if (!g[m.grupo]) { g[m.grupo] = { grupo: m.grupo, tipo: m.tipo, consigna: m.consigna, fecha: m.fecha, quien: m.quien, cliente: m.cliente, nota: m.nota, precio: m.precio, creado: m.creado, items: [], anticipo: 0 }; orden.push(m.grupo); }
+      g[m.grupo].items.push(m); g[m.grupo].anticipo += Number(m.anticipo) || 0;
     });
     return orden.map(function (k) { return g[k]; });
   }
@@ -326,13 +326,16 @@
     if (bajos.length) h += '<div class="alerta"><strong>Se están acabando:</strong> ' + bajos.map(function (p) { return esc(p.nombre_base + " " + p.sabor) + " (" + st[p.id] + ")"; }).join(", ") + "</div>";
     // Dinero de hoy (siempre todo el historial, no depende del periodo)
     var cobrado = 0, deCaja = 0, debe = {};
-    D.movimientos.forEach(function (m) { if (m.tipo === "venta") cobrado += m.cantidad * m.precio; });
+    var antic = 0;
+    D.movimientos.forEach(function (m) { if (m.tipo === "venta") cobrado += m.cantidad * m.precio; if (m.tipo === "apartado") antic += Number(m.anticipo) || 0; });
+    cobrado += antic; // anticipos de apartados ya están en caja; al entregar, la venta los incluye
     (D.gastos || []).forEach(function (g) { if (g.pago === "caja") deCaja += g.monto; else debe[g.pago] = (debe[g.pago] || 0) + g.monto; });
     var pc = 0, pcB = 0, pcT = consignas(); pcT.forEach(function (c) { pcB += c.bolsas; pc += c.bolsas * c.precio; });
     var apB = 0, apV = 0; D.movimientos.forEach(function (m) { if (m.tipo === "apartado") { apB += m.cantidad; apV += m.cantidad * m.precio; } });
+    apV = Math.max(0, apV - antic);
     var deudas = Object.keys(debe);
     var cajaH = '<div class="kpis" style="margin-bottom:16px">' +
-      '<div class="kpi verde"><span>En caja (en teoría)</span><strong>' + pesos(cobrado - deCaja) + "</strong><small>cobrado " + pesos(cobrado) + " − gastos de caja " + pesos(deCaja) + "</small></div>" +
+      '<div class="kpi verde"><span>En caja (en teoría)</span><strong>' + pesos(cobrado - deCaja) + "</strong><small>cobrado " + pesos(cobrado) + (antic ? " (incluye " + pesos(antic) + " de anticipos)" : "") + " − gastos de caja " + pesos(deCaja) + "</small></div>" +
       '<div class="kpi"><span>Por cobrar</span><strong>' + pesos(pc + apV) + "</strong><small>" + (pcB ? num(pcB) + " bolsas a consigna en " + pcT.length + (pcT.length === 1 ? " tienda" : " tiendas") : "nada a consigna") + (apB ? " · " + num(apB) + " apartadas" : "") + "</small></div>" +
       (deudas.length ? '<div class="kpi" style="grid-column:1/-1"><span>Se le debe por gastos que pagó de su bolsa</span><small style="font-size:15px">' + deudas.map(function (k) { return esc(nombrePersona(k)) + ": <b>" + pesos(debe[k]) + "</b>"; }).join(" · ") + "</small></div>" : "") +
       "</div>";
@@ -489,6 +492,7 @@
     h += '<div class="caja" style="margin-top:14px">';
     if (f.tipo === "venta" || f.tipo === "consigna" || f.tipo === "apartado") {
       var esCons = f.tipo === "consigna", esAp = f.tipo === "apartado";
+      if (esAp) h += '<label style="margin:0 0 12px">¿Ya te dio algo? (anticipo, opcional)<input id="fanticipo" inputmode="decimal" value="' + (f.anticipo || "") + '" placeholder="$0"></label>';
       if (esAp) h += '<p class="vacio" style="margin:0 0 10px">Las bolsas quedan separadas para esa persona: ya no cuentan como disponibles, pero todavía no son venta. Cuando las entregues, en Inventario → Apartados tocas "Entregar".</p>';
       if (esCons) h += '<p class="vacio" style="margin:0 0 10px">Las bolsas salen de tu inventario pero no cuentan como vendidas. Cuando pases a cobrar, en Inventario → En consigna marcas cuántas se vendieron.</p>';
       h += "<h3>" + (esCons || esAp ? "Precio acordado por bolsa" : "¿A cuánto la vendiste?") + "</h3><div class=\"chips\" style=\"margin-bottom:10px\">" + D.ajustes.precios.map(function (p) {
@@ -563,7 +567,7 @@
       var t = parseFloat(String(ftI.value).replace(/[$,\s]/g, "")) || 0, n = totalBolsas();
       if (n) { f.precio = redondo(t / n); sincPrecio("total"); }
     };
-    ["fcliente", "ffecha", "fnota", "ftel"].forEach(function (id) {
+    ["fcliente", "ffecha", "fnota", "ftel", "fanticipo"].forEach(function (id) {
       var e = document.getElementById(id); if (e) e.oninput = function () { guardarCampos(); resumenBoton(); };
     });
     var c = document.getElementById("cancelar"); if (c) c.onclick = function () { ir("inventario"); };
@@ -576,6 +580,7 @@
     if (g("ftel") !== null) form.telefono = g("ftel");
     if (g("ffecha") !== null) form.fecha = g("ffecha") || D.hoy;
     if (g("fnota") !== null) form.nota = g("fnota");
+    if (g("fanticipo") !== null) form.anticipo = parseFloat(String(g("fanticipo")).replace(/[$,\s]/g, "")) || 0;
   }
   function totalBolsas() {
     var t = 0; Object.keys(form.items).forEach(function (k) { t += form.items[k] || 0; }); return t;
@@ -606,7 +611,7 @@
       falla("Falta el precio por bolsa.", "Falta el precio ⬇"); return;
     }
     form.enviando = true; resumenBoton(); err.textContent = "";
-    api("POST", "/movimientos", { tipo: form.tipo, items: items, precio: form.precio, cliente: form.cliente, nota: form.nota, fecha: form.fecha, telefono: form.telefono || "", forzar: forzar }).then(function (r) {
+    api("POST", "/movimientos", { tipo: form.tipo, items: items, precio: form.precio, cliente: form.cliente, nota: form.nota, fecha: form.fecha, telefono: form.telefono || "", anticipo: form.tipo === "apartado" ? form.anticipo || 0 : 0, forzar: forzar }).then(function (r) {
       form.enviando = false; resumenBoton();
       if (r._status === 401) { pintarLogin(); return; }
       if (r.sinStock) {
@@ -665,6 +670,17 @@
     v.querySelectorAll("[data-recibo]").forEach(function (b) { b.onclick = function () { rgrupo = b.getAttribute("data-recibo"); ir("remision"); }; });
     var nc = document.getElementById("nuevacons"); if (nc) nc.onclick = function () { ir("vender"); form.tipo = "consigna"; pintar(); };
     var na = document.getElementById("nuevoap"); if (na) na.onclick = function () { ir("vender"); form.tipo = "apartado"; pintar(); };
+    v.querySelectorAll("[data-ant]").forEach(function (b) { b.onclick = function () { var x = v.querySelector('[data-antbox="' + b.getAttribute("data-ant") + '"]'); x.hidden = !x.hidden; if (!x.hidden) x.querySelector("input").focus(); }; });
+    v.querySelectorAll("[data-antok]").forEach(function (b) {
+      b.onclick = function () {
+        var gr = b.getAttribute("data-antok"), inp = v.querySelector('[data-antbox="' + gr + '"] input');
+        var monto = parseFloat(String(inp.value).replace(/[$,\s]/g, "")) || 0; b.disabled = true;
+        api("POST", "/movimientos/" + gr + "/anticipo", { monto: monto }).then(function (r) {
+          b.disabled = false; if (!r.ok) { aviso(r.error || "No se pudo.", true); return; }
+          aviso(monto ? "Anticipo guardado: " + pesos(monto) : "Anticipo quitado"); cargar();
+        });
+      };
+    });
     v.querySelectorAll("[data-entregar]").forEach(function (b) {
       b.onclick = function () {
         var como = b.getAttribute("data-como"); b.disabled = true;
@@ -763,7 +779,9 @@
         "<ul>" + g.items.map(function (m) { return "<li>" + ((g.tipo === "ajuste" || g.tipo === "traspaso") && m.cantidad > 0 ? "+" : "") + m.cantidad + (g.tipo === "traspaso" && variasCiudades() ? " (" + esc(nombreCiudad(m.ciudad)) + ")" : "") + " × " + esc(nombreProd(m.producto_id)) + "</li>"; }).join("") + "</ul>" +
         (g.nota ? '<div style="font-size:13px;color:var(--suave);margin-bottom:8px">' + esc(g.nota) + "</div>" : "") +
         '<div class="pie"><span><strong>' + n + (n === 1 ? " bolsa" : " bolsas") + "</strong>" + (g.precio ? " · " + pesos(g.precio) + " c/u · <strong>" + pesos(n * g.precio) + "</strong>" : "") + "</span></div>" +
-        '<div class="fila" style="gap:6px;margin-top:10px;flex-wrap:wrap"><button class="btn chico verde" data-entregar="' + esc(g.grupo) + '" data-como="venta">Entregar como venta</button>' +
+        (g.anticipo ? '<div class="cobro ok">💵 <b>Ya dio ' + pesos(g.anticipo) + "</b> de anticipo" + (g.precio ? " · al entregar cobra solo <b>" + pesos(Math.max(0, n * g.precio - g.anticipo)) + "</b>" : "") + "</div>" : "") +
+        '<div class="fila" style="gap:6px;margin-top:8px;align-items:flex-end" data-antbox="' + esc(g.grupo) + '" hidden><label style="flex:1;margin:0">Total que ya te dio<input inputmode="decimal" value="' + (g.anticipo || "") + '" placeholder="$0"></label><button class="btn chico" data-antok="' + esc(g.grupo) + '">Guardar</button></div>' +
+        '<div class="fila" style="gap:6px;margin-top:10px;flex-wrap:wrap"><button class="btn chico claro" data-ant="' + esc(g.grupo) + '">' + (g.anticipo ? "Cambiar anticipo" : "Me dio anticipo") + '</button><button class="btn chico verde" data-entregar="' + esc(g.grupo) + '" data-como="venta">Entregar como venta</button>' +
         '<button class="btn chico claro" data-entregar="' + esc(g.grupo) + '" data-como="consigna">Entregar a consigna</button>' +
         '<button class="btn chico peligro" data-quitarap="' + esc(g.grupo) + '">Cancelar</button></div></div>';
     }).join("");
@@ -1064,6 +1082,7 @@
         '<span class="fila" style="gap:6px">' + (g.tipo === "venta" || g.tipo === "entrada" || g.tipo === "consigna" || g.tipo === "apartado" ? '<button class="btn chico claro" data-precio-g="' + esc(g.grupo) + '" data-actual="' + g.precio + '" data-t="' + g.tipo + '">' + (g.tipo === "entrada" ? "Cambiar costo" : "Cambiar precio") + "</button>" : "") +
         (g.tipo === "consigna" ? '<button class="btn chico claro" data-recibo="' + esc(g.grupo) + '">Recibo</button>' : "") +
         '<button class="btn chico peligro" data-borrar="' + esc(g.grupo) + '">Borrar</button></span></div>' +
+        (g.tipo === "apartado" && g.anticipo ? '<div class="cobro ok">💵 Ya dio <b>' + pesos(g.anticipo) + "</b> de anticipo · resta " + pesos(Math.max(0, n * g.precio - g.anticipo)) + "</div>" : "") +
         (g.tipo === "consigna" ? estadoCobro(cob[g.grupo]) + (cob[g.grupo] && cob[g.grupo].faltan ? '<button class="btn chico verde" style="margin-top:8px" data-cobrar="' + esc(cob[g.grupo].tienda) + '">Pasar a cobrar</button>' : "") +
           '<div style="font-size:13px;margin-top:8px">' + estadoRemision(g.grupo) + "</div>" : "") + "</div>";
     }).join("") : '<p class="vacio">No hay movimientos.</p>';

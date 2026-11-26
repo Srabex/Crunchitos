@@ -137,6 +137,12 @@ async function db(env) {
     try { await env.DB.prepare("ALTER TABLE movimientos ADD COLUMN consigna INTEGER NOT NULL DEFAULT 0").run(); } catch (e) { /* ya existe */ }
     await env.DB.prepare("INSERT OR REPLACE INTO meta (llave, valor) VALUES ('mig_consigna', '1')").run();
   }
+  // Anticipo de un apartado (lo que ya dio la persona). Se guarda en la primera fila del grupo.
+  const migA = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'mig_anticipo'").first();
+  if (!migA) {
+    try { await env.DB.prepare("ALTER TABLE movimientos ADD COLUMN anticipo REAL NOT NULL DEFAULT 0").run(); } catch (e) { /* ya existe */ }
+    await env.DB.prepare("INSERT OR REPLACE INTO meta (llave, valor) VALUES ('mig_anticipo', '1')").run();
+  }
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS remisiones (
     grupo TEXT PRIMARY KEY, telefono TEXT NOT NULL DEFAULT '', creado INTEGER NOT NULL,
     confirmado INTEGER NOT NULL DEFAULT 0, confirmado_por TEXT NOT NULL DEFAULT '', firma TEXT NOT NULL DEFAULT '')`).run();
@@ -423,9 +429,11 @@ async function guardarMovimiento(D, yo, body) {
   const ahora = Date.now();
   const cliente = texto(body.cliente, 80);
   const nota = texto(body.nota, 300);
-  const st = items.map((i) =>
-    D.prepare(`INSERT INTO movimientos (grupo, tipo, producto_id, cantidad, precio, cliente, nota, quien, fecha, creado, ciudad)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?)`).bind(grupo, tipo, i.id, i.n, precio, cliente, nota, yo, fecha, ahora, ciudad));
+  let anticipo = tipo === "apartado" ? Math.round((Number(body.anticipo) || 0) * 100) / 100 : 0;
+  if (!Number.isFinite(anticipo) || anticipo < 0 || anticipo > 1000000) return error("Revisa el anticipo.");
+  const st = items.map((i, k) =>
+    D.prepare(`INSERT INTO movimientos (grupo, tipo, producto_id, cantidad, precio, cliente, nota, quien, fecha, creado, ciudad, anticipo)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).bind(grupo, tipo, i.id, i.n, precio, cliente, nota, yo, fecha, ahora, ciudad, k === 0 ? anticipo : 0));
   if (tipo === "consigna") {
     let tel = String(body.telefono ?? "").replace(/\D/g, "");
     if (tel.length === 10) tel = "52" + tel;
@@ -682,6 +690,17 @@ async function api(req, env, url) {
     if (como === "consigna") st.push(D.prepare("INSERT OR IGNORE INTO remisiones (grupo, telefono, creado) VALUES (?, '', ?)").bind(mEnt[1], Date.now()));
     await D.batch(st);
     return json({ ok: true, grupo: mEnt[1] });
+  }
+  // Cambiar el anticipo de un apartado (total que ya dio).
+  const mAnt = /^\/movimientos\/(g-[\w-]+)\/anticipo$/.exec(ruta);
+  if (mAnt && metodo === "POST") {
+    const monto = Math.round((Number(body.monto) || 0) * 100) / 100;
+    if (!Number.isFinite(monto) || monto < 0 || monto > 1000000) return error("Revisa el anticipo.");
+    await D.batch([
+      D.prepare("UPDATE movimientos SET anticipo = 0 WHERE grupo = ?").bind(mAnt[1]),
+      D.prepare("UPDATE movimientos SET anticipo = ? WHERE id = (SELECT MIN(id) FROM movimientos WHERE grupo = ? AND tipo = 'apartado')").bind(monto, mAnt[1]),
+    ]);
+    return json({ ok: true });
   }
   const mPrecio = /^\/movimientos\/(g-[\w-]+)$/.exec(ruta);
   if (mPrecio && metodo === "PUT") {
