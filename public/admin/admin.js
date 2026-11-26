@@ -606,7 +606,7 @@
     var fis = function (id) { return (st[id] || 0) + (ap[id] || 0); };
     v.innerHTML = '<h2>Ajustar conteo</h2><p class="vacio" style="margin:-4px 0 14px">Cuenta las bolsas que tienes en la mano (incluye las apartadas, sin las de tiendas) y corrige el número de cada sabor. Se guarda solo la diferencia como "Ajuste" en el historial.</p>' +
       '<div class="sabores">' + D.productos.map(function (p) {
-        return '<div class="it"><img src="/img/etiquetas/' + esc(p.id) + '.webp" alt="" loading="lazy"><div class="nom">' + esc(p.nombre_base + " " + p.sabor) + '<small data-dif="' + esc(p.id) + '">El panel dice ' + fis(p.id) + (ap[p.id] ? " (" + ap[p.id] + " apartadas)" : "") + "</small></div>" +
+        return '<div class="it"><img src="/img/etiquetas/' + esc(p.id) + '.webp" alt="" loading="lazy"><div class="nom">' + esc(p.nombre_base + " " + p.sabor) + '<small data-dif="' + esc(p.id) + '"></small></div>' +
           '<div class="paso"><button type="button" data-cm="' + esc(p.id) + '" aria-label="Menos">−</button><input inputmode="numeric" data-c="' + esc(p.id) + '" value="' + fis(p.id) + '" aria-label="Conteo de ' + esc(p.nombre_base + " " + p.sabor) + '"><button type="button" data-cp="' + esc(p.id) + '" aria-label="Más">+</button></div></div>';
       }).join("") + "</div>" +
       '<div class="caja" style="margin-top:14px"><label>Nota (opcional)<input id="cnota" placeholder="Ej. se registró esquite y era camote adobado"></label><p class="error" id="cerr" role="alert" style="margin-top:10px"></p></div>' +
@@ -616,7 +616,7 @@
       var cambios = 0;
       D.productos.forEach(function (p) {
         var d = leer(p.id) - fis(p.id), s = v.querySelector('[data-dif="' + p.id + '"]');
-        s.textContent = "El panel dice " + fis(p.id) + (d ? " → " + (d > 0 ? "+" : "") + d : "");
+        s.textContent = "En mano según el panel: " + fis(p.id) + (ap[p.id] ? " (" + (st[p.id] || 0) + " disponibles + " + ap[p.id] + " apartadas)" : "") + (d ? " → " + (d > 0 ? "+" : "") + d : "");
         s.className = d ? "bajo" : ""; if (d) cambios++;
       });
       var b = document.getElementById("cguardar"); b.textContent = cambios ? "Guardar conteo · " + cambios + (cambios === 1 ? " sabor cambia" : " sabores cambian") : "Todo cuadra"; b.disabled = !cambios;
