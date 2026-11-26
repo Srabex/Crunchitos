@@ -970,7 +970,7 @@
     l.push("Me has pagado: " + pesos(t.abonado));
     if (t.abonos.length) t.abonos.slice().sort(function (a, b) { return (a.fecha || "").localeCompare(b.fecha || ""); }).forEach(function (a) { l.push("   - " + fechaBonita(a.fecha) + ": " + pesos(a.monto) + (a.nota && a.nota !== "Pago al cobrar" ? " (" + a.nota + ")" : "")); });
     l.push("");
-    l.push(t.saldo > 0 ? "*De lo vendido me debes: " + pesos(t.saldo) + "*" : t.saldo < 0 ? "*A tu favor: " + pesos(-t.saldo) + "*" + (t.faltan ? " (se acomoda cuando contemos lo que queda)" : "") : "*✅ De lo vendido estamos al corriente.*");
+    l.push(t.saldo > 0 ? "*De lo vendido me debes: " + pesos(t.saldo) + "*" : t.saldo < 0 ? "*A tu favor: " + pesos(-t.saldo) + "*" + (t.faltan ? " (se acomoda cuando contemos lo que queda)" : "") : t.faltan ? (t.cobradas ? "De lo vendido estamos al corriente." : "*Pendiente de contar y cobrar.*") : "*✅ Estamos al corriente, no debes nada.*");
     if (t.faltan) {
       l.push("En tu tienda siguen " + t.faltan + (t.faltan === 1 ? " bolsa" : " bolsas") + " (" + pesos(t.enTienda) + ")");
       var q = quedanEnTienda(t); if (q.length) { l.push(""); l.push("_Deberían quedar:_"); q.forEach(function (x) { l.push("- " + x[1] + " " + x[0]); }); }
@@ -995,7 +995,7 @@
       g.font = "400 50px 'Bubblegum Sans', sans-serif"; g.fillText(t.tienda, W / 2, 250);
       g.font = "500 24px Poppins, sans-serif"; g.fillText(new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" }), W / 2, 284);
       var k = [["Vendido", pesos(t.cobrado), t.cobradas + " bolsas", "#fff", "#3B2216"], ["Pagado", pesos(t.abonado), t.abonos.length + (t.abonos.length === 1 ? " pago" : " pagos"), "#fff", "#2F7D5B"],
-        t.saldo > 0 ? ["Me debes", pesos(t.saldo), "de lo vendido", "#D33A2A", "#fff"] : t.saldo < 0 ? ["A tu favor", pesos(-t.saldo), t.faltan ? "al contar se acomoda" : "te lo debo", "#2F6F8F", "#fff"] : ["Al corriente", "✓", "de lo vendido", "#2F7D5B", "#fff"]];
+        t.saldo > 0 ? ["Me debes", pesos(t.saldo), "de lo vendido", "#D33A2A", "#fff"] : t.saldo < 0 ? ["A tu favor", pesos(-t.saldo), t.faltan ? "al contar se acomoda" : "te lo debo", "#2F6F8F", "#fff"] : t.faltan ? ["Por cobrar", pesos(t.enTienda), t.faltan + " bolsas en tu tienda", "#D9572A", "#fff"] : ["Al corriente", "✓", "no debes nada", "#2F7D5B", "#fff"]];
       k.forEach(function (x, i) {
         var bx = 60 + i * 330, by = 330;
         g.fillStyle = x[3]; rr(g, bx, by, 300, 150, 24); g.fill();
@@ -1019,7 +1019,7 @@
       }
       g.fillStyle = "#3B2216"; g.fillRect(0, H - 120, W, 120);
       g.textAlign = "center"; g.fillStyle = "#FFF6E6"; g.font = "600 28px Poppins, sans-serif";
-      g.fillText(t.saldo > 0 ? "Paga y manda tu comprobante en crunchitos.mx/pago" : "¡Gracias por vender Crunchitos!", W / 2, H - 50);
+      g.fillText(t.saldo > 0 || (t.faltan && t.saldo >= 0) ? "Paga y manda tu comprobante en crunchitos.mx/pago" : "¡Gracias por vender Crunchitos!", W / 2, H - 50);
       compartirCanvas(cv, "cuenta-" + t.tienda.toLowerCase().replace(/[^a-z0-9]+/g, "-") + ".png", "Cuenta Crunchitos · " + t.tienda, function () { btn.textContent = txt; btn.disabled = false; });
     };
     var hecho = false, go = function () { if (hecho) return; hecho = true; (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(listo); };
