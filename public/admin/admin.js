@@ -253,7 +253,7 @@
       if (m.cliente) { var c = m.cliente.trim(); porCliente[c] = porCliente[c] || { b: 0, d: 0 }; porCliente[c].b += m.cantidad; porCliente[c].d += m.cantidad * m.precio; }
     });
     var periodos = [["hoy", "Hoy"], ["7", "7 días"], ["30", "30 días"], ["mes", "Este mes"], ["todo", "Todo"]];
-    var h = '<div class="fila entre"><h2>Cómo vamos</h2></div>' +
+    var h = '<div class="fila entre" style="align-items:center"><h2>Cómo vamos</h2><button class="btn chico verde" id="repimg">Compartir reporte</button></div>' +
       '<div class="chips" role="group" aria-label="Periodo" style="margin-bottom:14px">' + periodos.map(function (p) {
         return '<button class="chip" data-p="' + p[0] + '" aria-pressed="' + (periodo === p[0]) + '">' + p[1] + "</button>";
       }).join("") + "</div>";
@@ -315,6 +315,22 @@
       return "<tr><td>" + esc(c) + "</td><td class=num>" + num(porCliente[c].b) + " bolsas</td><td class=num>" + pesos(porCliente[c].d) + "</td></tr>";
     }).join("") + "</tbody></table>" : '<p class="vacio">Cuando pongas el nombre del cliente en la venta, aquí ves quién te compra más.</p>') + "</div>";
     v.innerHTML = h;
+    var nomPer = { hoy: "Hoy", "7": "Últimos 7 días", "30": "Últimos 30 días", mes: "Este mes", todo: "Desde el inicio" }[periodo] || "";
+    document.getElementById("repimg").onclick = function () {
+      var cs = consignas(), tn = 0; cs.forEach(function (c) { tn += c.bolsas; });
+      imagenReporte({
+        periodo: nomPer,
+        caja: cobrado - deCaja, porCobrar: pc + apV, pcTxt: (pcB ? pcB + " a consigna" : "") + (apB ? (pcB ? " · " : "") + apB + " apartadas" : ""),
+        vendido: dinero, bolsas: bolsas, ganBolsas: gananciaBolsas, cp: cp, gastos: totGastos, real: gananciaBolsas - totGastos,
+        bodega: enStock, tiendas: tn, merma: tomadas + merma,
+        precios: filasPrecio.map(function (k) { return [pesos(Number(k)) + " " + nombrePrecio(k), porPrecio[k].b, porPrecio[k].d]; }),
+        sabores: sabores.slice(0, 5).map(function (id) { var p = D.productos.find(function (x) { return x.id === id; }) || {}; return [nombreProd(id), porSabor[id], p.color]; }),
+        gastosCat: cats.map(function (c) { return [CAT[c] || c, porCat[c]]; }),
+        quien: Object.keys(porPersona).map(function (q) { return [nombrePersona(q), porPersona[q].b, porPersona[q].d]; }),
+        debe: deudas.map(function (k) { return [nombrePersona(k), debe[k]]; }),
+        bajos: bajos.map(function (p) { return p.nombre_base + " " + p.sabor + " (" + st[p.id] + ")"; })
+      }, this);
+    };
     v.querySelectorAll("[data-p]").forEach(function (b) { b.onclick = function () { periodo = b.getAttribute("data-p"); pintar(); }; });
     document.getElementById("irgastos").onclick = function () { ir("gastos"); };
   }
@@ -725,6 +741,91 @@
       Promise.all(["500 29px Poppins", "700 28px Poppins", "400 40px 'Bubblegum Sans'"].map(function (x) { return f.load(x).catch(function () {}); })).then(listo, listo);
     };
     if (logo.complete) go(); else { logo.onload = go; logo.onerror = go; }
+  }
+  // Reporte "Cómo vamos" como imagen para el grupo de socios (interno).
+  function imagenReporte(r, btn) {
+    var txt = btn.textContent; btn.textContent = "Armando…"; btn.disabled = true;
+    var W = 1080, lin = 52;
+    var secciones = [["Ventas por precio", r.precios.map(function (x) { return [x[0], x[1] + (x[1] === 1 ? " bolsa" : " bolsas"), pesos(x[2])]; })],
+      ["Lo que más se vende", r.sabores.map(function (x) { return [x[0], "", x[1] + (x[1] === 1 ? " bolsa" : " bolsas"), x[2]]; })],
+      ["Gastos", r.gastosCat.map(function (x) { return [x[0], "", pesos(x[1])]; })],
+      ["Quién vendió", r.quien.map(function (x) { return [x[0], x[1] + (x[1] === 1 ? " bolsa" : " bolsas"), pesos(x[2])]; })]];
+    if (r.debe.length) secciones.push(["Se le debe (gastos de su bolsa)", r.debe.map(function (x) { return [x[0], "", pesos(x[1])]; })]);
+    secciones = secciones.filter(function (s) { return s[1].length; });
+    var H = 300 + 2 * 150 + 3 * 150 + 40;
+    secciones.forEach(function (s) { H += 80 + s[1].length * lin + 20; });
+    if (r.bajos.length) H += 140;
+    H += 110;
+    var cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    var g = cv.getContext("2d"), logo = new Image(); logo.src = "/img/logo.svg";
+    var listo = function () {
+      g.fillStyle = "#FFF6E6"; g.fillRect(0, 0, W, H);
+      g.fillStyle = "#ECBE48"; g.fillRect(0, 0, W, 280);
+      try { g.drawImage(logo, (W - 400) / 2, 30, 400, 131); } catch (e) {}
+      g.textAlign = "center"; g.fillStyle = "#3B2216";
+      g.font = "700 26px Poppins, sans-serif"; g.fillText("C Ó M O   V A M O S  ·  " + r.periodo.toUpperCase(), W / 2, 202);
+      var ahora = new Date();
+      g.font = "500 28px Poppins, sans-serif";
+      g.fillText(ahora.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" }) + " · " + ahora.toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" }), W / 2, 246);
+      var tarjeta = function (x, y, w, t, v, sub, fondo, colV) {
+        g.fillStyle = fondo; rr(g, x, y, w, 130, 24); g.fill();
+        g.textAlign = "left"; g.fillStyle = fondo === "#3B2216" ? "#FFF6E6" : "#3B2216";
+        g.font = "600 22px Poppins, sans-serif"; g.fillText(t, x + 26, y + 38);
+        g.fillStyle = colV || g.fillStyle; g.font = "700 44px Poppins, sans-serif"; g.fillText(v, x + 26, y + 88);
+        g.fillStyle = fondo === "#3B2216" ? "rgba(255,246,230,.75)" : "#9A6A25"; g.font = "500 19px Poppins, sans-serif"; g.fillText(sub, x + 26, y + 116);
+      };
+      var y = 310, w2 = (W - 120 - 20) / 2, w3 = (W - 120 - 40) / 3;
+      tarjeta(60, y, w2, "En caja (en teoría)", pesos(r.caja), "todo lo cobrado − gastos de caja", "#3B2216", "#ECBE48");
+      tarjeta(80 + w2, y, w2, "Por cobrar", pesos(r.porCobrar), r.pcTxt || "nada pendiente", "#fff"); y += 150;
+      tarjeta(60, y, w2, "Vendido", pesos(r.vendido), r.bolsas + " bolsas" + (r.bolsas ? " · prom. " + pesos(r.vendido / r.bolsas) : ""), "#ECBE48");
+      tarjeta(80 + w2, y, w2, "Ganancia real", pesos(r.real), "bolsas " + pesos(r.ganBolsas) + " − gastos " + pesos(r.gastos), r.real < 0 ? "#FDECEA" : "#DFF2E6", r.real < 0 ? "#C0392B" : "#14653A"); y += 150;
+      tarjeta(60, y, w3, "En bodega", String(r.bodega), "bolsas disponibles", "#fff");
+      tarjeta(80 + w3, y, w3, "En tiendas", String(r.tiendas), "bolsas a consigna", "#fff");
+      tarjeta(100 + 2 * w3, y, w3, "Tomadas / merma", String(r.merma), "costo " + pesos(r.cp) + " c/u", "#fff"); y += 170;
+      secciones.forEach(function (s) {
+        g.textAlign = "left"; g.fillStyle = "#3B2216"; g.font = "400 40px 'Bubblegum Sans', sans-serif"; g.fillText(s[0], 60, y + 30); y += 56;
+        g.fillStyle = "#fff"; rr(g, 40, y, W - 80, s[1].length * lin + 16, 20); g.fill(); y += 8;
+        s[1].forEach(function (row, i) {
+          var cy = y + i * lin + 35;
+          if (i) { g.fillStyle = "#F1E4CB"; g.fillRect(70, y + i * lin, W - 140, 2); }
+          var x0 = 70;
+          if (row[3]) { g.fillStyle = row[3]; g.beginPath(); g.arc(84, cy - 9, 11, 0, 7); g.fill(); x0 = 106; }
+          g.fillStyle = "#3B2216"; g.textAlign = "left"; g.font = "500 27px Poppins, sans-serif"; g.fillText(row[0], x0, cy);
+          g.textAlign = "right"; g.font = "500 25px Poppins, sans-serif"; g.fillStyle = "#9A6A25"; if (row[1]) g.fillText(row[1], 780, cy);
+          g.fillStyle = "#3B2216"; g.font = "700 27px Poppins, sans-serif"; g.fillText(row[2], W - 70, cy);
+        });
+        y += s[1].length * lin + 36;
+      });
+      if (r.bajos.length) {
+        g.fillStyle = "#FDECEA"; rr(g, 40, y, W - 80, 116, 20); g.fill();
+        g.textAlign = "left"; g.fillStyle = "#8C2C20"; g.font = "700 25px Poppins, sans-serif"; g.fillText("Se están acabando:", 66, y + 44);
+        g.font = "500 22px Poppins, sans-serif"; var t = r.bajos.join(", "); if (t.length > 80) t = t.slice(0, 78) + "…"; g.fillText(t, 66, y + 84);
+        y += 140;
+      }
+      g.textAlign = "center"; g.fillStyle = "#9A6A25"; g.font = "500 22px Poppins, sans-serif";
+      g.fillText("Reporte interno · crunchitos.mx/admin", W / 2, y + 30);
+      var fin = document.createElement("canvas"); fin.width = W; fin.height = Math.min(H, y + 70);
+      fin.getContext("2d").drawImage(cv, 0, 0); cv = fin;
+      compartirCanvas(cv, "Crunchitos reporte " + hoyLocal() + ".png", "Reporte Crunchitos", function () { btn.textContent = txt; btn.disabled = false; });
+    };
+    var go = function () {
+      var f = document.fonts;
+      if (!f || !f.load) return listo();
+      Promise.all(["500 27px Poppins", "700 44px Poppins", "600 22px Poppins", "400 40px 'Bubblegum Sans'"].map(function (x) { return f.load(x).catch(function () {}); })).then(listo, listo);
+    };
+    if (logo.complete) go(); else { logo.onload = go; logo.onerror = go; }
+  }
+  function compartirCanvas(cv, nombre, titulo, fin) {
+    cv.toBlob(function (b) {
+      fin();
+      var file = null; try { file = new File([b], nombre, { type: "image/png" }); } catch (e) {}
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: titulo }).catch(function () {});
+      } else {
+        var a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = nombre; document.body.appendChild(a); a.click();
+        setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      }
+    }, "image/png");
   }
   function rr(g, x, y, w, h, r) {
     g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
