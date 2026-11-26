@@ -843,13 +843,7 @@
       cv.toBlob(function (b) {
         btn.textContent = txt; btn.disabled = false;
         var nombre = "Crunchitos inventario " + hoyLocal() + ".png";
-        var file = null; try { file = new File([b], nombre, { type: "image/png" }); } catch (e) {}
-        if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-          navigator.share({ files: [file], title: "Inventario Crunchitos" }).catch(function () {});
-        } else {
-          var a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = nombre; document.body.appendChild(a); a.click();
-          setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-        }
+        entregarImagen(b, nombre);
       }, "image/png");
     };
     var go = function () {
@@ -1012,16 +1006,20 @@
     var hecho = false, go = function () { if (hecho) return; hecho = true; (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(listo); };
     logo.onload = go; logo.onerror = go; setTimeout(go, 1500);
   }
+  // En el cel: menú de compartir (WhatsApp) solo con el archivo, sin título ni texto (con título, WhatsApp de la Mac
+  // pegaba la imagen dos veces). En la compu: se descarga y se arrastra al chat.
+  function entregarImagen(b, nombre) {
+    var cel = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+    var file = null; try { file = new File([b], nombre, { type: "image/png" }); } catch (e) {}
+    if (cel && file && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file] }).catch(function () {}); return; }
+    var a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = nombre; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    aviso("Imagen descargada: arrástrala al chat de WhatsApp");
+  }
   function compartirCanvas(cv, nombre, titulo, fin) {
     cv.toBlob(function (b) {
       fin();
-      var file = null; try { file = new File([b], nombre, { type: "image/png" }); } catch (e) {}
-      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-        navigator.share({ files: [file], title: titulo }).catch(function () {});
-      } else {
-        var a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = nombre; document.body.appendChild(a); a.click();
-        setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-      }
+      entregarImagen(b, nombre);
     }, "image/png");
   }
   function rr(g, x, y, w, h, r) {
