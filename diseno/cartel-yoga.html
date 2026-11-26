@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Cartel Crunchitos · Yoga Studio</title>
+<!-- Cartel media carta para Yoga Studio: precio $55, 12 sabores y QR a crunchitos.mx/pago/?de=Yoga Studio.
+     Para otra tienda: ?de=Nombre&precio=55. Captura 600x927 a escala 2.75 (≈300 dpi). -->
+<style>
+@font-face{font-family:"Bubblegum Sans";src:url(../public/fonts/BubblegumSans.woff) format("woff")}
+@font-face{font-family:"Gochi Hand";src:url(../public/fonts/GochiHand.woff) format("woff")}
+@font-face{font-family:"Poppins";src:url(../public/fonts/Poppins-Regular.woff) format("woff");font-weight:400}
+@font-face{font-family:"Poppins";src:url(../public/fonts/Poppins-Medium.woff) format("woff");font-weight:500}
+@font-face{font-family:"Poppins";src:url(../public/fonts/Poppins-Bold.woff) format("woff");font-weight:700}
+*{box-sizing:border-box;margin:0}
+html,body{width:600px;height:927px;overflow:hidden}
+body{font-family:Poppins,sans-serif;color:#3B2216;position:relative;background:#FFF6E6}
+.top{height:250px;background:#ECBE48 repeating-conic-gradient(from 0deg at 50% 0%,rgba(255,246,230,.18) 0deg 8deg,rgba(255,246,230,0) 8deg 16deg);position:relative}
+.logo{position:absolute;left:34px;top:30px;width:290px;filter:drop-shadow(0 5px 0 #9A6A25)}
+.desc{position:absolute;left:38px;top:132px;font-weight:700;font-size:13.5px;letter-spacing:2.4px}
+.antojo{position:absolute;left:36px;top:168px;font-family:"Gochi Hand";font-size:31px;line-height:1;color:#FFF6E6;text-shadow:0 3px 0 #9A6A25,2px 3px 0 #9A6A25,-2px 3px 0 #9A6A25}
+.precio{position:absolute;right:30px;top:34px;width:200px;height:190px;background:#3B2216;color:#FFF6E6;border-radius:26px;text-align:center;padding-top:26px;box-shadow:0 6px 0 #9A6A25}
+.precio .t{font-weight:700;font-size:12px;letter-spacing:2.5px;color:#ECBE48}
+.precio .p{font-family:"Bubblegum Sans";font-size:86px;line-height:1;margin-top:6px}
+.precio .s{font-size:14px;font-weight:500}
+.sabores{position:absolute;left:30px;right:30px;top:270px}
+.sabores h2{font-family:"Gochi Hand";font-weight:400;font-size:38px;line-height:1;margin-bottom:14px}
+.base{display:flex;align-items:center;gap:10px;margin-bottom:13px}
+.base b{width:100px;flex:none;font-family:"Gochi Hand";font-weight:400;font-size:26px;line-height:1;background:var(--f);color:#3B2216;border-radius:12px;padding:7px 0 5px;text-align:center}
+.pills{display:flex;flex-wrap:wrap;gap:7px}
+.pill{background:var(--c);color:#FFF6E6;font-weight:700;font-size:15.5px;border-radius:999px;padding:8px 14px;line-height:1.1}
+.pill.claro{color:#3B2216;box-shadow:inset 0 0 0 2px #E6D3AE}
+.pago{position:absolute;left:30px;right:30px;top:578px;height:262px;background:#3B2216;color:#FFF6E6;border-radius:26px;padding:22px}
+.qr{position:absolute;left:22px;top:22px;width:218px;height:218px;background:#fff;border-radius:16px;padding:12px}
+.qr svg{width:100%;height:100%;display:block}
+.pasos{position:absolute;left:262px;top:22px;right:20px}
+.pasos h2{font-family:"Gochi Hand";font-weight:400;font-size:30px;line-height:1;color:#ECBE48;margin-bottom:12px}
+.paso{display:flex;gap:10px;align-items:flex-start;margin-bottom:11px;font-size:14px;line-height:1.3}
+.paso i{flex:none;width:26px;height:26px;border-radius:50%;background:#ECBE48;color:#3B2216;font-style:normal;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+.efectivo{font-size:12px;opacity:.8;margin-top:4px}
+.web{position:absolute;bottom:30px;width:100%;text-align:center;font-weight:700;font-size:13px;letter-spacing:3.5px}
+</style>
+</head>
+<body>
+<div class="top">
+  <img class="logo" src="../public/img/logo.svg" alt="Crunchitos">
+  <div class="desc">SNACKS DESHIDRATADOS</div>
+  <div class="antojo">¡Crujientes de verdad!</div>
+  <div class="precio"><div class="t">CADA BOLSA</div><div class="p" id="precio">$55</div><div class="s">12 sabores</div></div>
+</div>
+<div class="sabores">
+  <h2>Elige tu sabor</h2>
+  <div class="base" style="--f:#CFA481"><b>Jícama</b><div class="pills">
+    <span class="pill" style="--c:#5E9A2A">limón y sal</span><span class="pill" style="--c:#D33A2A">con chile</span><span class="pill" style="--c:#D9572A">rancherito</span><span class="pill claro" style="--c:#E9B91E">esquite</span><span class="pill" style="--c:#EE8A1C">habanero y miel</span></div></div>
+  <div class="base" style="--f:#91B25B"><b>Pepino</b><div class="pills">
+    <span class="pill" style="--c:#5E9A2A">limón y sal</span><span class="pill" style="--c:#8C2C20">adobado</span></div></div>
+  <div class="base" style="--f:#C88A5F"><b>Camote</b><div class="pills">
+    <span class="pill" style="--c:#5E9A2A">limón y sal</span><span class="pill" style="--c:#8C2C20">adobado</span></div></div>
+  <div class="base" style="--f:#F2C54C"><b>Plátano</b><div class="pills">
+    <span class="pill" style="--c:#2F7D5B">natural</span><span class="pill claro" style="--c:#F7F0E1">con sal</span><span class="pill" style="--c:#A8703F">azúcar y canela</span></div></div>
+</div>
+<div class="pago">
+  <div class="qr" id="qr"></div>
+  <div class="pasos">
+    <h2>Paga aquí</h2>
+    <div class="paso"><i>1</i><span>Toma tu bolsa</span></div>
+    <div class="paso"><i>2</i><span>Escanea el código y transfiere <b id="precio2">$55</b> por bolsa</span></div>
+    <div class="paso"><i>3</i><span>Pon tu nombre y manda tu comprobante</span></div>
+    <div class="efectivo">¿Efectivo? Pregunta en recepción.</div>
+  </div>
+</div>
+<div class="web">CRUNCHITOS.MX</div>
+<script src="../public/admin/qrcode.js"></script>
+<script>
+var u = new URLSearchParams(location.search), de = u.get("de") || "Yoga Studio", precio = u.get("precio") || "55";
+document.getElementById("precio").textContent = "$" + precio; document.getElementById("precio2").textContent = "$" + precio;
+var q = qrcode(0, "M"); q.addData("https://crunchitos.mx/pago/?de=" + encodeURIComponent(de)); q.make();
+document.getElementById("qr").innerHTML = q.createSvgTag({ cellSize: 8, margin: 0, scalable: true }).replace(/fill="black"/g, 'fill="#3B2216"');
+</script>
+</body>
+</html>
