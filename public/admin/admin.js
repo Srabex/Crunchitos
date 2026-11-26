@@ -143,7 +143,7 @@
     Object.keys(porTienda).forEach(function (k) {
       var s = salidas[k] || {};
       porTienda[k].forEach(function (m) {
-        var e = out[m.grupo] = out[m.grupo] || { dejadas: 0, cobradas: 0, cobrado: 0, regresaron: 0, merma: 0, faltan: 0, precio: m.precio, tienda: k, ultimoCobro: null };
+        var e = out[m.grupo] = out[m.grupo] || { grupo: m.grupo, fecha: m.fecha, dejadas: 0, cobradas: 0, cobrado: 0, regresaron: 0, merma: 0, faltan: 0, precio: m.precio, tienda: k, ultimoCobro: null };
         var falta = m.cantidad, p = s[m.producto_id] || { venta: [], devolucion: 0, merma: 0 };
         e.dejadas += m.cantidad;
         while (falta > 0 && p.venta.length) {
@@ -932,6 +932,86 @@
     };
     if (logo.complete) go(); else { logo.onload = go; logo.onerror = go; }
   }
+  // ——— estado de cuenta de una tienda (texto para WhatsApp o imagen)
+  var cuentasTienda = {};
+  function telTienda(t) {
+    for (var i = t.lista.length - 1; i >= 0; i--) { var r = remision(t.lista[i].grupo); if (r.telefono) return r.telefono; }
+    return "";
+  }
+  function quedanEnTienda(t) {
+    var c = consignas().find(function (x) { return x.tienda === t.tienda; });
+    return c ? Object.keys(c.items).map(function (id) { return [nombreProd(id), c.items[id]]; }) : [];
+  }
+  function lineaConsigna(c) {
+    return fechaBonita(c.fecha) + ": " + c.dejadas + (c.dejadas === 1 ? " bolsa" : " bolsas") + " a " + pesos(c.precio) + " → " +
+      (c.faltan ? (c.cobradas ? "pagó " + c.cobradas + ", " : "") + (c.regresaron ? "regresaron " + c.regresaron + ", " : "") + "pendientes " + c.faltan
+        : "✅ liquidada" + (c.cobradas ? " (pagó " + c.cobradas + (c.regresaron ? ", regresaron " + c.regresaron : "") + ")" : c.regresaron ? " (regresaron " + c.regresaron + ")" : ""));
+  }
+  function textoCuenta(t) {
+    var l = [], N = String.fromCharCode(10);
+    l.push("🧾 *Cuenta Crunchitos · " + t.tienda + "*");
+    l.push(new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" }));
+    l.push("");
+    l.push("*Bolsas que te he dejado:*");
+    t.lista.slice().sort(function (a, b) { return (a.fecha || "").localeCompare(b.fecha || ""); }).forEach(function (c) { l.push("• " + lineaConsigna(c)); });
+    l.push("");
+    l.push("Total dejado: " + t.dejadas + " bolsas (" + pesos(t.valor) + ")");
+    l.push("Ya pagado: " + t.cobradas + " bolsas · " + pesos(t.cobrado));
+    if (t.regresaron) l.push("Regresaron: " + t.regresaron);
+    if (t.faltan) {
+      l.push("*Pendiente: " + pesos(t.porCobrar) + "* (" + t.faltan + (t.faltan === 1 ? " bolsa" : " bolsas") + " en tu tienda)");
+      var q = quedanEnTienda(t); if (q.length) { l.push(""); l.push("_En tu tienda deberían quedar:_"); q.forEach(function (x) { l.push("- " + x[1] + " " + x[0]); }); }
+      l.push(""); l.push("Cuando vendas, me pagas aquí y me mandas el comprobante: " + location.origin + "/pago/?de=" + encodeURIComponent(t.tienda));
+    } else { l.push("*✅ Estás al corriente, no debes nada.*"); }
+    l.push(""); l.push("¡Gracias por vender Crunchitos! 🙌");
+    return l.join(N);
+  }
+  function imagenCuenta(t, btn) {
+    var txt = btn.textContent; btn.textContent = "Armando imagen…"; btn.disabled = true;
+    var lista = t.lista.slice().sort(function (a, b) { return (a.fecha || "").localeCompare(b.fecha || ""); });
+    var q = t.faltan ? quedanEnTienda(t) : [];
+    var W = 1080, H = 640 + lista.length * 64 + (q.length ? 90 + q.length * 50 : 0) + 150;
+    var cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    var g = cv.getContext("2d"), logo = new Image(); logo.src = "/img/logo.svg";
+    var listo = function () {
+      g.fillStyle = "#FFF6E6"; g.fillRect(0, 0, W, H);
+      g.fillStyle = "#ECBE48"; g.fillRect(0, 0, W, 300);
+      try { g.drawImage(logo, (W - 380) / 2, 30, 380, 124); } catch (e) {}
+      g.textAlign = "center"; g.fillStyle = "#3B2216";
+      g.font = "700 24px Poppins, sans-serif"; g.fillText("E S T A D O   D E   C U E N T A", W / 2, 192);
+      g.font = "400 50px 'Bubblegum Sans', sans-serif"; g.fillText(t.tienda, W / 2, 250);
+      g.font = "500 24px Poppins, sans-serif"; g.fillText(new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" }), W / 2, 284);
+      var k = [["Dejado", pesos(t.valor), t.dejadas + " bolsas", "#fff", "#3B2216"], ["Pagado", pesos(t.cobrado), t.cobradas + " bolsas", "#fff", "#2F7D5B"],
+        [t.faltan ? "Pendiente" : "Al corriente", t.faltan ? pesos(t.porCobrar) : "✓", t.faltan ? t.faltan + " bolsas" : "no debe nada", t.faltan ? "#D33A2A" : "#2F7D5B", "#fff"]];
+      k.forEach(function (x, i) {
+        var bx = 60 + i * 330, by = 330;
+        g.fillStyle = x[3]; rr(g, bx, by, 300, 150, 24); g.fill();
+        g.fillStyle = x[3] === "#fff" ? x[4] : "#fff";
+        g.font = "700 22px Poppins, sans-serif"; g.fillText(x[0].toUpperCase(), bx + 150, by + 40);
+        g.font = "400 54px 'Bubblegum Sans', sans-serif"; g.fillText(x[1], bx + 150, by + 98);
+        g.font = "500 22px Poppins, sans-serif"; g.fillText(x[2], bx + 150, by + 132);
+      });
+      var y = 545; g.textAlign = "left"; g.fillStyle = "#9A6A25"; g.font = "700 24px Poppins, sans-serif"; g.fillText("BOLSAS QUE TE HE DEJADO", 70, y);
+      y += 20;
+      lista.forEach(function (c, i) {
+        y += 64; if (i % 2 === 0) { g.fillStyle = "#fff"; rr(g, 50, y - 44, W - 100, 60, 14); g.fill(); }
+        g.fillStyle = "#3B2216"; g.textAlign = "left"; g.font = "600 26px Poppins, sans-serif";
+        g.fillText(fechaBonita(c.fecha) + " · " + c.dejadas + " bolsas a " + pesos(c.precio), 70, y);
+        g.textAlign = "right"; g.fillStyle = c.faltan ? "#D33A2A" : "#2F7D5B"; g.font = "700 24px Poppins, sans-serif";
+        g.fillText(c.faltan ? "faltan " + c.faltan + (c.cobradas ? " (pagó " + c.cobradas + ")" : "") : "✓ liquidada", W - 70, y);
+      });
+      if (q.length) {
+        y += 80; g.textAlign = "left"; g.fillStyle = "#9A6A25"; g.font = "700 24px Poppins, sans-serif"; g.fillText("EN TU TIENDA DEBERÍAN QUEDAR", 70, y);
+        q.forEach(function (x) { y += 50; g.fillStyle = "#3B2216"; g.font = "500 26px Poppins, sans-serif"; g.fillText(x[1] + " × " + x[0], 70, y); });
+      }
+      g.fillStyle = "#3B2216"; g.fillRect(0, H - 120, W, 120);
+      g.textAlign = "center"; g.fillStyle = "#FFF6E6"; g.font = "600 28px Poppins, sans-serif";
+      g.fillText(t.faltan ? "Paga y manda tu comprobante en crunchitos.mx/pago" : "¡Gracias por vender Crunchitos!", W / 2, H - 50);
+      compartirCanvas(cv, "cuenta-" + t.tienda.toLowerCase().replace(/[^a-z0-9]+/g, "-") + ".png", "Cuenta Crunchitos · " + t.tienda, function () { btn.textContent = txt; btn.disabled = false; });
+    };
+    var hecho = false, go = function () { if (hecho) return; hecho = true; (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(listo); };
+    logo.onload = go; logo.onerror = go; setTimeout(go, 1500);
+  }
   function compartirCanvas(cv, nombre, titulo, fin) {
     cv.toBlob(function (b) {
       fin();
@@ -1059,8 +1139,8 @@
     if (filtroHist === "consigna") {
       var cu = {};
       Object.keys(cob).forEach(function (k) {
-        var c = cob[k], t = cu[c.tienda] = cu[c.tienda] || { tienda: c.tienda, n: 0, dejadas: 0, valor: 0, cobradas: 0, cobrado: 0, regresaron: 0, merma: 0, faltan: 0, porCobrar: 0 };
-        t.n++; t.dejadas += c.dejadas; t.valor += c.dejadas * c.precio; t.cobradas += c.cobradas; t.cobrado += c.cobrado;
+        var c = cob[k], t = cu[c.tienda] = cu[c.tienda] || { tienda: c.tienda, n: 0, dejadas: 0, valor: 0, cobradas: 0, cobrado: 0, regresaron: 0, merma: 0, faltan: 0, porCobrar: 0, lista: [] };
+        t.n++; t.lista.push(c); t.dejadas += c.dejadas; t.valor += c.dejadas * c.precio; t.cobradas += c.cobradas; t.cobrado += c.cobrado;
         t.regresaron += c.regresaron; t.merma += c.merma; t.faltan += c.faltan; t.porCobrar += c.faltan * c.precio;
       });
       var lista = Object.keys(cu).map(function (k) { return cu[k]; }).sort(function (a, b) { return b.porCobrar - a.porCobrar; });
@@ -1069,8 +1149,10 @@
           '<div style="font-size:14px;margin-top:6px;line-height:1.6">Le has dejado <b>' + t.dejadas + " bolsas</b> en " + t.n + (t.n === 1 ? " consigna" : " consignas") + " (" + pesos(t.valor) + ")<br>" +
           "Ya cobrado: <b>" + t.cobradas + " bolsas · " + pesos(t.cobrado) + "</b>" + (t.regresaron ? "<br>Regresaron: " + t.regresaron : "") + (t.merma ? "<br>Merma: " + t.merma : "") + "</div>" +
           (t.faltan ? '<div class="cobro pend">⏳ <b>Falta cobrar: ' + pesos(t.porCobrar) + "</b> · " + t.faltan + (t.faltan === 1 ? " bolsa" : " bolsas") + ' en la tienda</div><button class="btn chico verde" style="margin-top:8px" data-cobrar="' + esc(t.tienda) + '">Pasar a cobrar</button>'
-            : '<div class="cobro ok">✅ <b>Al corriente</b>: no debe nada</div>') + "</div>";
+            : '<div class="cobro ok">✅ <b>Al corriente</b>: no debe nada</div>') +
+          '<div class="fila" style="gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn chico claro" data-ctxt="' + esc(t.tienda) + '">Mandar cuenta por WhatsApp</button><button class="btn chico claro" data-cimg="' + esc(t.tienda) + '">Compartir como imagen</button></div>' + "</div>";
       }).join("") + '<h3 style="margin:16px 0 8px">Movimientos</h3>';
+      cuentasTienda = cu;
     }
     h += gs.length ? gs.slice(0, 200).map(function (g) {
       var n = 0; g.items.forEach(function (m) { n += m.cantidad; });
@@ -1090,6 +1172,8 @@
     v.querySelectorAll("[data-f]").forEach(function (b) { b.onclick = function () { filtroHist = b.getAttribute("data-f"); pintar(); }; });
     v.querySelectorAll("[data-recibo]").forEach(function (b) { b.onclick = function () { rgrupo = b.getAttribute("data-recibo"); ir("remision"); }; });
     v.querySelectorAll("[data-cobrar]").forEach(function (b) { b.onclick = function () { lform = null; ltienda = b.getAttribute("data-cobrar"); ir("liquidar"); }; });
+    v.querySelectorAll("[data-ctxt]").forEach(function (b) { b.onclick = function () { var t = cuentasTienda[b.getAttribute("data-ctxt")]; if (!t) return; window.open("https://wa.me/" + telTienda(t) + "?text=" + encodeURIComponent(textoCuenta(t)), "_blank"); }; });
+    v.querySelectorAll("[data-cimg]").forEach(function (b) { b.onclick = function () { var t = cuentasTienda[b.getAttribute("data-cimg")]; if (t) imagenCuenta(t, b); }; });
     v.querySelectorAll("[data-precio-g]").forEach(function (b) {
       b.onclick = function () {
         var t = b.getAttribute("data-t") === "entrada" ? "Nuevo costo por bolsa" : "Nuevo precio por bolsa";
