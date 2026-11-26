@@ -1080,19 +1080,26 @@
   function vLiquidar(v) {
     var c = consignas().find(function (x) { return x.tienda === ltienda; });
     if (!c) { vista = "inventario"; pintar(); return; }
-    if (!lform) lform = { precio: c.precio, vendidas: {}, devueltas: {}, fecha: D.hoy, nota: "" };
+    if (!lform) lform = { precio: c.precio, vendidas: {}, devueltas: {}, quedan: {}, modo: "quedan", fecha: D.hoy, nota: "" };
     var f = lform;
+    // Modo "quedan": se cuenta lo que hay en la tienda y el sistema calcula lo vendido (tiene − quedan).
+    if (f.modo === "quedan") Object.keys(c.items).forEach(function (id) {
+      if (f.quedan[id] === undefined) f.quedan[id] = c.items[id];
+      f.vendidas[id] = c.items[id] - f.quedan[id];
+      if ((f.devueltas[id] || 0) > f.quedan[id]) f.devueltas[id] = f.quedan[id];
+    });
     function total(o) { var n = 0; Object.keys(o).forEach(function (k) { n += o[k] || 0; }); return n; }
     var h = '<button class="enlace" id="volver">← Inventario</button><h2>Cobrar a ' + esc(c.tienda) + "</h2>" +
-      '<p class="vacio" style="margin:-4px 0 12px">Cuenta lo que queda en la tienda. Pon cuántas se vendieron y cuántas te traes de regreso; las demás se quedan a consigna.</p>' +
-      '<button class="btn chico claro" id="todas" style="margin-bottom:12px">Se vendieron todas</button>' +
+      '<div class="chips" role="group" aria-label="Cómo contar" style="margin-bottom:10px"><button class="chip" data-modo="quedan" aria-pressed="' + (f.modo === "quedan") + '">Cuento lo que queda</button><button class="chip" data-modo="vendidas" aria-pressed="' + (f.modo !== "quedan") + '">Pongo lo que se vendió</button></div>' +
+      '<p class="vacio" style="margin:-4px 0 12px">' + (f.modo === "quedan" ? "Cuenta las bolsas que siguen en la tienda y el sistema calcula cuántas se vendieron. Si te traes algunas de regreso, márcalas en «Regresan» (salen de las que quedan)." : "Pon cuántas se vendieron y cuántas te traes de regreso; las demás se quedan a consigna.") + "</p>" +
+      '<button class="btn chico claro" id="todas" style="margin-bottom:12px">' + (f.modo === "quedan" ? "No queda ninguna (se vendieron todas)" : "Se vendieron todas") + "</button>" +
       '<div class="sabores">' + Object.keys(c.items).map(function (id) {
         var tiene = c.items[id], vnd = f.vendidas[id] || 0, dev = f.devueltas[id] || 0;
         return '<div class="caja" style="margin:0;padding:12px"><div class="fila entre"><strong style="font-size:15px">' + esc(nombreProd(id)) + '</strong><small class="vacio">tiene ' + tiene + "</small></div>" +
-          '<div class="rejilla2" style="margin-top:8px">' + ["vendidas", "devueltas"].map(function (k) {
-            var n = k === "vendidas" ? vnd : dev;
-            return '<div><small style="font-weight:600">' + (k === "vendidas" ? "Se vendieron" : "Regresan") + '</small><div class="paso" style="margin-top:4px"><button type="button" data-l="' + k + '" data-id="' + esc(id) + '" data-d="-1">−</button><input readonly value="' + n + '" aria-label="' + (k === "vendidas" ? "Vendidas" : "Regresan") + '"><button type="button" data-l="' + k + '" data-id="' + esc(id) + '" data-d="1">+</button></div></div>';
-          }).join("") + "</div></div>";
+          '<div class="rejilla2" style="margin-top:8px">' + (f.modo === "quedan" ? ["quedan", "devueltas"] : ["vendidas", "devueltas"]).map(function (k) {
+            var n = k === "vendidas" ? vnd : k === "quedan" ? f.quedan[id] : dev, et = { vendidas: "Se vendieron", quedan: "Quedan en la tienda", devueltas: "Regresan" }[k];
+            return '<div><small style="font-weight:600">' + et + '</small><div class="paso" style="margin-top:4px"><button type="button" data-l="' + k + '" data-id="' + esc(id) + '" data-d="-1">−</button><input readonly value="' + n + '" aria-label="' + et + '"><button type="button" data-l="' + k + '" data-id="' + esc(id) + '" data-d="1">+</button></div></div>';
+          }).join("") + "</div>" + (f.modo === "quedan" ? '<div style="font-size:13px;margin-top:6px;font-weight:600;color:' + (vnd ? "var(--verde)" : "var(--suave)") + '">→ se vendieron ' + vnd + "</div>" : "") + "</div>";
       }).join("") + "</div>" +
       '<div class="caja" style="margin-top:14px"><div class="rejilla2"><label>Precio por bolsa<input id="lprecio" inputmode="decimal" value="' + esc(f.precio) + '"></label><label>Fecha<input type="date" id="lfecha" value="' + esc(f.fecha) + '" max="' + esc(D.hoy) + '"></label></div>' +
       '<label style="margin-top:10px">Nota (opcional)<input id="lnota" value="' + esc(f.nota) + '" placeholder="Ej. le dejé 10 más"></label><p class="error" id="lerr" style="margin-top:10px"></p></div>' +
@@ -1100,12 +1107,19 @@
     v.innerHTML = h;
     function leer() { f.precio = parseFloat(document.getElementById("lprecio").value) || 0; f.fecha = document.getElementById("lfecha").value || D.hoy; f.nota = document.getElementById("lnota").value; }
     document.getElementById("volver").onclick = function () { ir("inventario"); };
-    document.getElementById("todas").onclick = function () { leer(); f.devueltas = {}; Object.keys(c.items).forEach(function (id) { f.vendidas[id] = c.items[id]; }); pintar(); };
+    document.getElementById("todas").onclick = function () { leer(); f.devueltas = {}; Object.keys(c.items).forEach(function (id) { f.vendidas[id] = c.items[id]; f.quedan[id] = 0; }); pintar(); };
+    v.querySelectorAll("[data-modo]").forEach(function (b) { b.onclick = function () { leer(); f.modo = b.getAttribute("data-modo"); if (f.modo === "quedan") Object.keys(c.items).forEach(function (id) { f.quedan[id] = c.items[id] - (f.vendidas[id] || 0); }); pintar(); }; });
     v.querySelectorAll("[data-l]").forEach(function (b) {
       b.onclick = function () {
         leer();
-        var k = b.getAttribute("data-l"), id = b.getAttribute("data-id"), otro = k === "vendidas" ? "devueltas" : "vendidas";
-        var n = (f[k][id] || 0) + Number(b.getAttribute("data-d"));
+        var k = b.getAttribute("data-l"), id = b.getAttribute("data-id"), d = Number(b.getAttribute("data-d"));
+        if (f.modo === "quedan") {
+          if (k === "quedan") f.quedan[id] = Math.max(0, Math.min(c.items[id], (f.quedan[id] || 0) + d));
+          else f.devueltas[id] = Math.max(0, Math.min(f.quedan[id] || 0, (f.devueltas[id] || 0) + d));
+          pintar(); return;
+        }
+        var otro = k === "vendidas" ? "devueltas" : "vendidas";
+        var n = (f[k][id] || 0) + d;
         n = Math.max(0, Math.min(n, c.items[id] - (f[otro][id] || 0)));
         f[k][id] = n; pintar();
       };
