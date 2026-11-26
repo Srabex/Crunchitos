@@ -18,9 +18,9 @@
   function redondo(n) { return Math.round(n * 100) / 100; }
   function pesos(n) { var r = Math.round(n || 0); return (r < 0 ? "-$" : "$") + fmt.format(Math.abs(r)); }
   function num(n) { return fmt.format(n || 0); }
-  function aviso(t) {
+  function aviso(t, arriba) {
     var a = document.getElementById("aviso");
-    a.textContent = t; a.hidden = false;
+    a.textContent = t; a.hidden = false; a.classList.toggle("arriba", !!arriba);
     clearTimeout(aviso._t); aviso._t = setTimeout(function () { a.hidden = true; }, 2600);
   }
   function api(metodo, ruta, body) {
@@ -364,7 +364,7 @@
       api("POST", "/gastos", { monto: monto, concepto: g.concepto, categoria: g.categoria, pago: g.pago, fecha: g.fecha, nota: g.nota }).then(function (r) {
         b.disabled = false;
         if (r._status === 401) { pintarLogin(); return; }
-        if (!r.ok) { err.textContent = r.error || "No se pudo guardar."; return; }
+        if (!r.ok) { err.textContent = r.error || "No se pudo guardar."; aviso(r.error || "No se pudo guardar", true); err.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
         aviso("Gasto guardado"); gform = null; cargar();
       });
     };
@@ -509,17 +509,32 @@
     guardarCampos();
     var err = document.getElementById("ferr");
     var items = Object.keys(form.items).filter(function (k) { return form.items[k] > 0; }).map(function (k) { return { producto_id: k, cantidad: form.items[k] }; });
+    // Avisa arriba (aviso) y lleva la pantalla al mensaje, para que no "no pase nada".
+    var falla = function (html, corto) {
+      err.innerHTML = html; aviso(corto, true);
+      err.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+    if ((form.tipo === "consigna" || form.tipo === "apartado") && !String(form.cliente || "").trim()) {
+      var c = document.getElementById("fcliente");
+      falla(form.tipo === "consigna" ? "Falta poner a qué tienda o persona se le dejan." : "Falta poner para quién es el apartado.", "Falta un dato ⬇");
+      if (c) { c.focus(); c.classList.add("falta"); c.oninput = function () { c.classList.remove("falta"); }; }
+      return;
+    }
+    if ((form.tipo === "venta" || form.tipo === "consigna") && !(Number(form.precio) > 0)) {
+      falla("Falta el precio por bolsa.", "Falta el precio ⬇"); return;
+    }
     form.enviando = true; resumenBoton(); err.textContent = "";
     api("POST", "/movimientos", { tipo: form.tipo, items: items, precio: form.precio, cliente: form.cliente, nota: form.nota, fecha: form.fecha, telefono: form.telefono || "", forzar: forzar }).then(function (r) {
       form.enviando = false; resumenBoton();
       if (r._status === 401) { pintarLogin(); return; }
       if (r.sinStock) {
-        err.innerHTML = "No alcanza el inventario: " + r.sinStock.map(function (s) { return esc(nombreProd(s.id)) + " (hay " + s.hay + ", pones " + s.pides + ")"; }).join(", ") +
-          '. <button class="enlace" id="forzar">Guardar de todos modos</button>';
+        r.sinStock.forEach(function (x) { var it = document.querySelector('[data-n="' + x.id + '"]'); if (it) it.closest(".it").classList.add("sinstock"); });
+        falla("No alcanza el inventario: " + r.sinStock.map(function (s) { return esc(nombreProd(s.id)) + " (hay " + s.hay + ", pones " + s.pides + ")"; }).join(", ") +
+          '. <button class="enlace" id="forzar">Guardar de todos modos</button>', "No alcanza el inventario ⬇");
         document.getElementById("forzar").onclick = function () { enviar(true); };
         return;
       }
-      if (!r.ok) { err.textContent = r.error || "No se pudo guardar."; return; }
+      if (!r.ok) { falla(esc(r.error || "No se pudo guardar."), r.error || "No se pudo guardar"); return; }
       var tipo = form.tipo;
       aviso({ venta: "Venta guardada 🙌", apartado: "Apartado guardado", consigna: "Consigna guardada", entrada: "Entrada guardada", tomada: "Guardado", merma: "Merma guardada" }[tipo]);
       return cargar().then(function () {
@@ -761,7 +776,7 @@
       var b = this; b.disabled = true;
       api("POST", "/consigna/liquidar", { tienda: c.tienda, precio: f.precio, fecha: f.fecha, nota: f.nota, vendidas: f.vendidas, devueltas: f.devueltas }).then(function (r) {
         b.disabled = false;
-        if (!r.ok) { document.getElementById("lerr").textContent = r.error || "No se pudo guardar."; return; }
+        if (!r.ok) { var le = document.getElementById("lerr"); le.textContent = r.error || "No se pudo guardar."; aviso(r.error || "No se pudo guardar", true); le.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
         aviso("Listo, cuentas al día con " + c.tienda); lform = null; vista = "inventario"; cargar();
       });
     };
@@ -893,7 +908,7 @@
         return { nombre: f.querySelector(".pn").value, valor: parseFloat(f.querySelector(".pv").value) };
       }).filter(function (p) { return p.nombre.trim() && !isNaN(p.valor); }).sort(function (a, b) { return a.valor - b.valor; });
       api("PUT", "/ajustes", { precios: precios, costo: parseFloat(document.getElementById("acosto").value), stockBajo: parseInt(document.getElementById("abajo").value, 10), minimo: parseInt(document.getElementById("amin").value, 10), mostrarAgotados: document.getElementById("aagot").checked, whatsapp: document.getElementById("awa").value }).then(function (r) {
-        if (!r.ok) { document.getElementById("aerr").textContent = r.error || "No se pudo guardar."; return; }
+        if (!r.ok) { var ae = document.getElementById("aerr"); ae.textContent = r.error || "No se pudo guardar."; aviso(r.error || "No se pudo guardar", true); ae.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
         aviso("Ajustes guardados"); cargar();
       });
     };
