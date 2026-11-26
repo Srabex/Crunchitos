@@ -62,6 +62,8 @@ Panel para Sebas, Paola (Pao, paolardzmq@gmail.com) y Víctor (victor.hernandez.
 - **En caja** = ventas directas (sin consigna) + abonos + anticipos de apartados − gastos de caja. Las ventas con `consigna = 1` ya no suman a caja (el dinero entra por el abono). **Por cobrar** = Σ por tienda max(0, en tienda + saldo) + apartados − anticipos.
 - Historial → Consigna: botón **"+ Abono / pago"** por tienda (POST `/api/abonos`; borrar en "Cobros de consigna", DELETE `/api/abonos/<id>`; los abonos ligados a un cobro se borran al borrar ese cobro). Pasar a cobrar muestra el saldo previo, calcula "te toca cobrar" y pide **"¿Cuánto te pagó hoy?"** (`pagado` en `/api/consigna/liquidar` → abono ligado al grupo).
 
+- **Emojis en ligas wa.me desde la compu** (`textoWa`, 26 nov 2026): WhatsApp de la Mac los muestra como "�"; en la compu los mensajes del panel se mandan sin emojis (✅ → ✓). En el cel se quedan.
+
 ## Varias ciudades (26 nov 2026, rama `multi-ciudad` → main)
 - Tabla `ciudades` (id, nombre, whatsapp, orden, publica). Migración `ciudades_v1`: agrega columna `ciudad` (default `chihuahua`) a movimientos, gastos, puntos y equipo; crea Chihuahua (614 235 5166) y Guadalajara (33 1760 8242, `publica = 0` hasta que arranque, ~2 semanas) y pone a Pao en Guadalajara.
 - Panel: barra amarilla "Ciudad" bajo el encabezado (si hay más de una) con cada ciudad y "Todas juntas". El cliente filtra `D.movimientos/gastos/puntos` por ciudad (`filtrarCiudad`, originales en `D.movTodos/gasTodos/ptsTodos`) y `api()` manda `ciudad` en cada POST/PUT. Con "Todas" solo se ve (Vender, Gastos, Conteo, Traspaso piden elegir ciudad). Caja, por cobrar, reportes e imágenes salen por la ciudad elegida (o la suma). Por defecto, la ciudad de la persona (`equipo.ciudad`; dueño = primera).
