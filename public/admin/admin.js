@@ -563,8 +563,11 @@
       return "<tr><td><span class=\"punto\" style=\"background:" + esc(p.color) + "\"></span>" + esc(p.nombre_base + " " + p.sabor) + "</td><td class=num>" + r.e + "</td><td class=num>" + (r.v || "–") + "</td><td class=num>" + ((r.t + r.m) || "–") + "</td><td class=num>" + (r.c || "–") + '</td><td class="num' + (bajo ? " bajo" : "") + '"><strong>' + st[p.id] + "</strong></td></tr>";
     }).join("");
     var quedan = 0; D.productos.forEach(function (p) { quedan += st[p.id]; });
+    var apN = 0, apG = {}; D.movimientos.forEach(function (m) { if (m.tipo === "apartado") { apN += m.cantidad; apG[m.grupo] = 1; } });
+    var apP = Object.keys(apG).length;
     v.innerHTML = '<div class="fila entre"><h2>Inventario</h2><span class="fila" style="gap:6px"><button class="btn chico claro" id="contar">Ajustar conteo</button><button class="btn chico" id="llego">+ Llegó mercancía</button></span></div>' +
-      '<div class="kpis"><div class="kpi amarillo"><span>Quedan</span><strong>' + num(quedan) + "</strong><small>bolsas</small></div>" +
+      '<div class="kpis"><div class="kpi amarillo"><span>Disponibles</span><strong>' + num(quedan) + "</strong><small>" + (apN ? "en tu mano: " + num(quedan + apN) + " con las apartadas" : "bolsas") + "</small></div>" +
+      '<div class="kpi"><span>Apartadas</span><strong>' + num(apN) + "</strong><small>" + (apP ? "para " + apP + (apP === 1 ? " persona" : " personas") : "nada apartado") + "</small></div>" +
       '<div class="kpi"><span>Valor a costo</span><strong>' + pesos(quedan * cp) + "</strong><small>" + pesos(cp) + " por bolsa</small></div>" +
       '<div class="kpi"><span>Si se venden a público</span><strong>' + pesos(quedan * precioPublico()) + "</strong><small>" + pesos(precioPublico()) + " por bolsa</small></div>" +
       '<div class="kpi"><span>Han llegado</span><strong>' + num(t.e) + "</strong><small>bolsas en total</small></div></div>" +
@@ -635,7 +638,8 @@
   }
   function vApartados() {
     var gs = grupos(D.movimientos).filter(function (g) { return g.tipo === "apartado"; });
-    var h = '<div class="fila entre" style="margin:20px 0 10px"><h2 style="margin:0">Apartados</h2><button class="btn chico" id="nuevoap">+ Apartar</button></div>';
+    var tn = 0; gs.forEach(function (g) { g.items.forEach(function (m) { tn += m.cantidad; }); });
+    var h = '<div class="fila entre" style="margin:20px 0 10px"><h2 style="margin:0">Apartados' + (tn ? ' <span style="font-family:Poppins;font-size:15px;opacity:.7">(' + tn + (tn === 1 ? " bolsa" : " bolsas") + ")</span>" : "") + '</h2><button class="btn chico" id="nuevoap">+ Apartar</button></div>';
     if (!gs.length) return h + '<p class="vacio" style="margin-bottom:16px">No hay bolsas apartadas.</p>';
     return h + gs.map(function (g) {
       var n = 0; g.items.forEach(function (m) { n += m.cantidad; });
