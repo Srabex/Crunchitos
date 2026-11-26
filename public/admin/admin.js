@@ -975,10 +975,10 @@
     l.push("*Bolsas que te he dejado:*");
     t.lista.slice().sort(function (a, b) { return (a.fecha || "").localeCompare(b.fecha || ""); }).forEach(function (c) { l.push("• " + lineaConsigna(c)); });
     l.push("");
-    l.push("Total dejado: " + t.dejadas + " bolsas (" + pesos(t.valor) + ")");
-    l.push("Vendidas: " + t.cobradas + " bolsas · " + pesos(t.cobrado));
-    if (t.regresaron) l.push("Regresaron: " + t.regresaron);
-    l.push("Me has pagado: " + pesos(t.abonado));
+    l.push("📦 Entregado: " + t.dejadas + " bolsas · " + pesos(t.valor));
+    l.push("🛒 Vendido: " + t.cobradas + " bolsas · " + pesos(t.cobrado));
+    if (t.regresaron) l.push("↩️ Regresaron: " + t.regresaron + " bolsas");
+    l.push("💵 Pagado: " + pesos(t.abonado));
     if (t.abonos.length) t.abonos.slice().sort(function (a, b) { return (a.fecha || "").localeCompare(b.fecha || ""); }).forEach(function (a) { l.push("   - " + fechaBonita(a.fecha) + ": " + pesos(a.monto) + (a.nota && a.nota !== "Pago al cobrar" ? " (" + a.nota + ")" : "")); });
     l.push("");
     var rc = resumenCuenta(t);
@@ -1007,18 +1007,18 @@
       g.font = "700 24px Poppins, sans-serif"; g.fillText("E S T A D O   D E   C U E N T A", W / 2, 192);
       g.font = "400 50px 'Bubblegum Sans', sans-serif"; g.fillText(t.tienda, W / 2, 250);
       g.font = "500 24px Poppins, sans-serif"; g.fillText(new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" }), W / 2, 284);
-      var k = [["Vendido", pesos(t.cobrado), t.cobradas + " bolsas", "#fff", "#3B2216"], ["Pagado", pesos(t.abonado), t.abonos.length + (t.abonos.length === 1 ? " pago" : " pagos"), "#fff", "#2F7D5B"],
+      var k = [["Entregado", pesos(t.valor), t.dejadas + " bolsas", "#fff", "#3B2216"], ["Vendido", pesos(t.cobrado), t.cobradas + " bolsas", "#fff", "#3B2216"], ["Pagado", pesos(t.abonado), t.abonos.length + (t.abonos.length === 1 ? " pago" : " pagos"), "#fff", "#2F7D5B"],
         (function () { var rc = resumenCuenta(t);
-          if (rc.tipo === "debe") return ["Pendiente", pesos(rc.monto), t.faltan ? "incluye " + t.faltan + " en tu tienda" : "de lo vendido", "#D33A2A", "#fff"];
+          if (rc.tipo === "debe") return ["Pendiente", pesos(rc.monto), t.regresaron ? "ya sin " + t.regresaron + " regresadas" : "por pagar", "#D33A2A", "#fff"];
           if (rc.tipo === "favor") return ["A tu favor", pesos(rc.monto), "te lo debo", "#2F6F8F", "#fff"];
           return ["Al corriente", "✓", "no debes nada", "#2F7D5B", "#fff"]; })()];
       k.forEach(function (x, i) {
-        var bx = 60 + i * 330, by = 330;
-        g.fillStyle = x[3]; rr(g, bx, by, 300, 150, 24); g.fill();
+        var cw = 228, bx = 50 + i * (cw + 16), by = 330, cx = bx + cw / 2;
+        g.fillStyle = x[3]; rr(g, bx, by, cw, 150, 22); g.fill();
         g.fillStyle = x[3] === "#fff" ? x[4] : "#fff";
-        g.font = "700 22px Poppins, sans-serif"; g.fillText(x[0].toUpperCase(), bx + 150, by + 40);
-        g.font = "400 54px 'Bubblegum Sans', sans-serif"; g.fillText(x[1], bx + 150, by + 98);
-        g.font = "500 22px Poppins, sans-serif"; g.fillText(x[2], bx + 150, by + 132);
+        g.font = "700 20px Poppins, sans-serif"; g.fillText(x[0].toUpperCase(), cx, by + 38);
+        g.font = "400 48px 'Bubblegum Sans', sans-serif"; g.fillText(x[1], cx, by + 94);
+        g.font = "500 19px Poppins, sans-serif"; g.fillText(x[2], cx, by + 128);
       });
       var y = 545; g.textAlign = "left"; g.fillStyle = "#9A6A25"; g.font = "700 24px Poppins, sans-serif"; g.fillText("BOLSAS QUE TE HE DEJADO", 70, y);
       y += 20;
@@ -1221,9 +1221,9 @@
           : rc.tipo === "favor" ? '<div class="cobro parcial">🤝 <b>A su favor ' + pesos(rc.monto) + "</b>: " + rc.det + "</div>"
           : '<div class="cobro ok">✅ <b>Al corriente</b>: no debe nada</div>';
         return '<div class="mov"><div style="font-weight:700;font-size:16px">' + esc(t.tienda) + '</div>' +
-          '<div style="font-size:14px;margin-top:6px;line-height:1.6">Le has dejado <b>' + t.dejadas + " bolsas</b> en " + t.n + (t.n === 1 ? " consigna" : " consignas") + " (" + pesos(t.valor) + ")<br>" +
-          "Vendidas (registradas): <b>" + t.cobradas + " bolsas · " + pesos(t.cobrado) + "</b><br>" +
-          "Te ha pagado: <b>" + pesos(t.abonado) + "</b>" + (t.abonos.length ? " en " + t.abonos.length + (t.abonos.length === 1 ? " pago" : " pagos") : "") +
+          '<div style="font-size:14px;margin-top:6px;line-height:1.6">📦 Entregado: <b>' + t.dejadas + " bolsas · " + pesos(t.valor) + "</b> <span style=\"color:var(--suave)\">(" + t.n + (t.n === 1 ? " consigna" : " consignas") + ")</span><br>" +
+          "🛒 Vendido: <b>" + t.cobradas + " bolsas · " + pesos(t.cobrado) + "</b><br>" +
+          "💵 Pagado: <b>" + pesos(t.abonado) + "</b>" + (t.abonos.length ? " en " + t.abonos.length + (t.abonos.length === 1 ? " pago" : " pagos") : "") +
           (t.regresaron ? "<br>Regresaron: " + t.regresaron : "") + (t.merma ? "<br>Merma: " + t.merma : "") +
           (t.faltan ? "<br>Siguen en la tienda: <b>" + t.faltan + (t.faltan === 1 ? " bolsa" : " bolsas") + " (" + pesos(t.enTienda) + ")</b>" : "") + "</div>" +
           tag +
