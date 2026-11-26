@@ -56,6 +56,12 @@ Panel para Sebas, Paola (Pao, paolardzmq@gmail.com) y Víctor (victor.hernandez.
 
 - **Compartir imágenes** (`entregarImagen`, 26 nov 2026): en celular abre el menú de compartir solo con el archivo (sin título: en WhatsApp de la Mac la imagen se pegaba dos veces); en la compu la descarga.
 
+## Abonos y cuenta por tienda (26 nov 2026, rama `abonos`)
+- Tabla `abonos` (tienda, monto, fecha, nota, quien, grupo, ciudad): **todo el dinero que entra por consigna**, lo pague la tienda o un cliente de la tienda que le transfiere directo a Sebas (ej. Yoga Studio: el cliente paga $55 a Sebas y Lluvia gana $15; se anota abono de $55). Migración `abonos_v1`: cada cobro de consigna que ya existía se volvió abono del mismo monto y fecha (la caja no cambió).
+- **Cuenta de cada tienda** (`cuentas()` en admin.js): saldo = vendido registrado (a precio de consigna) − abonos. Saldo > 0 la tienda debe; < 0 está a su favor (normal mientras no se cuente lo que queda). En tienda = bolsas sin pasar a cobrar × precio.
+- **En caja** = ventas directas (sin consigna) + abonos + anticipos de apartados − gastos de caja. Las ventas con `consigna = 1` ya no suman a caja (el dinero entra por el abono). **Por cobrar** = Σ por tienda max(0, en tienda + saldo) + apartados − anticipos.
+- Historial → Consigna: botón **"+ Abono / pago"** por tienda (POST `/api/abonos`; borrar en "Cobros de consigna", DELETE `/api/abonos/<id>`; los abonos ligados a un cobro se borran al borrar ese cobro). Pasar a cobrar muestra el saldo previo, calcula "te toca cobrar" y pide **"¿Cuánto te pagó hoy?"** (`pagado` en `/api/consigna/liquidar` → abono ligado al grupo).
+
 ## Varias ciudades (26 nov 2026, rama `multi-ciudad` → main)
 - Tabla `ciudades` (id, nombre, whatsapp, orden, publica). Migración `ciudades_v1`: agrega columna `ciudad` (default `chihuahua`) a movimientos, gastos, puntos y equipo; crea Chihuahua (614 235 5166) y Guadalajara (33 1760 8242, `publica = 0` hasta que arranque, ~2 semanas) y pone a Pao en Guadalajara.
 - Panel: barra amarilla "Ciudad" bajo el encabezado (si hay más de una) con cada ciudad y "Todas juntas". El cliente filtra `D.movimientos/gastos/puntos` por ciudad (`filtrarCiudad`, originales en `D.movTodos/gasTodos/ptsTodos`) y `api()` manda `ciudad` en cada POST/PUT. Con "Todas" solo se ve (Vender, Gastos, Conteo, Traspaso piden elegir ciudad). Caja, por cobrar, reportes e imágenes salen por la ciudad elegida (o la suma). Por defecto, la ciudad de la persona (`equipo.ciudad`; dueño = primera).

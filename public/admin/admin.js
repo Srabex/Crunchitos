@@ -159,14 +159,27 @@
     });
     return out;
   }
-  function estadoCobro(c) {
+  // Cuenta de cada tienda: vendido (a precio de consigna) − lo que ha pagado (abonos). Saldo > 0: te debe; < 0: le debes.
+  function cuentas() {
+    var cob = cobroConsignas(), cu = {};
+    var t0 = function (k) { return cu[k] = cu[k] || { tienda: k, n: 0, dejadas: 0, valor: 0, cobradas: 0, cobrado: 0, regresaron: 0, merma: 0, faltan: 0, enTienda: 0, abonado: 0, abonos: [], lista: [] }; };
+    Object.keys(cob).forEach(function (k) {
+      var c = cob[k], t = t0(c.tienda);
+      t.n++; t.lista.push(c); t.dejadas += c.dejadas; t.valor += c.dejadas * c.precio; t.cobradas += c.cobradas; t.cobrado += c.cobrado;
+      t.regresaron += c.regresaron; t.merma += c.merma; t.faltan += c.faltan; t.enTienda += c.faltan * c.precio;
+    });
+    (D.abonos || []).forEach(function (a) { var t = t0((a.tienda || "Sin nombre").trim()); t.abonado += Number(a.monto) || 0; t.abonos.push(a); });
+    Object.keys(cu).forEach(function (k) { var t = cu[k]; t.saldo = Math.round((t.cobrado - t.abonado) * 100) / 100; t.porCobrar = Math.max(0, t.enTienda + t.saldo); });
+    return cu;
+  }
+    function estadoCobro(c) {
     if (!c) return "";
     var extra = (c.regresaron ? " · regresaron " + c.regresaron : "") + (c.merma ? " · merma " + c.merma : "");
-    var cobr = c.cobradas ? "cobradas " + c.cobradas + " (" + pesos(c.cobrado) + ")" : "";
-    if (!c.faltan) return '<div class="cobro ok">✅ <b>Ya se cobró todo</b>' + (cobr ? " · " + cobr : " · no se vendió ninguna") + extra + (c.ultimoCobro ? " · " + esc(fechaBonita(c.ultimoCobro)) : "") + "</div>";
+    var cobr = c.cobradas ? "vendidas " + c.cobradas + " (" + pesos(c.cobrado) + ")" : "";
+    if (!c.faltan) return '<div class="cobro ok">✅ <b>Cerrada</b>' + (cobr ? " · " + cobr : " · no se vendió ninguna") + extra + (c.ultimoCobro ? " · " + esc(fechaBonita(c.ultimoCobro)) : "") + "</div>";
     var pend = c.faltan + (c.faltan === 1 ? " bolsa sigue" : " bolsas siguen") + " en la tienda (" + pesos(c.faltan * c.precio) + ")";
-    if (!c.cobradas && !c.regresaron && !c.merma) return '<div class="cobro pend">⏳ <b>Pendiente de cobrar</b> · ' + pend + "</div>";
-    return '<div class="cobro parcial">🟡 <b>Cobrada en parte</b> · ' + cobr + extra + " · ⏳ " + pend + "</div>";
+    if (!c.cobradas && !c.regresaron && !c.merma) return '<div class="cobro pend">⏳ <b>Sin pasar a cobrar</b> · ' + pend + "</div>";
+    return '<div class="cobro parcial">🟡 <b>En parte</b> · ' + cobr + extra + " · ⏳ " + pend + "</div>";
   }
   function remision(grupo) { return (D.remisiones || []).find(function (r) { return r.grupo === grupo; }) || {}; }
   function ligaRemision(grupo) { return location.origin + "/r/" + grupo; }
@@ -209,7 +222,7 @@
       if (d._status === 401) { D = null; pintarLogin(); return; }
       if (!d.ok) { app.innerHTML = '<p class="cargando">' + esc(d.error || "No se pudo cargar.") + ' <button class="enlace" id="re">Reintentar</button></p>'; document.getElementById("re").onclick = cargar; return; }
       D = d; D.hoy = hoyLocal() > d.hoy ? hoyLocal() : d.hoy;
-      D.movTodos = d.movimientos; D.gasTodos = d.gastos || []; D.ptsTodos = d.puntos || [];
+      D.movTodos = d.movimientos; D.gasTodos = d.gastos || []; D.ptsTodos = d.puntos || []; D.aboTodos = d.abonos || [];
       D.ciudades = d.ciudades || [];
       if (!ciudad || (ciudad !== "todas" && !D.ciudades.some(function (c) { return c.id === ciudad; }))) ciudad = d.miCiudad || (D.ciudades[0] || {}).id || "chihuahua";
       filtrarCiudad();
@@ -219,7 +232,7 @@
 
   function filtrarCiudad() {
     var es = function (x) { return ciudad === "todas" || (x.ciudad || "chihuahua") === ciudad; };
-    D.movimientos = D.movTodos.filter(es); D.gastos = D.gasTodos.filter(es); D.puntos = D.ptsTodos.filter(es);
+    D.movimientos = D.movTodos.filter(es); D.gastos = D.gasTodos.filter(es); D.puntos = D.ptsTodos.filter(es); D.abonos = (D.aboTodos || []).filter(es);
   }
   function variasCiudades() { return D && D.ciudades && D.ciudades.length > 1; }
   function nombreCiudad(id) { if (id === "todas") return "Todas las ciudades"; var c = (D.ciudades || []).find(function (x) { return x.id === id; }); return c ? c.nombre : id; }
@@ -327,10 +340,12 @@
     // Dinero de hoy (siempre todo el historial, no depende del periodo)
     var cobrado = 0, deCaja = 0, debe = {};
     var antic = 0;
-    D.movimientos.forEach(function (m) { if (m.tipo === "venta") cobrado += m.cantidad * m.precio; if (m.tipo === "apartado") antic += Number(m.anticipo) || 0; });
+    D.movimientos.forEach(function (m) { if (m.tipo === "venta" && !m.consigna) cobrado += m.cantidad * m.precio; if (m.tipo === "apartado") antic += Number(m.anticipo) || 0; });
+    (D.abonos || []).forEach(function (a) { cobrado += Number(a.monto) || 0; }); // lo que pagan las tiendas a consigna (o sus clientes directo)
     cobrado += antic; // anticipos de apartados ya están en caja; al entregar, la venta los incluye
     (D.gastos || []).forEach(function (g) { if (g.pago === "caja") deCaja += g.monto; else debe[g.pago] = (debe[g.pago] || 0) + g.monto; });
-    var pc = 0, pcB = 0, pcT = consignas(); pcT.forEach(function (c) { pcB += c.bolsas; pc += c.bolsas * c.precio; });
+    var pc = 0, pcB = 0, pcT = consignas(), cuI = cuentas(); pcT.forEach(function (c) { pcB += c.bolsas; });
+    Object.keys(cuI).forEach(function (k) { pc += cuI[k].porCobrar; });
     var apB = 0, apV = 0; D.movimientos.forEach(function (m) { if (m.tipo === "apartado") { apB += m.cantidad; apV += m.cantidad * m.precio; } });
     apV = Math.max(0, apV - antic);
     var deudas = Object.keys(debe);
@@ -938,8 +953,8 @@
   }
   function lineaConsigna(c) {
     return fechaBonita(c.fecha) + ": " + c.dejadas + (c.dejadas === 1 ? " bolsa" : " bolsas") + " a " + pesos(c.precio) + " → " +
-      (c.faltan ? (c.cobradas ? "pagó " + c.cobradas + ", " : "") + (c.regresaron ? "regresaron " + c.regresaron + ", " : "") + "pendientes " + c.faltan
-        : "✅ liquidada" + (c.cobradas ? " (pagó " + c.cobradas + (c.regresaron ? ", regresaron " + c.regresaron : "") + ")" : c.regresaron ? " (regresaron " + c.regresaron + ")" : ""));
+      (c.faltan ? (c.cobradas ? "vendió " + c.cobradas + ", " : "") + (c.regresaron ? "regresaron " + c.regresaron + ", " : "") + "siguen en tienda " + c.faltan
+        : "✅ cerrada" + (c.cobradas ? " (vendió " + c.cobradas + (c.regresaron ? ", regresaron " + c.regresaron : "") + ")" : c.regresaron ? " (regresaron " + c.regresaron + ")" : ""));
   }
   function textoCuenta(t) {
     var l = [], N = String.fromCharCode(10);
@@ -950,19 +965,23 @@
     t.lista.slice().sort(function (a, b) { return (a.fecha || "").localeCompare(b.fecha || ""); }).forEach(function (c) { l.push("• " + lineaConsigna(c)); });
     l.push("");
     l.push("Total dejado: " + t.dejadas + " bolsas (" + pesos(t.valor) + ")");
-    l.push("Ya pagado: " + t.cobradas + " bolsas · " + pesos(t.cobrado));
+    l.push("Vendidas: " + t.cobradas + " bolsas · " + pesos(t.cobrado));
     if (t.regresaron) l.push("Regresaron: " + t.regresaron);
+    l.push("Me has pagado: " + pesos(t.abonado));
+    if (t.abonos.length) t.abonos.slice().sort(function (a, b) { return (a.fecha || "").localeCompare(b.fecha || ""); }).forEach(function (a) { l.push("   - " + fechaBonita(a.fecha) + ": " + pesos(a.monto) + (a.nota && a.nota !== "Pago al cobrar" ? " (" + a.nota + ")" : "")); });
+    l.push("");
+    l.push(t.saldo > 0 ? "*De lo vendido me debes: " + pesos(t.saldo) + "*" : t.saldo < 0 ? "*A tu favor: " + pesos(-t.saldo) + "*" + (t.faltan ? " (se acomoda cuando contemos lo que queda)" : "") : "*✅ De lo vendido estamos al corriente.*");
     if (t.faltan) {
-      l.push("*Pendiente: " + pesos(t.porCobrar) + "* (" + t.faltan + (t.faltan === 1 ? " bolsa" : " bolsas") + " en tu tienda)");
-      var q = quedanEnTienda(t); if (q.length) { l.push(""); l.push("_En tu tienda deberían quedar:_"); q.forEach(function (x) { l.push("- " + x[1] + " " + x[0]); }); }
-      l.push(""); l.push("Cuando vendas, me pagas aquí y me mandas el comprobante: " + location.origin + "/pago/?de=" + encodeURIComponent(t.tienda));
-    } else { l.push("*✅ Estás al corriente, no debes nada.*"); }
+      l.push("En tu tienda siguen " + t.faltan + (t.faltan === 1 ? " bolsa" : " bolsas") + " (" + pesos(t.enTienda) + ")");
+      var q = quedanEnTienda(t); if (q.length) { l.push(""); l.push("_Deberían quedar:_"); q.forEach(function (x) { l.push("- " + x[1] + " " + x[0]); }); }
+      l.push(""); l.push("Me pagas aquí y me mandas el comprobante: " + location.origin + "/pago/?de=" + encodeURIComponent(t.tienda));
+    }
     l.push(""); l.push("¡Gracias por vender Crunchitos! 🙌");
     return l.join(N);
   }
   function imagenCuenta(t, btn) {
     var txt = btn.textContent; btn.textContent = "Armando imagen…"; btn.disabled = true;
-    var lista = t.lista.slice().sort(function (a, b) { return (a.fecha || "").localeCompare(b.fecha || ""); });
+    var lista = (t.lista || []).slice().sort(function (a, b) { return (a.fecha || "").localeCompare(b.fecha || ""); });
     var q = t.faltan ? quedanEnTienda(t) : [];
     var W = 1080, H = 640 + lista.length * 64 + (q.length ? 90 + q.length * 50 : 0) + 150;
     var cv = document.createElement("canvas"); cv.width = W; cv.height = H;
@@ -975,8 +994,8 @@
       g.font = "700 24px Poppins, sans-serif"; g.fillText("E S T A D O   D E   C U E N T A", W / 2, 192);
       g.font = "400 50px 'Bubblegum Sans', sans-serif"; g.fillText(t.tienda, W / 2, 250);
       g.font = "500 24px Poppins, sans-serif"; g.fillText(new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" }), W / 2, 284);
-      var k = [["Dejado", pesos(t.valor), t.dejadas + " bolsas", "#fff", "#3B2216"], ["Pagado", pesos(t.cobrado), t.cobradas + " bolsas", "#fff", "#2F7D5B"],
-        [t.faltan ? "Pendiente" : "Al corriente", t.faltan ? pesos(t.porCobrar) : "✓", t.faltan ? t.faltan + " bolsas" : "no debe nada", t.faltan ? "#D33A2A" : "#2F7D5B", "#fff"]];
+      var k = [["Vendido", pesos(t.cobrado), t.cobradas + " bolsas", "#fff", "#3B2216"], ["Pagado", pesos(t.abonado), t.abonos.length + (t.abonos.length === 1 ? " pago" : " pagos"), "#fff", "#2F7D5B"],
+        t.saldo > 0 ? ["Me debes", pesos(t.saldo), "de lo vendido", "#D33A2A", "#fff"] : t.saldo < 0 ? ["A tu favor", pesos(-t.saldo), t.faltan ? "al contar se acomoda" : "te lo debo", "#2F6F8F", "#fff"] : ["Al corriente", "✓", "de lo vendido", "#2F7D5B", "#fff"]];
       k.forEach(function (x, i) {
         var bx = 60 + i * 330, by = 330;
         g.fillStyle = x[3]; rr(g, bx, by, 300, 150, 24); g.fill();
@@ -992,15 +1011,15 @@
         g.fillStyle = "#3B2216"; g.textAlign = "left"; g.font = "600 26px Poppins, sans-serif";
         g.fillText(fechaBonita(c.fecha) + " · " + c.dejadas + " bolsas a " + pesos(c.precio), 70, y);
         g.textAlign = "right"; g.fillStyle = c.faltan ? "#D33A2A" : "#2F7D5B"; g.font = "700 24px Poppins, sans-serif";
-        g.fillText(c.faltan ? "faltan " + c.faltan + (c.cobradas ? " (pagó " + c.cobradas + ")" : "") : "✓ liquidada", W - 70, y);
+        g.fillText(c.faltan ? "en tienda " + c.faltan + (c.cobradas ? " (vendió " + c.cobradas + ")" : "") : "✓ cerrada", W - 70, y);
       });
       if (q.length) {
-        y += 80; g.textAlign = "left"; g.fillStyle = "#9A6A25"; g.font = "700 24px Poppins, sans-serif"; g.fillText("EN TU TIENDA DEBERÍAN QUEDAR", 70, y);
+        y += 80; g.textAlign = "left"; g.fillStyle = "#9A6A25"; g.font = "700 24px Poppins, sans-serif"; g.fillText("EN TU TIENDA DEBERÍAN QUEDAR " + t.faltan + " BOLSAS (" + pesos(t.enTienda) + ")", 70, y);
         q.forEach(function (x) { y += 50; g.fillStyle = "#3B2216"; g.font = "500 26px Poppins, sans-serif"; g.fillText(x[1] + " × " + x[0], 70, y); });
       }
       g.fillStyle = "#3B2216"; g.fillRect(0, H - 120, W, 120);
       g.textAlign = "center"; g.fillStyle = "#FFF6E6"; g.font = "600 28px Poppins, sans-serif";
-      g.fillText(t.faltan ? "Paga y manda tu comprobante en crunchitos.mx/pago" : "¡Gracias por vender Crunchitos!", W / 2, H - 50);
+      g.fillText(t.saldo > 0 ? "Paga y manda tu comprobante en crunchitos.mx/pago" : "¡Gracias por vender Crunchitos!", W / 2, H - 50);
       compartirCanvas(cv, "cuenta-" + t.tienda.toLowerCase().replace(/[^a-z0-9]+/g, "-") + ".png", "Cuenta Crunchitos · " + t.tienda, function () { btn.textContent = txt; btn.disabled = false; });
     };
     var hecho = false, go = function () { if (hecho) return; hecho = true; (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(listo); };
@@ -1087,6 +1106,9 @@
       if ((f.devueltas[id] || 0) > f.quedan[id]) f.devueltas[id] = f.quedan[id];
     });
     function total(o) { var n = 0; Object.keys(o).forEach(function (k) { n += o[k] || 0; }); return n; }
+    var cta = cuentas()[c.tienda] || { saldo: 0 }, saldoPrev = cta.saldo || 0;
+    var hoyVal = Math.round(total(f.vendidas) * (Number(f.precio) || 0) * 100) / 100, debeHoy = Math.max(0, Math.round((saldoPrev + hoyVal) * 100) / 100);
+    if (!f.pagadoTocado) f.pagado = debeHoy;
     var h = '<button class="enlace" id="volver">← Inventario</button><h2>Cobrar a ' + esc(c.tienda) + "</h2>" +
       '<div class="chips" role="group" aria-label="Cómo contar" style="margin-bottom:10px"><button class="chip" data-modo="quedan" aria-pressed="' + (f.modo === "quedan") + '">Cuento lo que queda</button><button class="chip" data-modo="vendidas" aria-pressed="' + (f.modo !== "quedan") + '">Pongo lo que se vendió</button></div>' +
       '<p class="vacio" style="margin:-4px 0 12px">' + (f.modo === "quedan" ? "Cuenta las bolsas que siguen en la tienda y el sistema calcula cuántas se vendieron. Si te traes algunas de regreso, márcalas en «Regresan» (salen de las que quedan)." : "Pon cuántas se vendieron y cuántas te traes de regreso; las demás se quedan a consigna.") + "</p>" +
@@ -1100,10 +1122,16 @@
           }).join("") + "</div>" + (f.modo === "quedan" ? '<div style="font-size:13px;margin-top:6px;font-weight:600;color:' + (vnd ? "var(--verde)" : "var(--suave)") + '">→ se vendieron ' + vnd + "</div>" : "") + "</div>";
       }).join("") + "</div>" +
       '<div class="caja" style="margin-top:14px"><div class="rejilla2"><label>Precio por bolsa<input id="lprecio" inputmode="decimal" value="' + esc(f.precio) + '"></label><label>Fecha<input type="date" id="lfecha" value="' + esc(f.fecha) + '" max="' + esc(D.hoy) + '"></label></div>' +
+      '<div style="font-size:14px;margin-top:12px;line-height:1.6">' + (saldoPrev < 0 ? "Ya te había pagado " + pesos(-saldoPrev) + " de más (abonos, p. ej. clientes que te transfirieron directo).<br>" : saldoPrev > 0 ? "Ya te debía " + pesos(saldoPrev) + " de antes.<br>" : "") +
+        "Vendidas hoy: " + pesos(hoyVal) + " → <b>" + (saldoPrev + hoyVal >= 0 ? "te toca cobrar " + pesos(debeHoy) : "le debes " + pesos(-(saldoPrev + hoyVal))) + "</b></div>" +
+      '<label style="margin-top:10px">¿Cuánto te pagó hoy?<input id="lpagado" inputmode="decimal" value="' + (f.pagado || 0) + '"></label>' +
       '<label style="margin-top:10px">Nota (opcional)<input id="lnota" value="' + esc(f.nota) + '" placeholder="Ej. le dejé 10 más"></label><p class="error" id="lerr" style="margin-top:10px"></p></div>' +
-      '<div class="barra"><button class="btn verde" id="lguardar">' + (total(f.vendidas) ? "Cobrar " + pesos(total(f.vendidas) * f.precio) + " · " + total(f.vendidas) + " vendidas" : "Guardar") + (total(f.devueltas) ? " · " + total(f.devueltas) + " regresan" : "") + "</button></div>";
+      '<div class="barra"><button class="btn verde" id="lguardar">' + (total(f.vendidas) ? "Guardar · " + total(f.vendidas) + " vendidas" : "Guardar") + (f.pagado ? " · te paga " + pesos(f.pagado) : "") + (total(f.devueltas) ? " · " + total(f.devueltas) + " regresan" : "") + "</button></div>";
     v.innerHTML = h;
-    function leer() { f.precio = parseFloat(document.getElementById("lprecio").value) || 0; f.fecha = document.getElementById("lfecha").value || D.hoy; f.nota = document.getElementById("lnota").value; }
+    function leer() {
+      f.precio = parseFloat(document.getElementById("lprecio").value) || 0; f.fecha = document.getElementById("lfecha").value || D.hoy; f.nota = document.getElementById("lnota").value;
+      var p = parseFloat(String(document.getElementById("lpagado").value).replace(/[$,\s]/g, "")) || 0; if (p !== f.pagado) { f.pagado = p; f.pagadoTocado = true; }
+    }
     document.getElementById("volver").onclick = function () { ir("inventario"); };
     document.getElementById("todas").onclick = function () { leer(); f.devueltas = {}; Object.keys(c.items).forEach(function (id) { f.vendidas[id] = c.items[id]; f.quedan[id] = 0; }); pintar(); };
     v.querySelectorAll("[data-modo]").forEach(function (b) { b.onclick = function () { leer(); f.modo = b.getAttribute("data-modo"); if (f.modo === "quedan") Object.keys(c.items).forEach(function (id) { f.quedan[id] = c.items[id] - (f.vendidas[id] || 0); }); pintar(); }; });
@@ -1122,11 +1150,11 @@
         f[k][id] = n; pintar();
       };
     });
-    ["lprecio", "lfecha", "lnota"].forEach(function (id) { document.getElementById(id).onchange = function () { leer(); pintar(); }; });
+    ["lprecio", "lfecha", "lnota", "lpagado"].forEach(function (id) { document.getElementById(id).onchange = function () { leer(); pintar(); }; });
     document.getElementById("lguardar").onclick = function () {
       leer();
       var b = this; b.disabled = true;
-      api("POST", "/consigna/liquidar", { tienda: c.tienda, precio: f.precio, fecha: f.fecha, nota: f.nota, vendidas: f.vendidas, devueltas: f.devueltas }).then(function (r) {
+      api("POST", "/consigna/liquidar", { tienda: c.tienda, precio: f.precio, fecha: f.fecha, nota: f.nota, vendidas: f.vendidas, devueltas: f.devueltas, pagado: f.pagado || 0 }).then(function (r) {
         b.disabled = false;
         if (!r.ok) { var le = document.getElementById("lerr"); le.textContent = r.error || "No se pudo guardar."; aviso(r.error || "No se pudo guardar", true); le.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
         aviso("Listo, cuentas al día con " + c.tienda); lform = null; vista = "inventario"; cargar();
@@ -1150,27 +1178,35 @@
         return '<button class="chip" data-f="' + t[0] + '" aria-pressed="' + (filtroHist === t[0]) + '">' + t[1] + "</button>";
       }).join("") + "</div>";
     if (filtroHist === "cobros") {
-      var tot = 0, tb = 0, pt = {};
-      gs.forEach(function (g) { if (g.tipo !== "venta") return; g.items.forEach(function (m) { var k = g.cliente || "Sin nombre", x = pt[k] = pt[k] || { b: 0, d: 0 }; x.b += m.cantidad; x.d += m.cantidad * m.precio; tb += m.cantidad; tot += m.cantidad * m.precio; }); });
-      h += '<div class="mov"><div style="font-size:14px;color:var(--suave)">Lo que ya cobraste de consignas</div><div style="font-size:26px;font-weight:700;margin:2px 0 8px">' + pesos(tot) + ' <small style="font-size:14px;font-weight:500">· ' + tb + ' bolsas</small></div>' +
-        (Object.keys(pt).length ? "<table><tbody>" + Object.keys(pt).sort(function (a, b) { return pt[b].d - pt[a].d; }).map(function (k) { return "<tr><td>" + esc(k) + "</td><td class=num>" + pt[k].b + " bolsas</td><td class=num><b>" + pesos(pt[k].d) + "</b></td></tr>"; }).join("") + "</tbody></table>" : '<p class="vacio">Todavía no has registrado cobros.</p>') + "</div>" +
-        '<h3 style="margin:16px 0 8px">Cada cobro</h3>';
+      var tot = 0, pt = {};
+      (D.abonos || []).forEach(function (a) { var k = (a.tienda || "Sin nombre").trim(); pt[k] = (pt[k] || 0) + Number(a.monto); tot += Number(a.monto); });
+      h += '<div class="mov"><div style="font-size:14px;color:var(--suave)">Lo que te han pagado por consignas</div><div style="font-size:26px;font-weight:700;margin:2px 0 8px">' + pesos(tot) + "</div>" +
+        (Object.keys(pt).length ? "<table><tbody>" + Object.keys(pt).sort(function (a, b) { return pt[b] - pt[a]; }).map(function (k) { return "<tr><td>" + esc(k) + "</td><td class=num><b>" + pesos(pt[k]) + "</b></td></tr>"; }).join("") + "</tbody></table>" : '<p class="vacio">Todavía no has registrado pagos.</p>') + "</div>" +
+        '<h3 style="margin:16px 0 8px">Pagos y abonos</h3>' +
+        ((D.abonos || []).length ? (D.abonos || []).map(function (a) {
+          return '<div class="mov"><div class="cab"><span><span class="pill p-venta">Pago</span> ' + esc(fechaBonita(a.fecha)) + "</span><span>" + esc(nombrePersona(a.quien)) + '</span></div><div class="pie" style="margin-top:6px"><span><b>' + esc(a.tienda) + "</b> · <b>" + pesos(a.monto) + "</b>" + (a.nota ? ' · <span style="color:var(--suave)">' + esc(a.nota) + "</span>" : "") + "</span>" +
+            (a.grupo ? "" : '<button class="btn chico peligro" data-borraabono="' + a.id + '">Borrar</button>') + "</div></div>";
+        }).join("") : "") +
+        '<h3 style="margin:16px 0 8px">Bolsas vendidas que registraste</h3>';
     }
     if (filtroHist === "consigna") {
-      var cu = {};
-      Object.keys(cob).forEach(function (k) {
-        var c = cob[k], t = cu[c.tienda] = cu[c.tienda] || { tienda: c.tienda, n: 0, dejadas: 0, valor: 0, cobradas: 0, cobrado: 0, regresaron: 0, merma: 0, faltan: 0, porCobrar: 0, lista: [] };
-        t.n++; t.lista.push(c); t.dejadas += c.dejadas; t.valor += c.dejadas * c.precio; t.cobradas += c.cobradas; t.cobrado += c.cobrado;
-        t.regresaron += c.regresaron; t.merma += c.merma; t.faltan += c.faltan; t.porCobrar += c.faltan * c.precio;
-      });
+      var cu = cuentas();
       var lista = Object.keys(cu).map(function (k) { return cu[k]; }).sort(function (a, b) { return b.porCobrar - a.porCobrar; });
       if (lista.length) h += '<h3 style="margin:4px 0 8px">Cuenta por tienda</h3>' + lista.map(function (t) {
+        var tag = t.saldo > 0 ? '<div class="cobro pend">💰 <b>Te debe ' + pesos(t.saldo) + "</b> de lo ya vendido</div>"
+          : t.saldo < 0 ? '<div class="cobro parcial">🤝 <b>Le debes ' + pesos(-t.saldo) + "</b> (te han pagado más de lo vendido registrado; al contar lo que queda se ajusta)</div>"
+          : '<div class="cobro ok">✅ <b>Al corriente</b> con lo vendido</div>';
         return '<div class="mov"><div style="font-weight:700;font-size:16px">' + esc(t.tienda) + '</div>' +
           '<div style="font-size:14px;margin-top:6px;line-height:1.6">Le has dejado <b>' + t.dejadas + " bolsas</b> en " + t.n + (t.n === 1 ? " consigna" : " consignas") + " (" + pesos(t.valor) + ")<br>" +
-          "Ya cobrado: <b>" + t.cobradas + " bolsas · " + pesos(t.cobrado) + "</b>" + (t.regresaron ? "<br>Regresaron: " + t.regresaron : "") + (t.merma ? "<br>Merma: " + t.merma : "") + "</div>" +
-          (t.faltan ? '<div class="cobro pend">⏳ <b>Falta cobrar: ' + pesos(t.porCobrar) + "</b> · " + t.faltan + (t.faltan === 1 ? " bolsa" : " bolsas") + ' en la tienda</div><button class="btn chico verde" style="margin-top:8px" data-cobrar="' + esc(t.tienda) + '">Pasar a cobrar</button>'
-            : '<div class="cobro ok">✅ <b>Al corriente</b>: no debe nada</div>') +
-          '<div class="fila" style="gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn chico claro" data-ctxt="' + esc(t.tienda) + '">Mandar cuenta por WhatsApp</button><button class="btn chico claro" data-cimg="' + esc(t.tienda) + '">Compartir como imagen</button></div>' + "</div>";
+          "Vendidas (registradas): <b>" + t.cobradas + " bolsas · " + pesos(t.cobrado) + "</b><br>" +
+          "Te ha pagado: <b>" + pesos(t.abonado) + "</b>" + (t.abonos.length ? " en " + t.abonos.length + (t.abonos.length === 1 ? " pago" : " pagos") : "") +
+          (t.regresaron ? "<br>Regresaron: " + t.regresaron : "") + (t.merma ? "<br>Merma: " + t.merma : "") +
+          (t.faltan ? "<br>Siguen en la tienda: <b>" + t.faltan + (t.faltan === 1 ? " bolsa" : " bolsas") + " (" + pesos(t.enTienda) + ")</b>" : "") + "</div>" +
+          tag + (t.faltan ? '<div style="font-size:13px;color:var(--suave);margin-top:6px">Si se venden todas, en total te pagaría ' + pesos(t.porCobrar) + " más.</div>" : "") +
+          '<div class="fila" style="gap:6px;margin-top:8px;align-items:flex-end" data-abobox="' + esc(t.tienda) + '" hidden><label style="flex:1;margin:0">Monto<input inputmode="decimal" placeholder="$0"></label><label style="flex:2;margin:0">Nota<input placeholder="Ej. cliente me transfirió directo"></label><button class="btn chico" data-abook="' + esc(t.tienda) + '">Guardar</button></div>' +
+          '<div class="fila" style="gap:6px;margin-top:8px;flex-wrap:wrap">' + (t.faltan ? '<button class="btn chico verde" data-cobrar="' + esc(t.tienda) + '">Pasar a cobrar</button>' : "") +
+          '<button class="btn chico" data-abono="' + esc(t.tienda) + '">+ Abono / pago</button>' +
+          '<button class="btn chico claro" data-ctxt="' + esc(t.tienda) + '">Mandar cuenta por WhatsApp</button><button class="btn chico claro" data-cimg="' + esc(t.tienda) + '">Compartir como imagen</button></div>' + "</div>";
       }).join("") + '<h3 style="margin:16px 0 8px">Movimientos</h3>';
       cuentasTienda = cu;
     }
@@ -1192,6 +1228,22 @@
     v.querySelectorAll("[data-f]").forEach(function (b) { b.onclick = function () { filtroHist = b.getAttribute("data-f"); pintar(); }; });
     v.querySelectorAll("[data-recibo]").forEach(function (b) { b.onclick = function () { rgrupo = b.getAttribute("data-recibo"); ir("remision"); }; });
     v.querySelectorAll("[data-cobrar]").forEach(function (b) { b.onclick = function () { lform = null; ltienda = b.getAttribute("data-cobrar"); ir("liquidar"); }; });
+    v.querySelectorAll("[data-abono]").forEach(function (b) { b.onclick = function () { var x = v.querySelector('[data-abobox="' + b.getAttribute("data-abono") + '"]'); x.hidden = !x.hidden; if (!x.hidden) x.querySelector("input").focus(); }; });
+    v.querySelectorAll("[data-abook]").forEach(function (b) {
+      b.onclick = function () {
+        var td = b.getAttribute("data-abook"), box = v.querySelector('[data-abobox="' + td + '"]'), ins = box.querySelectorAll("input");
+        var monto = parseFloat(String(ins[0].value).replace(/[$,\s]/g, "")) || 0;
+        if (!(monto > 0)) { aviso("Pon el monto del abono", true); ins[0].focus(); return; }
+        b.disabled = true;
+        api("POST", "/abonos", { tienda: td, monto: monto, nota: ins[1].value, fecha: D.hoy }).then(function (r) { b.disabled = false; if (!r.ok) { aviso(r.error || "No se pudo.", true); return; } aviso("Abono de " + pesos(monto) + " guardado"); cargar(); });
+      };
+    });
+    v.querySelectorAll("[data-borraabono]").forEach(function (b) {
+      b.onclick = function () {
+        if (b.getAttribute("data-ok") !== "1") { b.setAttribute("data-ok", "1"); b.textContent = "¿Seguro? Toca otra vez"; return; }
+        api("DELETE", "/abonos/" + b.getAttribute("data-borraabono")).then(function (r) { if (!r.ok) { aviso(r.error || "No se pudo.", true); return; } aviso("Abono borrado"); cargar(); });
+      };
+    });
     v.querySelectorAll("[data-ctxt]").forEach(function (b) { b.onclick = function () { var t = cuentasTienda[b.getAttribute("data-ctxt")]; if (!t) return; window.open("https://wa.me/" + telTienda(t) + "?text=" + encodeURIComponent(textoCuenta(t)), "_blank"); }; });
     v.querySelectorAll("[data-cimg]").forEach(function (b) { b.onclick = function () { var t = cuentasTienda[b.getAttribute("data-cimg")]; if (t) imagenCuenta(t, b); }; });
     v.querySelectorAll("[data-precio-g]").forEach(function (b) {

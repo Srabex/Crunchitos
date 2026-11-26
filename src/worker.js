@@ -228,6 +228,22 @@ async function db(env) {
       env.DB.prepare("INSERT OR REPLACE INTO meta (llave, valor) VALUES ('ciudades_v1', '1')"),
     ]);
   }
+  // Abonos: dinero que entra por una tienda a consigna (lo que paga la tienda o lo que sus clientes le transfieren directo a Sebas).
+  // La cuenta de cada tienda = vendido a precio de consigna − abonos. abonos.grupo liga el abono al cobro que lo creó.
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS abonos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, tienda TEXT NOT NULL, monto REAL NOT NULL, fecha TEXT NOT NULL,
+    nota TEXT NOT NULL DEFAULT '', quien TEXT NOT NULL DEFAULT '', grupo TEXT NOT NULL DEFAULT '',
+    ciudad TEXT NOT NULL DEFAULT 'chihuahua', creado INTEGER NOT NULL)`).run();
+  const ab1 = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'abonos_v1'").first();
+  if (!ab1) {
+    // Los cobros de consigna que ya existían se toman como pagados el mismo día (así la caja no cambia).
+    await env.DB.batch([
+      env.DB.prepare(`INSERT INTO abonos (tienda, monto, fecha, nota, quien, grupo, ciudad, creado)
+        SELECT cliente, SUM(cantidad * precio), MIN(fecha), 'Pago al cobrar', MIN(quien), grupo, MIN(ciudad), MIN(creado)
+        FROM movimientos WHERE tipo = 'venta' AND consigna = 1 GROUP BY grupo HAVING SUM(cantidad * precio) > 0`),
+      env.DB.prepare("INSERT OR REPLACE INTO meta (llave, valor) VALUES ('abonos_v1', '1')"),
+    ]);
+  }
   // Sabores nuevos (p. ej. plátano natural) entran solos a una base que ya existía, con su orden.
   await env.DB.batch(PRODUCTOS.flatMap(([id, base, nb, sabor, color], i) => [
     env.DB.prepare("INSERT OR IGNORE INTO productos (id, base, nombre_base, sabor, color, orden) VALUES (?,?,?,?,?,?)").bind(id, base, nb, sabor, color, i),
@@ -361,6 +377,7 @@ async function datos(D, yo) {
     D.prepare("SELECT * FROM gastos ORDER BY fecha DESC, creado DESC").all(),
   ]);
   const rem = await D.prepare("SELECT * FROM remisiones").all();
+  const abo = await D.prepare("SELECT * FROM abonos ORDER BY fecha DESC, creado DESC").all();
   const pts = await D.prepare("SELECT id, nombre, direccion, mapa, creado, ciudad, length(foto) AS tieneFoto FROM puntos ORDER BY creado").all();
   const eqC = await D.prepare("SELECT email, ciudad FROM equipo").all();
   return {
@@ -377,6 +394,7 @@ async function datos(D, yo) {
     ajustes: aj,
     gastos: gas.results,
     remisiones: rem.results,
+    abonos: abo.results,
     puntos: pts.results,
     equipoCiudad: Object.fromEntries(eqC.results.map((e) => [e.email, e.ciudad])),
   };
@@ -503,6 +521,8 @@ async function liquidar(D, yo, body) {
   const validos = new Set(prods.map((p) => p.id));
   const lista = (o) => Object.entries(o || {}).map(([id, n]) => ({ id, n: Math.trunc(Number(n)) })).filter((x) => validos.has(x.id) && x.n > 0 && x.n <= 10000);
   const vendidas = lista(body.vendidas), devueltas = lista(body.devueltas), merma = lista(body.merma);
+  const pagado = Math.round((Number(body.pagado) || 0) * 100) / 100;
+  if (!Number.isFinite(pagado) || pagado < 0 || pagado > 1000000) return error("Revisa cuánto te pagó.");
   if (!vendidas.length && !devueltas.length && !merma.length) return error("Pon cuántas se vendieron o regresan.");
   const ahora = Date.now(), nota = texto(body.nota, 300), ciudad = await ciudadDe(D, body, yo);
   const ins = (grupo, tipo, x, p, consigna) => D.prepare(`INSERT INTO movimientos (grupo, tipo, producto_id, cantidad, precio, cliente, nota, quien, fecha, creado, consigna, ciudad)
@@ -512,6 +532,8 @@ async function liquidar(D, yo, body) {
     ...vendidas.map((x) => ins(gV, "venta", x, precio, 1)),
     ...devueltas.map((x) => ins(gD, "devolucion", x, 0, 1)),
     ...merma.map((x) => ins(gM, "merma", x, 0, 1)),
+    ...(pagado > 0 ? [D.prepare("INSERT INTO abonos (tienda, monto, fecha, nota, quien, grupo, ciudad, creado) VALUES (?,?,?,?,?,?,?,?)")
+      .bind(tienda, pagado, fecha, "Pago al cobrar", yo, vendidas.length ? gV : devueltas.length ? gD : gM, ciudad, ahora)] : []),
   ]);
   return json({ ok: true });
 }
@@ -645,6 +667,20 @@ async function api(req, env, url) {
   if (ruta === "/datos" && metodo === "GET") return json(await datos(D, yo));
   if (ruta === "/movimientos" && metodo === "POST") return guardarMovimiento(D, yo, body);
   if (ruta === "/consigna/liquidar" && metodo === "POST") return liquidar(D, yo, body);
+  if (ruta === "/abonos" && metodo === "POST") {
+    const tienda = texto(body.tienda, 80), monto = Math.round((Number(body.monto) || 0) * 100) / 100;
+    if (!tienda) return error("Falta la tienda.");
+    if (!Number.isFinite(monto) || monto <= 0 || monto > 1000000) return error("Pon el monto del abono.");
+    const fecha = esFecha(body.fecha) ? body.fecha : hoyChihuahua();
+    await D.prepare("INSERT INTO abonos (tienda, monto, fecha, nota, quien, grupo, ciudad, creado) VALUES (?,?,?,?,?,'',?,?)")
+      .bind(tienda, monto, fecha, texto(body.nota, 200), yo, await ciudadDe(D, body, yo), Date.now()).run();
+    return json({ ok: true });
+  }
+  const mAbo = /^\/abonos\/(\d+)$/.exec(ruta);
+  if (mAbo && metodo === "DELETE") {
+    await D.prepare("DELETE FROM abonos WHERE id = ?").bind(Number(mAbo[1])).run();
+    return json({ ok: true });
+  }
   if (ruta === "/ajuste" && metodo === "POST") return ajustarConteo(D, yo, body);
   if (ruta === "/traspaso" && metodo === "POST") return traspasar(D, yo, body);
   if (ruta === "/ciudades" && metodo === "POST") {
@@ -673,7 +709,10 @@ async function api(req, env, url) {
   }
   const mBorrar = /^\/movimientos\/(g-[\w-]+)$/.exec(ruta);
   if (mBorrar && metodo === "DELETE") {
-    await D.prepare("DELETE FROM movimientos WHERE grupo = ?").bind(mBorrar[1]).run();
+    await D.batch([
+      D.prepare("DELETE FROM movimientos WHERE grupo = ?").bind(mBorrar[1]),
+      D.prepare("DELETE FROM abonos WHERE grupo = ?").bind(mBorrar[1]),
+    ]);
     return json({ ok: true });
   }
   // Apartado → se entrega como venta o como consigna (mismo grupo, cambia el tipo).
