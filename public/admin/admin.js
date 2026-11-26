@@ -103,7 +103,7 @@
     var s = {};
     D.productos.forEach(function (p) { s[p.id] = 0; });
     D.movimientos.forEach(function (m) {
-      var d = (m.tipo === "entrada" || m.tipo === "devolucion") ? m.cantidad : (m.consigna ? 0 : -m.cantidad);
+      var d = (m.tipo === "entrada" || m.tipo === "devolucion" || m.tipo === "ajuste") ? m.cantidad : (m.consigna ? 0 : -m.cantidad);
       s[m.producto_id] = (s[m.producto_id] || 0) + d;
     });
     return s;
@@ -210,7 +210,7 @@
       ' <a class="enlace" href="/" target="_blank" rel="noopener">Página</a> <a class="enlace" href="/kit/" target="_blank" rel="noopener">Kit</a> <button class="enlace" id="salir">Salir</button></div></header>' +
       '<main id="vista"></main>' +
       '<nav class="tabs" aria-label="Secciones">' + tabs.map(function (t) {
-        var actual = vista === "liquidar" || vista === "entrada" || vista === "remision" ? "inventario" : vista;
+        var actual = vista === "liquidar" || vista === "entrada" || vista === "remision" || vista === "conteo" ? "inventario" : vista;
         return '<button data-v="' + t[0] + '"' + (actual === t[0] ? ' aria-current="page"' : "") + '><svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[t[0]] + "</svg>" + t[1] + "</button>";
       }).join("") + "</nav>";
     document.getElementById("salir").onclick = function () { api("POST", "/logout").then(function () { pintarLogin(); }); };
@@ -218,7 +218,7 @@
       b.onclick = function () { ir(b.getAttribute("data-v")); };
     });
     var v = document.getElementById("vista");
-    ({ inicio: vInicio, vender: vVender, gastos: vGastos, inventario: vInventario, historial: vHistorial, archivos: vArchivos, ajustes: vAjustes, entrada: vVender, liquidar: vLiquidar, remision: vRemision })[vista](v);
+    ({ inicio: vInicio, vender: vVender, gastos: vGastos, inventario: vInventario, historial: vHistorial, archivos: vArchivos, ajustes: vAjustes, entrada: vVender, liquidar: vLiquidar, remision: vRemision, conteo: vConteo })[vista](v);
   }
   function ir(v) {
     vista = v;
@@ -556,14 +556,14 @@
         var k = { entrada: "e", venta: "v", tomada: "t", merma: "m" }[m.tipo];
         if (k) r[k] += m.cantidad;
       });
-      r.c = 0; cs.forEach(function (c) { r.c += c.items[p.id] || 0; }); t.c += r.c;
+      r.c = 0; cs.forEach(function (c) { r.c += c.items[p.id] || 0; });
       Object.keys(t).forEach(function (k) { t[k] += r[k]; });
       var bajo = r.e > 0 && st[p.id] <= (D.ajustes.stockBajo || 0);
       inv.push({ nombre: p.nombre_base + " " + p.sabor, color: p.color, e: r.e, v: r.v, c: r.c, q: st[p.id], bajo: bajo });
       return "<tr><td><span class=\"punto\" style=\"background:" + esc(p.color) + "\"></span>" + esc(p.nombre_base + " " + p.sabor) + "</td><td class=num>" + r.e + "</td><td class=num>" + (r.v || "–") + "</td><td class=num>" + ((r.t + r.m) || "–") + "</td><td class=num>" + (r.c || "–") + '</td><td class="num' + (bajo ? " bajo" : "") + '"><strong>' + st[p.id] + "</strong></td></tr>";
     }).join("");
     var quedan = 0; D.productos.forEach(function (p) { quedan += st[p.id]; });
-    v.innerHTML = '<div class="fila entre"><h2>Inventario</h2><button class="btn chico" id="llego">+ Llegó mercancía</button></div>' +
+    v.innerHTML = '<div class="fila entre"><h2>Inventario</h2><span class="fila" style="gap:6px"><button class="btn chico claro" id="contar">Ajustar conteo</button><button class="btn chico" id="llego">+ Llegó mercancía</button></span></div>' +
       '<div class="kpis"><div class="kpi amarillo"><span>Quedan</span><strong>' + num(quedan) + "</strong><small>bolsas</small></div>" +
       '<div class="kpi"><span>Valor a costo</span><strong>' + pesos(quedan * cp) + "</strong><small>" + pesos(cp) + " por bolsa</small></div>" +
       '<div class="kpi"><span>Si se venden a público</span><strong>' + pesos(quedan * precioPublico()) + "</strong><small>" + pesos(precioPublico()) + " por bolsa</small></div>" +
@@ -571,8 +571,9 @@
       vApartados() + vConsignas(cs) +
       '<div class="fila entre" style="margin-top:20px;align-items:center"><h2 style="margin:0">Por sabor</h2><button class="btn chico verde" id="invimg">Compartir como imagen</button></div><div class="caja" style="margin-top:10px;overflow-x:auto"><table><thead><tr><th>Sabor</th><th class=num>Llegó</th><th class=num>Vend.</th><th class=num title="Tomadas y merma">Otras</th><th class=num title="A consigna en tiendas">Tiendas</th><th class=num title="En bodega">Quedan</th></tr></thead><tbody>' + filas +
       "</tbody><tfoot><tr><td>Total</td><td class=num>" + t.e + "</td><td class=num>" + t.v + "</td><td class=num>" + (t.t + t.m) + "</td><td class=num>" + t.c + "</td><td class=num>" + quedan + "</td></tr></tfoot></table></div>" +
-      '<p class="vacio">Quedan = disponibles en tu bodega (sin contar las apartadas). Tiendas = dejadas a consigna. Otras = bolsas que se tomaron o se echaron a perder. En rojo: sabores con ' + (D.ajustes.stockBajo || 0) + " bolsas o menos. Para corregir un conteo, registra una merma o una entrada con la diferencia.</p>";
+      '<p class="vacio">Quedan = disponibles en tu bodega (sin contar las apartadas). Tiendas = dejadas a consigna. Otras = bolsas que se tomaron o se echaron a perder. En rojo: sabores con ' + (D.ajustes.stockBajo || 0) + " bolsas o menos. Si lo que tienes en la mano no cuadra, toca «Ajustar conteo».</p>";
     document.getElementById("llego").onclick = function () { ir("entrada"); };
+    document.getElementById("contar").onclick = function () { ir("conteo"); };
     document.getElementById("invimg").onclick = function () { imagenInventario(inv, t, quedan, cs, this); };
     v.querySelectorAll("[data-cobrar]").forEach(function (b) { b.onclick = function () { lform = null; ltienda = b.getAttribute("data-cobrar"); ir("liquidar"); }; });
     v.querySelectorAll("[data-recibo]").forEach(function (b) { b.onclick = function () { rgrupo = b.getAttribute("data-recibo"); ir("remision"); }; });
@@ -595,6 +596,43 @@
       };
     });
   }
+  // Conteo físico: pones lo que hay en la mano (con apartadas) y se guarda la diferencia.
+  function vConteo(v) {
+    var st = stock(), ap = {};
+    D.movimientos.forEach(function (m) { if (m.tipo === "apartado") ap[m.producto_id] = (ap[m.producto_id] || 0) + m.cantidad; });
+    var fis = function (id) { return (st[id] || 0) + (ap[id] || 0); };
+    v.innerHTML = '<h2>Ajustar conteo</h2><p class="vacio" style="margin:-4px 0 14px">Cuenta las bolsas que tienes en la mano (incluye las apartadas, sin las de tiendas) y corrige el número de cada sabor. Se guarda solo la diferencia como "Ajuste" en el historial.</p>' +
+      '<div class="sabores">' + D.productos.map(function (p) {
+        return '<div class="it"><img src="/img/etiquetas/' + esc(p.id) + '.webp" alt="" loading="lazy"><div class="nom">' + esc(p.nombre_base + " " + p.sabor) + '<small data-dif="' + esc(p.id) + '">El panel dice ' + fis(p.id) + (ap[p.id] ? " (" + ap[p.id] + " apartadas)" : "") + "</small></div>" +
+          '<div class="paso"><button type="button" data-cm="' + esc(p.id) + '" aria-label="Menos">−</button><input inputmode="numeric" data-c="' + esc(p.id) + '" value="' + fis(p.id) + '" aria-label="Conteo de ' + esc(p.nombre_base + " " + p.sabor) + '"><button type="button" data-cp="' + esc(p.id) + '" aria-label="Más">+</button></div></div>';
+      }).join("") + "</div>" +
+      '<div class="caja" style="margin-top:14px"><label>Nota (opcional)<input id="cnota" placeholder="Ej. se registró esquite y era camote adobado"></label><p class="error" id="cerr" role="alert" style="margin-top:10px"></p></div>' +
+      '<button class="enlace" id="ccancel">Cancelar</button><div class="barra"><button class="btn" id="cguardar">Guardar conteo</button></div>';
+    var leer = function (id) { var n = parseInt(v.querySelector('[data-c="' + id + '"]').value, 10); return n >= 0 ? n : 0; };
+    var pintaDif = function () {
+      var cambios = 0;
+      D.productos.forEach(function (p) {
+        var d = leer(p.id) - fis(p.id), s = v.querySelector('[data-dif="' + p.id + '"]');
+        s.textContent = "El panel dice " + fis(p.id) + (d ? " → " + (d > 0 ? "+" : "") + d : "");
+        s.className = d ? "bajo" : ""; if (d) cambios++;
+      });
+      var b = document.getElementById("cguardar"); b.textContent = cambios ? "Guardar conteo · " + cambios + (cambios === 1 ? " sabor cambia" : " sabores cambian") : "Todo cuadra"; b.disabled = !cambios;
+    };
+    v.querySelectorAll("[data-c]").forEach(function (i) { i.oninput = pintaDif; });
+    v.querySelectorAll("[data-cm],[data-cp]").forEach(function (b) {
+      b.onclick = function () { var id = b.getAttribute("data-cm") || b.getAttribute("data-cp"), i = v.querySelector('[data-c="' + id + '"]'); i.value = Math.max(0, (parseInt(i.value, 10) || 0) + (b.hasAttribute("data-cp") ? 1 : -1)); pintaDif(); };
+    });
+    document.getElementById("ccancel").onclick = function () { ir("inventario"); };
+    document.getElementById("cguardar").onclick = function () {
+      var conteo = {}; D.productos.forEach(function (p) { conteo[p.id] = leer(p.id); });
+      this.disabled = true;
+      api("POST", "/ajuste", { conteo: conteo, nota: document.getElementById("cnota").value }).then(function (r) {
+        if (!r.ok) { var e = document.getElementById("cerr"); e.textContent = r.error || "No se pudo guardar."; aviso(r.error || "No se pudo guardar", true); return; }
+        aviso(r.cambios ? "Conteo ajustado ✅" : "Todo cuadraba"); cargar().then(function () { ir("inventario"); });
+      });
+    };
+    pintaDif();
+  }
   function vApartados() {
     var gs = grupos(D.movimientos).filter(function (g) { return g.tipo === "apartado"; });
     var h = '<div class="fila entre" style="margin:20px 0 10px"><h2 style="margin:0">Apartados</h2><button class="btn chico" id="nuevoap">+ Apartar</button></div>';
@@ -603,7 +641,7 @@
       var n = 0; g.items.forEach(function (m) { n += m.cantidad; });
       var d = diasDesde(g.fecha);
       return '<div class="mov"><div class="cab"><span style="font-weight:700;color:var(--tinta);font-size:16px">' + esc(g.cliente || "Sin nombre") + "</span><span>" + (d ? "hace " + d + (d === 1 ? " día" : " días") : "hoy") + "</span></div>" +
-        "<ul>" + g.items.map(function (m) { return "<li>" + m.cantidad + " × " + esc(nombreProd(m.producto_id)) + "</li>"; }).join("") + "</ul>" +
+        "<ul>" + g.items.map(function (m) { return "<li>" + (g.tipo === "ajuste" && m.cantidad > 0 ? "+" : "") + m.cantidad + " × " + esc(nombreProd(m.producto_id)) + "</li>"; }).join("") + "</ul>" +
         (g.nota ? '<div style="font-size:13px;color:var(--suave);margin-bottom:8px">' + esc(g.nota) + "</div>" : "") +
         '<div class="pie"><span><strong>' + n + (n === 1 ? " bolsa" : " bolsas") + "</strong>" + (g.precio ? " · " + pesos(g.precio) + " c/u · <strong>" + pesos(n * g.precio) + "</strong>" : "") + "</span></div>" +
         '<div class="fila" style="gap:6px;margin-top:10px;flex-wrap:wrap"><button class="btn chico verde" data-entregar="' + esc(g.grupo) + '" data-como="venta">Entregar como venta</button>' +
@@ -784,13 +822,13 @@
 
   // ——— historial
   function vHistorial(v) {
-    var tipos = [["todos", "Todo"], ["venta", "Ventas"], ["apartado", "Apartados"], ["consigna", "Consigna"], ["entrada", "Entradas"], ["tomada", "Tomadas"], ["merma", "Merma"]];
+    var tipos = [["todos", "Todo"], ["venta", "Ventas"], ["apartado", "Apartados"], ["ajuste", "Ajustes"], ["consigna", "Consigna"], ["entrada", "Entradas"], ["tomada", "Tomadas"], ["merma", "Merma"]];
     var gs = grupos(D.movimientos).filter(function (g) {
       if (filtroHist === "todos") return true;
       if (filtroHist === "consigna") return g.tipo === "consigna" || g.consigna;
       return g.tipo === filtroHist;
     });
-    var nombres = { venta: "Venta", apartado: "Apartado", entrada: "Entrada", tomada: "Tomada", merma: "Merma", consigna: "Consigna", devolucion: "Regresó" };
+    var nombres = { venta: "Venta", apartado: "Apartado", ajuste: "Ajuste de conteo", entrada: "Entrada", tomada: "Tomada", merma: "Merma", consigna: "Consigna", devolucion: "Regresó" };
     var h = '<div class="fila entre"><h2>Historial</h2><a class="btn chico claro" href="/api/movimientos.csv">Descargar Excel</a></div>' +
       '<div class="chips" style="margin-bottom:14px">' + tipos.map(function (t) {
         return '<button class="chip" data-f="' + t[0] + '" aria-pressed="' + (filtroHist === t[0]) + '">' + t[1] + "</button>";

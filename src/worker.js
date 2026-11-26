@@ -358,7 +358,7 @@ async function datos(D, yo) {
 
 async function stockPorProducto(D) {
   const { results } = await D.prepare(
-    `SELECT producto_id, SUM(CASE WHEN tipo IN ('entrada','devolucion') THEN cantidad
+    `SELECT producto_id, SUM(CASE WHEN tipo IN ('entrada','devolucion','ajuste') THEN cantidad
        WHEN consigna = 1 THEN 0 ELSE -cantidad END) AS stock
      FROM movimientos GROUP BY producto_id`).all();
   return Object.fromEntries(results.map((r) => [r.producto_id, Number(r.stock) || 0]));
@@ -400,6 +400,28 @@ async function guardarMovimiento(D, yo, body) {
   }
   await D.batch(st);
   return json({ ok: true, grupo });
+}
+
+// Conteo real de bodega: guarda la diferencia por sabor como "ajuste" (+/-). El conteo físico incluye lo apartado.
+async function ajustarConteo(D, yo, body) {
+  const conteo = body.conteo && typeof body.conteo === "object" ? body.conteo : {};
+  const stock = await stockPorProducto(D);
+  const { results: ap } = await D.prepare("SELECT producto_id, SUM(cantidad) AS n FROM movimientos WHERE tipo = 'apartado' GROUP BY producto_id").all();
+  const apartado = Object.fromEntries(ap.map((r) => [r.producto_id, Number(r.n) || 0]));
+  const grupo = "g-" + crypto.randomUUID(), ahora = Date.now(), fecha = hoyChihuahua();
+  const nota = texto(body.nota, 300) || "Ajuste por conteo";
+  const st = [];
+  for (const id of Object.keys(stock)) {
+    if (conteo[id] === undefined || conteo[id] === "") continue;
+    const real = Math.trunc(Number(conteo[id]));
+    if (!Number.isFinite(real) || real < 0 || real > 100000) return error("Revisa los números del conteo.");
+    const dif = real - ((stock[id] || 0) + (apartado[id] || 0));
+    if (dif) st.push(D.prepare(`INSERT INTO movimientos (grupo, tipo, producto_id, cantidad, precio, cliente, nota, quien, fecha, creado)
+      VALUES (?, 'ajuste', ?, ?, 0, '', ?, ?, ?, ?)`).bind(grupo, id, dif, nota, yo, fecha, ahora));
+  }
+  if (!st.length) return json({ ok: true, cambios: 0 });
+  await D.batch(st);
+  return json({ ok: true, cambios: st.length, grupo });
 }
 
 // Visita a una tienda con consigna: lo vendido cuenta como venta, lo que regresa vuelve a bodega.
@@ -551,6 +573,7 @@ async function api(req, env, url) {
   if (ruta === "/datos" && metodo === "GET") return json(await datos(D, yo));
   if (ruta === "/movimientos" && metodo === "POST") return guardarMovimiento(D, yo, body);
   if (ruta === "/consigna/liquidar" && metodo === "POST") return liquidar(D, yo, body);
+  if (ruta === "/ajuste" && metodo === "POST") return ajustarConteo(D, yo, body);
   const mBorrar = /^\/movimientos\/(g-[\w-]+)$/.exec(ruta);
   if (mBorrar && metodo === "DELETE") {
     await D.prepare("DELETE FROM movimientos WHERE grupo = ?").bind(mBorrar[1]).run();

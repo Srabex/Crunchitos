@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Pide tu paquete · Crunchitos</title>
+<meta name="theme-color" content="#ECBE48">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:title" content="Pide tu paquete · Crunchitos">
+<meta property="og:description" content="Elige tu paquete de emprendedor, arma tus sabores y mándalo por WhatsApp.">
+<meta property="og:image" content="https://crunchitos.mx/og.jpg?v=2">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+:root{--tinta:#3B2216;--crema:#FFF6E6;--sombra:#9A6A25;--amarillo:#ECBE48;--wa:#1F9D55;--linea:#EADBC0}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;font-family:Poppins,system-ui,sans-serif;color:var(--tinta);background:var(--crema);-webkit-font-smoothing:antialiased;padding-bottom:110px}
+.env{max-width:640px;margin:0 auto;padding:0 16px}
+header{background:var(--amarillo);text-align:center;padding:18px 0 22px;position:relative}
+.volver{position:absolute;left:14px;top:14px;display:inline-flex;align-items:center;gap:4px;background:var(--crema);color:var(--tinta);text-decoration:none;font-weight:700;font-size:14px;border-radius:999px;padding:8px 14px;box-shadow:0 2px 0 var(--sombra)}
+header img{width:200px;margin:0 auto;display:block;height:auto}
+header h1{font-family:"Gochi Hand",cursive;font-weight:400;font-size:40px;line-height:1;color:var(--crema);text-shadow:2px 3px 0 var(--sombra);margin:10px 0 4px}
+header p{margin:0;font-size:14px}
+h2{font-family:"Bubblegum Sans",sans-serif;font-weight:400;font-size:28px;margin:24px 0 10px}
+.caja{background:#fff;border-radius:20px;padding:16px;box-shadow:0 2px 0 rgba(59,34,22,.08);margin-bottom:12px}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:4px}
+input[type=text],input[type=tel],input[inputmode]{width:100%;font:500 16px Poppins,sans-serif;padding:12px 14px;border:2px solid var(--linea);border-radius:14px;background:#fff;color:var(--tinta)}
+input:focus{outline:none;border-color:var(--amarillo)}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border-radius:999px;font:700 15px Poppins,sans-serif;text-decoration:none;border:0;cursor:pointer;background:var(--tinta);color:var(--crema);box-shadow:0 4px 0 #000}
+.btn.claro{background:#fff;color:var(--tinta);box-shadow:0 3px 0 var(--linea);border:2px solid var(--linea)}
+.btn.wa{background:var(--wa);color:#fff;box-shadow:0 4px 0 #146b39}
+.btn.amarillo{background:var(--amarillo);color:var(--tinta);box-shadow:0 4px 0 var(--sombra)}
+.btn.ancho{width:100%}
+.btn:focus-visible,button:focus-visible{outline:3px solid var(--tinta);outline-offset:2px}
+.sabores{display:flex;flex-direction:column}
+.sab{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--linea)}
+.sab:first-child{border-top:0}
+.sab .pto{width:14px;height:14px;border-radius:50%;flex:none}
+.sab .nom{flex:1;font-size:15px;line-height:1.2}
+.sab .nom small{display:block;font-size:12px;opacity:.65}
+.cnt{display:flex;align-items:center;gap:6px}
+.cnt button{width:40px;height:40px;border-radius:50%;border:0;background:var(--amarillo);font:700 22px/1 Poppins,sans-serif;color:var(--tinta);cursor:pointer;box-shadow:0 2px 0 var(--sombra)}
+.cnt button:disabled{opacity:.3;cursor:default}
+.cnt output{min-width:28px;text-align:center;font-weight:700;font-size:18px}
+.sab.con{background:#FFF8E3;margin:0 -16px;padding-left:16px;padding-right:16px}
+.checks{display:flex;gap:18px;margin:12px 0 4px;flex-wrap:wrap}
+.checks label{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:500;margin:0}
+.checks input{width:22px;height:22px;accent-color:var(--wa)}
+.ped{border-top:1px solid var(--linea);padding:12px 0}
+.ped:first-child{border-top:0;padding-top:0}
+.ped .cab{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.ped .cab strong{font-size:17px}
+.ped .det{font-size:14px;margin:4px 0 8px;line-height:1.45}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.tag{font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px;background:#F3E7CF}
+.tag.si{background:#DFF2E6;color:#14653A}
+.acc{display:flex;gap:8px;flex-wrap:wrap}
+.acc button{min-height:38px;font-size:13px;padding:0 14px}
+.res{width:100%;border-collapse:collapse;font-size:15px}
+.res td{padding:6px 0;border-top:1px solid var(--linea)}
+.res td:last-child{text-align:right;font-weight:700}
+.res tr.tot td{font-weight:700;border-top:2px solid var(--tinta)}
+.vacio{opacity:.7;font-size:14px;margin:0}
+.barra{position:fixed;left:0;right:0;bottom:0;background:var(--tinta);padding:12px 16px calc(12px + env(safe-area-inset-bottom));z-index:9}
+.barra .env{display:flex;gap:10px;padding:0}
+.barra .btn{flex:1}
+.aviso{font-size:13px;opacity:.75;text-align:center;margin:18px 0 0}
+.tag.nuevo{background:#ECBE48;color:#3B2216}
+#enviar[aria-disabled=true]{opacity:.55}
+
+.paqs{display:grid;gap:10px}
+.paq{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fff;border:3px solid var(--linea);border-radius:18px;padding:14px 16px;font:inherit;color:var(--tinta);cursor:pointer}
+.paq[aria-pressed=true]{border-color:var(--tinta);background:#FFF8E3}
+.paq .n{font-family:"Bubblegum Sans",sans-serif;font-size:26px;line-height:1;min-width:58px;text-align:center}
+.paq .n small{display:block;font:600 11px Poppins,sans-serif;letter-spacing:1px}
+.paq .t{flex:1}.paq .t b{display:block;font-size:16px}.paq .t span{font-size:13px;opacity:.75}
+.paq .p{font-weight:700;font-size:17px;white-space:nowrap}
+.reco{display:inline-block;background:var(--wa);color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:middle}
+.cuenta{position:sticky;top:0;z-index:5;background:var(--tinta);color:var(--crema);border-radius:16px;padding:10px 14px;margin:0 0 10px;display:flex;justify-content:space-between;align-items:center;font-weight:600}
+.cuenta b{font-size:20px;color:var(--amarillo)}
+.cuenta.ok b{color:#7BE0A3}
+.barrita{height:6px;background:#5a3a2a;border-radius:9px;overflow:hidden;margin-top:6px}.barrita i{display:block;height:100%;background:var(--amarillo)}
+.cuenta.ok .barrita i{background:#7BE0A3}
+.opc{display:flex;gap:8px;flex-wrap:wrap}
+.opc button{min-height:42px;font-size:14px}
+.opc button[aria-pressed=true]{background:var(--tinta);color:var(--crema);border-color:var(--tinta)}
+.msg{background:#FDECEA;color:#8C2C20;border-radius:14px;padding:10px 14px;font-size:14px;font-weight:600;margin-top:10px}
+</style>
+</head>
+<body>
+<header>
+  <a class="volver" href="/kit/">‹ Mi kit</a>
+  <div class="env">
+    <img src="/img/logo.svg" alt="Crunchitos" width="857" height="280">
+    <h1>Pide tu paquete</h1>
+    <p>Elige tu paquete, arma tus sabores y mándanoslo por WhatsApp.</p>
+  </div>
+</header>
+
+<main class="env">
+  <h2>1. Tu paquete</h2>
+  <div class="paqs" id="paqs"></div>
+
+  <h2>2. Tus sabores</h2>
+  <div class="caja">
+    <div class="opc" style="margin-bottom:12px">
+      <button class="btn claro" id="parejo" type="button">Repartir parejo</button>
+      <button class="btn claro" id="sorpresa" type="button" aria-pressed="false">Que me lo armen variado</button>
+      <button class="btn claro" id="borrar" type="button">Poner todo en 0</button>
+    </div>
+    <div id="armar">
+      <div class="cuenta" id="cuenta"></div>
+      <div class="sabores" id="sabores"></div>
+    </div>
+    <p class="vacio" id="txtsorpresa" hidden>Listo: nosotros te lo armamos variado con los sabores que más se venden.</p>
+  </div>
+
+  <h2>3. Tus datos</h2>
+  <div class="caja">
+    <div class="dos">
+      <div><label for="nom">Tu nombre</label><input type="text" id="nom" autocomplete="name" placeholder="Nombre"></div>
+      <div><label for="zona">Colonia o zona</label><input type="text" id="zona" placeholder="Ej. Col. Álamos"></div>
+    </div>
+    <label style="margin-top:12px">¿Cómo pagas?</label>
+    <div class="opc" id="pagos">
+      <button class="btn claro" type="button" data-pago="Efectivo" aria-pressed="false">Efectivo</button>
+      <button class="btn claro" type="button" data-pago="Transferencia" aria-pressed="false">Transferencia</button>
+    </div>
+    <label for="nota" style="margin-top:12px">Nota (opcional)</label>
+    <input type="text" id="nota" placeholder="Ej. entrégamelo el sábado en la tarde">
+    <div class="msg" id="msg" hidden role="alert"></div>
+  </div>
+  <p class="aviso">Te confirmamos por WhatsApp la fecha de entrega. <a href="/kit/">← Volver al kit</a></p>
+</main>
+
+<div class="barra"><div class="env">
+  <a class="btn claro" href="/kit/" style="flex:0 0 auto">Mi kit</a>
+  <a class="btn wa" id="enviar" href="#" target="_blank" rel="noopener">Pedir mi paquete</a>
+</div></div>
+
+<script>
+(function () {
+  var WA = "526142355166";
+  var SABORES = [
+    ["jicama-limon", "Jícama", "limón y sal", "#5E9A2A"], ["jicama-chile", "Jícama", "con chile", "#D33A2A"],
+    ["jicama-rancherito", "Jícama", "rancherito", "#D9572A"], ["jicama-esquite", "Jícama", "esquite", "#E9B91E"],
+    ["jicama-habanero", "Jícama", "habanero y miel", "#EE8A1C"], ["pepino-limon", "Pepino", "limón y sal", "#82A85B"],
+    ["pepino-adobado", "Pepino", "adobado", "#91B25B"], ["camote-limon", "Camote", "limón y sal", "#C2875D"],
+    ["camote-adobado", "Camote", "adobado", "#C88A5F"], ["platano-natural", "Plátano", "natural", "#EEC14A"],
+    ["platano-sal", "Plátano", "con sal", "#ECBE48"], ["platano-canela", "Plátano", "azúcar y canela", "#F2C54C"]
+  ];
+  var PAQ = [
+    { id: "inicial", nombre: "Paquete Inicial", n: 36, precio: 1500, sub: "Para empezar" },
+    { id: "emprendedor", nombre: "Paquete Emprendedor", n: 75, precio: 3000, sub: "El que más conviene", reco: 1 },
+    { id: "mayorista", nombre: "Paquete Mayorista", n: 130, precio: 5000, sub: "Mejor precio por bolsa" }
+  ];
+  var K = "crunchitos-paquete-v1";
+  var st = { paq: "emprendedor", items: {}, sorpresa: false, nom: "", zona: "", pago: "", nota: "" };
+  try { var g = JSON.parse(localStorage.getItem(K) || "null"); if (g && g.items) st = Object.assign(st, g); } catch (e) {}
+  var guardar = function () { try { localStorage.setItem(K, JSON.stringify(st)); } catch (e) {} };
+  var $ = function (id) { return document.getElementById(id); };
+  var pesos = function (n) { return "$" + n.toLocaleString("es-MX"); };
+  var paq = function () { return PAQ.filter(function (p) { return p.id === st.paq; })[0] || PAQ[1]; };
+  var total = function () { var t = 0; Object.keys(st.items).forEach(function (k) { t += st.items[k] || 0; }); return t; };
+
+  $("paqs").innerHTML = PAQ.map(function (p) {
+    return '<button type="button" class="paq" data-paq="' + p.id + '"><span class="n">' + p.n + "<small>BOLSAS</small></span>" +
+      '<span class="t"><b>' + p.nombre + (p.reco ? '<span class="reco">RECOMENDADO</span>' : "") + "</b><span>" + p.sub + " · " + pesos(Math.round(p.precio / p.n * 100) / 100) + " c/u</span></span>" +
+      '<span class="p">' + pesos(p.precio) + "</span></button>";
+  }).join("");
+  $("sabores").innerHTML = SABORES.map(function (s) {
+    return '<div class="sab" data-id="' + s[0] + '"><span class="pto" style="background:' + s[3] + '"></span><span class="nom">' + s[1] + " " + s[2] + "</span>" +
+      '<span class="cnt"><button type="button" data-menos="' + s[0] + '" aria-label="Quitar ' + s[1] + " " + s[2] + '">−</button><output>0</output><button type="button" data-mas="' + s[0] + '" aria-label="Agregar ' + s[1] + " " + s[2] + '">+</button></span></div>';
+  }).join("");
+
+  $("paqs").onclick = function (e) { var b = e.target.closest("[data-paq]"); if (!b) return; st.paq = b.getAttribute("data-paq"); recortar(); guardar(); pintar(); };
+  $("sabores").onclick = function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    var id = b.getAttribute("data-mas") || b.getAttribute("data-menos");
+    if (b.hasAttribute("data-mas")) { if (total() >= paq().n) return; st.items[id] = (st.items[id] || 0) + 1; }
+    else st.items[id] = Math.max(0, (st.items[id] || 0) - 1);
+    guardar(); pintar();
+  };
+  $("parejo").onclick = function () {
+    st.sorpresa = false; st.items = {}; var n = paq().n, q = Math.floor(n / SABORES.length), r = n % SABORES.length;
+    SABORES.forEach(function (s, i) { st.items[s[0]] = q + (i < r ? 1 : 0); }); guardar(); pintar();
+  };
+  $("borrar").onclick = function () { st.items = {}; st.sorpresa = false; guardar(); pintar(); };
+  $("sorpresa").onclick = function () { st.sorpresa = !st.sorpresa; guardar(); pintar(); };
+  $("pagos").onclick = function (e) { var b = e.target.closest("[data-pago]"); if (!b) return; st.pago = b.getAttribute("data-pago"); guardar(); pintar(); };
+  ["nom", "zona", "nota"].forEach(function (k) { $(k).value = st[k] || ""; $(k).oninput = function () { st[k] = this.value; guardar(); pintar(); }; });
+  function recortar() { // si cambia a un paquete más chico, quita lo que sobra empezando por el final
+    var sobra = total() - paq().n;
+    for (var i = SABORES.length - 1; i >= 0 && sobra > 0; i--) { var id = SABORES[i][0], q = Math.min(st.items[id] || 0, sobra); st.items[id] = (st.items[id] || 0) - q; sobra -= q; }
+  }
+  function falta() {
+    if (!st.sorpresa && total() !== paq().n) return "Te faltan " + (paq().n - total()) + " bolsas por repartir (o toca \"Que me lo armen variado\").";
+    if (!st.nom.trim()) return "Pon tu nombre.";
+    if (!st.pago) return "Elige cómo pagas.";
+    return "";
+  }
+  function pintar() {
+    var p = paq(), t = total();
+    document.querySelectorAll("[data-paq]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-paq") === st.paq)); });
+    document.querySelectorAll("[data-pago]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-pago") === st.pago)); });
+    $("sorpresa").setAttribute("aria-pressed", String(st.sorpresa));
+    $("armar").hidden = st.sorpresa; $("txtsorpresa").hidden = !st.sorpresa;
+    var c = $("cuenta"); c.className = "cuenta" + (t === p.n ? " ok" : "");
+    c.innerHTML = '<div style="flex:1"><div>' + (t === p.n ? "¡Completo! ✅" : "Llevas <b>" + t + "</b> de " + p.n + " bolsas") + '</div><div class="barrita"><i style="width:' + Math.min(100, t / p.n * 100) + '%"></i></div></div>';
+    document.querySelectorAll(".sab").forEach(function (r) {
+      var id = r.getAttribute("data-id"), n = st.items[id] || 0;
+      r.querySelector("output").textContent = n; r.classList.toggle("con", n > 0);
+      r.querySelector("[data-menos]").disabled = !n; r.querySelector("[data-mas]").disabled = t >= p.n;
+    });
+    var f = falta(), e = $("enviar");
+    e.setAttribute("aria-disabled", String(!!f));
+    e.textContent = f ? "Pedir mi paquete" : "Pedir " + p.nombre.replace("Paquete ", "") + " · " + pesos(p.precio);
+    e.href = f ? "#" : "https://wa.me/" + WA + "?text=" + encodeURIComponent(mensaje());
+    if (!f) $("msg").hidden = true;
+  }
+  function mensaje() {
+    var p = paq(), l = [];
+    l.push("📦 *Pedido de paquete Crunchitos*");
+    l.push("*" + p.nombre + "*: " + p.n + " bolsas · " + pesos(p.precio));
+    l.push("");
+    if (st.sorpresa) l.push("Sabores: que me lo armen variado 🙌");
+    else { l.push("*Sabores:*"); SABORES.forEach(function (s) { if (st.items[s[0]]) l.push("• " + st.items[s[0]] + " " + s[1] + " " + s[2]); }); }
+    l.push("");
+    l.push("Nombre: " + st.nom.trim());
+    if (st.zona.trim()) l.push("Zona: " + st.zona.trim());
+    l.push("Pago: " + st.pago);
+    if (st.nota.trim()) l.push("Nota: " + st.nota.trim());
+    return l.join(String.fromCharCode(10));
+  }
+  $("enviar").addEventListener("click", function (e) {
+    var f = falta(); if (!f) return;
+    e.preventDefault(); var m = $("msg"); m.textContent = f; m.hidden = false; m.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+  pintar();
+})();
+</script>
+</body>
+</html>
