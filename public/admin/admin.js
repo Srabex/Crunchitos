@@ -172,7 +172,18 @@
     Object.keys(cu).forEach(function (k) { var t = cu[k]; t.saldo = Math.round((t.cobrado - t.abonado) * 100) / 100; t.porCobrar = Math.max(0, t.enTienda + t.saldo); });
     return cu;
   }
-    function estadoCobro(c) {
+    // Lo que debe la tienda contando lo que sigue en su tienda (vale su precio mientras no lo regrese) − lo que ya pagó.
+  function resumenCuenta(t) {
+    var total = Math.round((t.enTienda + t.saldo) * 100) / 100;
+    var det = [];
+    if (t.faltan) det.push(t.faltan + (t.faltan === 1 ? " bolsa" : " bolsas") + " en la tienda (" + pesos(t.enTienda) + ")");
+    if (t.saldo > 0) det.push(pesos(t.saldo) + " de lo ya vendido");
+    if (t.saldo < 0) det.push("menos " + pesos(-t.saldo) + " que ya pagó de más");
+    if (total > 0) return { tipo: "debe", monto: total, titulo: t.faltan ? "Pendiente" : "Te debe", det: det.join(" + ").replace(" + menos", ", menos") };
+    if (total < 0) return { tipo: "favor", monto: -total, titulo: "A su favor", det: "ya pagó más de lo que tiene y vendió" };
+    return { tipo: "ok", monto: 0, titulo: "Al corriente", det: "no debe nada" };
+  }
+  function estadoCobro(c) {
     if (!c) return "";
     var extra = (c.regresaron ? " · regresaron " + c.regresaron : "") + (c.merma ? " · merma " + c.merma : "");
     var cobr = c.cobradas ? "vendidas " + c.cobradas + " (" + pesos(c.cobrado) + ")" : "";
@@ -970,9 +981,11 @@
     l.push("Me has pagado: " + pesos(t.abonado));
     if (t.abonos.length) t.abonos.slice().sort(function (a, b) { return (a.fecha || "").localeCompare(b.fecha || ""); }).forEach(function (a) { l.push("   - " + fechaBonita(a.fecha) + ": " + pesos(a.monto) + (a.nota && a.nota !== "Pago al cobrar" ? " (" + a.nota + ")" : "")); });
     l.push("");
-    l.push(t.saldo > 0 ? "*De lo vendido me debes: " + pesos(t.saldo) + "*" : t.saldo < 0 ? "*A tu favor: " + pesos(-t.saldo) + "*" + (t.faltan ? " (se acomoda cuando contemos lo que queda)" : "") : t.faltan ? (t.cobradas ? "De lo vendido estamos al corriente." : "*Pendiente de contar y cobrar.*") : "*✅ Estamos al corriente, no debes nada.*");
+    var rc = resumenCuenta(t);
+    if (t.faltan) l.push("En tu tienda siguen " + t.faltan + (t.faltan === 1 ? " bolsa" : " bolsas") + " (" + pesos(t.enTienda) + ")");
+    l.push(rc.tipo === "debe" ? "*Pendiente: " + pesos(rc.monto) + "*" + (t.saldo < 0 ? " (ya con tus " + pesos(-t.saldo) + " de más descontados)" : "") + (t.faltan ? " · si me regresas bolsas, baja" : "")
+      : rc.tipo === "favor" ? "*A tu favor: " + pesos(rc.monto) + "*" : "*✅ Estamos al corriente, no debes nada.*");
     if (t.faltan) {
-      l.push("En tu tienda siguen " + t.faltan + (t.faltan === 1 ? " bolsa" : " bolsas") + " (" + pesos(t.enTienda) + ")");
       var q = quedanEnTienda(t); if (q.length) { l.push(""); l.push("_Deberían quedar:_"); q.forEach(function (x) { l.push("- " + x[1] + " " + x[0]); }); }
       l.push(""); l.push("Me pagas aquí y me mandas el comprobante: " + location.origin + "/pago/?de=" + encodeURIComponent(t.tienda));
     }
@@ -995,7 +1008,10 @@
       g.font = "400 50px 'Bubblegum Sans', sans-serif"; g.fillText(t.tienda, W / 2, 250);
       g.font = "500 24px Poppins, sans-serif"; g.fillText(new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" }), W / 2, 284);
       var k = [["Vendido", pesos(t.cobrado), t.cobradas + " bolsas", "#fff", "#3B2216"], ["Pagado", pesos(t.abonado), t.abonos.length + (t.abonos.length === 1 ? " pago" : " pagos"), "#fff", "#2F7D5B"],
-        t.saldo > 0 ? ["Me debes", pesos(t.saldo), "de lo vendido", "#D33A2A", "#fff"] : t.saldo < 0 ? ["A tu favor", pesos(-t.saldo), t.faltan ? "al contar se acomoda" : "te lo debo", "#2F6F8F", "#fff"] : t.faltan ? ["Por cobrar", pesos(t.enTienda), t.faltan + " bolsas en tu tienda", "#D9572A", "#fff"] : ["Al corriente", "✓", "no debes nada", "#2F7D5B", "#fff"]];
+        (function () { var rc = resumenCuenta(t);
+          if (rc.tipo === "debe") return ["Pendiente", pesos(rc.monto), t.faltan ? "incluye " + t.faltan + " en tu tienda" : "de lo vendido", "#D33A2A", "#fff"];
+          if (rc.tipo === "favor") return ["A tu favor", pesos(rc.monto), "te lo debo", "#2F6F8F", "#fff"];
+          return ["Al corriente", "✓", "no debes nada", "#2F7D5B", "#fff"]; })()];
       k.forEach(function (x, i) {
         var bx = 60 + i * 330, by = 330;
         g.fillStyle = x[3]; rr(g, bx, by, 300, 150, 24); g.fill();
@@ -1019,7 +1035,7 @@
       }
       g.fillStyle = "#3B2216"; g.fillRect(0, H - 120, W, 120);
       g.textAlign = "center"; g.fillStyle = "#FFF6E6"; g.font = "600 28px Poppins, sans-serif";
-      g.fillText(t.saldo > 0 || (t.faltan && t.saldo >= 0) ? "Paga y manda tu comprobante en crunchitos.mx/pago" : "¡Gracias por vender Crunchitos!", W / 2, H - 50);
+      g.fillText(resumenCuenta(t).tipo === "debe" ? "Paga y manda tu comprobante en crunchitos.mx/pago" : "¡Gracias por vender Crunchitos!", W / 2, H - 50);
       compartirCanvas(cv, "cuenta-" + t.tienda.toLowerCase().replace(/[^a-z0-9]+/g, "-") + ".png", "Cuenta Crunchitos · " + t.tienda, function () { btn.textContent = txt; btn.disabled = false; });
     };
     var hecho = false, go = function () { if (hecho) return; hecho = true; (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(listo); };
@@ -1200,19 +1216,17 @@
       var cu = cuentas();
       var lista = Object.keys(cu).map(function (k) { return cu[k]; }).sort(function (a, b) { return b.porCobrar - a.porCobrar; });
       if (lista.length) h += '<h3 style="margin:4px 0 8px">Cuenta por tienda</h3>' + lista.map(function (t) {
-        var enT = t.faltan ? " · " + t.faltan + (t.faltan === 1 ? " bolsa" : " bolsas") + " en la tienda (" + pesos(t.enTienda) + ")" : "";
-        var tag = t.saldo > 0 ? '<div class="cobro pend">💰 <b>Te debe ' + pesos(t.saldo) + "</b> de lo ya vendido" + enT + "</div>"
-          : t.saldo < 0 ? '<div class="cobro parcial">🤝 <b>A su favor ' + pesos(-t.saldo) + "</b>: te han pagado más de lo que has registrado como vendido (p. ej. clientes que te transfirieron directo). Al contar lo que queda se acomoda." + enT + "</div>"
-          : !t.faltan ? '<div class="cobro ok">✅ <b>Al corriente</b>: no debe nada</div>'
-          : !t.cobradas ? '<div class="cobro pend">⏳ <b>Pendiente de cobrar</b>: todavía no pasas a contar ni a cobrar' + enT + "</div>"
-          : '<div class="cobro parcial">⏳ <b>Pagó todo lo que llevas registrado</b>, pero falta contar lo que queda' + enT + "</div>";
+        var rc = resumenCuenta(t);
+        var tag = rc.tipo === "debe" ? '<div class="cobro pend">⏳ <b>' + rc.titulo + " " + pesos(rc.monto) + "</b>: " + esc(rc.det) + (t.faltan ? ". Si regresa bolsas, baja." : "") + "</div>"
+          : rc.tipo === "favor" ? '<div class="cobro parcial">🤝 <b>A su favor ' + pesos(rc.monto) + "</b>: " + rc.det + "</div>"
+          : '<div class="cobro ok">✅ <b>Al corriente</b>: no debe nada</div>';
         return '<div class="mov"><div style="font-weight:700;font-size:16px">' + esc(t.tienda) + '</div>' +
           '<div style="font-size:14px;margin-top:6px;line-height:1.6">Le has dejado <b>' + t.dejadas + " bolsas</b> en " + t.n + (t.n === 1 ? " consigna" : " consignas") + " (" + pesos(t.valor) + ")<br>" +
           "Vendidas (registradas): <b>" + t.cobradas + " bolsas · " + pesos(t.cobrado) + "</b><br>" +
           "Te ha pagado: <b>" + pesos(t.abonado) + "</b>" + (t.abonos.length ? " en " + t.abonos.length + (t.abonos.length === 1 ? " pago" : " pagos") : "") +
           (t.regresaron ? "<br>Regresaron: " + t.regresaron : "") + (t.merma ? "<br>Merma: " + t.merma : "") +
           (t.faltan ? "<br>Siguen en la tienda: <b>" + t.faltan + (t.faltan === 1 ? " bolsa" : " bolsas") + " (" + pesos(t.enTienda) + ")</b>" : "") + "</div>" +
-          tag + (t.faltan ? '<div style="font-size:13px;color:var(--suave);margin-top:6px">Si se venden todas, te pagaría ' + pesos(t.porCobrar) + ".</div>" : "") +
+          tag +
           '<div class="fila" style="gap:6px;margin-top:8px;align-items:flex-end" data-abobox="' + esc(t.tienda) + '" hidden><label style="flex:1;margin:0">Monto<input inputmode="decimal" placeholder="$0"></label><label style="flex:2;margin:0">Nota<input placeholder="Ej. cliente me transfirió directo"></label><button class="btn chico" data-abook="' + esc(t.tienda) + '">Guardar</button></div>' +
           '<div class="fila" style="gap:6px;margin-top:8px;flex-wrap:wrap">' + (t.faltan ? '<button class="btn chico verde" data-cobrar="' + esc(t.tienda) + '">Pasar a cobrar</button>' : "") +
           '<button class="btn chico" data-abono="' + esc(t.tienda) + '">+ Abono / pago</button>' +
