@@ -463,6 +463,10 @@ async function guardarAjustes(D, body) {
     nuevo.precios = p;
   }
   if (body.mostrarAgotados !== undefined) nuevo.mostrarAgotados = !!body.mostrarAgotados;
+  // Cambiar el costo de toda la mercancía que ya llegó (la ganancia usa el costo de las entradas).
+  if (body.aplicarCosto && Number(body.costo) > 0 && Number(body.costo) < 10000) {
+    await D.prepare("UPDATE movimientos SET precio = ? WHERE tipo = 'entrada'").bind(Number(body.costo)).run();
+  }
   if (body.whatsapp !== undefined) {
     let w = String(body.whatsapp).replace(/\D/g, "");
     if (w.length === 10) w = "52" + w;

@@ -908,7 +908,7 @@
     var h = "<h2>Ajustes</h2>" +
       '<div class="caja"><h3>Precios de venta</h3><p class="vacio" style="margin-bottom:10px">Son los botones que salen al registrar una venta. Los reportes separan lo vendido en cada precio.</p><div id="lprecios">' +
       a.precios.map(filaPrecio).join("") + '</div><button class="enlace" id="addp">+ Agregar precio</button></div>' +
-      '<div class="caja"><div class="rejilla2"><label>Costo por bolsa (para nuevas entradas)<input id="acosto" inputmode="decimal" value="' + esc(a.costo) + '"></label>' +
+      '<div class="caja"><div class="rejilla2"><label>Costo por bolsa<input id="acosto" inputmode="decimal" value="' + esc(a.costo) + '"><span style="display:flex;align-items:center;gap:8px;font-weight:500;margin-top:8px"><input type="checkbox" id="acostotodo" style="width:20px;height:20px"> Aplicar también a la mercancía que ya llegó</span></label>' +
       '<label>Avisar cuando queden<input id="abajo" inputmode="numeric" value="' + esc(a.stockBajo) + '"></label>' +
       '<label>Pedido mínimo a domicilio (bolsas)<input id="amin" inputmode="numeric" value="' + esc(a.minimo || 10) + '"></label></div>' +
       '<p class="vacio" style="margin-top:6px">La página pide este mínimo de bolsas para pedir a domicilio.</p>' +
@@ -949,7 +949,7 @@
       var precios = [].map.call(v.querySelectorAll("#lprecios .fila"), function (f) {
         return { nombre: f.querySelector(".pn").value, valor: parseFloat(f.querySelector(".pv").value) };
       }).filter(function (p) { return p.nombre.trim() && !isNaN(p.valor); }).sort(function (a, b) { return a.valor - b.valor; });
-      api("PUT", "/ajustes", { precios: precios, costo: parseFloat(document.getElementById("acosto").value), stockBajo: parseInt(document.getElementById("abajo").value, 10), minimo: parseInt(document.getElementById("amin").value, 10), mostrarAgotados: document.getElementById("aagot").checked, whatsapp: document.getElementById("awa").value }).then(function (r) {
+      api("PUT", "/ajustes", { precios: precios, costo: parseFloat(document.getElementById("acosto").value), aplicarCosto: document.getElementById("acostotodo").checked, stockBajo: parseInt(document.getElementById("abajo").value, 10), minimo: parseInt(document.getElementById("amin").value, 10), mostrarAgotados: document.getElementById("aagot").checked, whatsapp: document.getElementById("awa").value }).then(function (r) {
         if (!r.ok) { var ae = document.getElementById("aerr"); ae.textContent = r.error || "No se pudo guardar."; aviso(r.error || "No se pudo guardar", true); ae.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
         aviso("Ajustes guardados"); cargar();
       });
