@@ -1200,16 +1200,19 @@
       var cu = cuentas();
       var lista = Object.keys(cu).map(function (k) { return cu[k]; }).sort(function (a, b) { return b.porCobrar - a.porCobrar; });
       if (lista.length) h += '<h3 style="margin:4px 0 8px">Cuenta por tienda</h3>' + lista.map(function (t) {
-        var tag = t.saldo > 0 ? '<div class="cobro pend">💰 <b>Te debe ' + pesos(t.saldo) + "</b> de lo ya vendido</div>"
-          : t.saldo < 0 ? '<div class="cobro parcial">🤝 <b>Le debes ' + pesos(-t.saldo) + "</b> (te han pagado más de lo vendido registrado; al contar lo que queda se ajusta)</div>"
-          : '<div class="cobro ok">✅ <b>Al corriente</b> con lo vendido</div>';
+        var enT = t.faltan ? " · " + t.faltan + (t.faltan === 1 ? " bolsa" : " bolsas") + " en la tienda (" + pesos(t.enTienda) + ")" : "";
+        var tag = t.saldo > 0 ? '<div class="cobro pend">💰 <b>Te debe ' + pesos(t.saldo) + "</b> de lo ya vendido" + enT + "</div>"
+          : t.saldo < 0 ? '<div class="cobro parcial">🤝 <b>A su favor ' + pesos(-t.saldo) + "</b>: te han pagado más de lo que has registrado como vendido (p. ej. clientes que te transfirieron directo). Al contar lo que queda se acomoda." + enT + "</div>"
+          : !t.faltan ? '<div class="cobro ok">✅ <b>Al corriente</b>: no debe nada</div>'
+          : !t.cobradas ? '<div class="cobro pend">⏳ <b>Pendiente de cobrar</b>: todavía no pasas a contar ni a cobrar' + enT + "</div>"
+          : '<div class="cobro parcial">⏳ <b>Pagó todo lo que llevas registrado</b>, pero falta contar lo que queda' + enT + "</div>";
         return '<div class="mov"><div style="font-weight:700;font-size:16px">' + esc(t.tienda) + '</div>' +
           '<div style="font-size:14px;margin-top:6px;line-height:1.6">Le has dejado <b>' + t.dejadas + " bolsas</b> en " + t.n + (t.n === 1 ? " consigna" : " consignas") + " (" + pesos(t.valor) + ")<br>" +
           "Vendidas (registradas): <b>" + t.cobradas + " bolsas · " + pesos(t.cobrado) + "</b><br>" +
           "Te ha pagado: <b>" + pesos(t.abonado) + "</b>" + (t.abonos.length ? " en " + t.abonos.length + (t.abonos.length === 1 ? " pago" : " pagos") : "") +
           (t.regresaron ? "<br>Regresaron: " + t.regresaron : "") + (t.merma ? "<br>Merma: " + t.merma : "") +
           (t.faltan ? "<br>Siguen en la tienda: <b>" + t.faltan + (t.faltan === 1 ? " bolsa" : " bolsas") + " (" + pesos(t.enTienda) + ")</b>" : "") + "</div>" +
-          tag + (t.faltan ? '<div style="font-size:13px;color:var(--suave);margin-top:6px">Si se venden todas, en total te pagaría ' + pesos(t.porCobrar) + " más.</div>" : "") +
+          tag + (t.faltan ? '<div style="font-size:13px;color:var(--suave);margin-top:6px">Si se venden todas, te pagaría ' + pesos(t.porCobrar) + ".</div>" : "") +
           '<div class="fila" style="gap:6px;margin-top:8px;align-items:flex-end" data-abobox="' + esc(t.tienda) + '" hidden><label style="flex:1;margin:0">Monto<input inputmode="decimal" placeholder="$0"></label><label style="flex:2;margin:0">Nota<input placeholder="Ej. cliente me transfirió directo"></label><button class="btn chico" data-abook="' + esc(t.tienda) + '">Guardar</button></div>' +
           '<div class="fila" style="gap:6px;margin-top:8px;flex-wrap:wrap">' + (t.faltan ? '<button class="btn chico verde" data-cobrar="' + esc(t.tienda) + '">Pasar a cobrar</button>' : "") +
           '<button class="btn chico" data-abono="' + esc(t.tienda) + '">+ Abono / pago</button>' +

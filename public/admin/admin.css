@@ -104,3 +104,5 @@ input.falta{border-color:var(--rojo)!important;background:#FDECEA}
 .cobro.ok{background:#E3F3E6;color:#1E6B34}
 .cobro.pend{background:#FDECEA;color:#9A2A1F}
 .cobro.parcial{background:#FFF3CF;color:#6B4A0F}
+
+[hidden]{display:none !important}
