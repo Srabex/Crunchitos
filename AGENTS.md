@@ -60,7 +60,7 @@ Panel para Sebas, Paola (Pao, paolardzmq@gmail.com) y Víctor (victor.hernandez.
 - Server: `ciudadDe(D, body, yo)` decide la ciudad de cada operación; `stockPorProducto(D, ciudad)`. **Traspaso** (Inventario → "Traspasar", POST `/api/traspaso`): mismo grupo, tipo `traspaso`, cantidad −n en la ciudad origen y +n en la destino (suma con signo como `ajuste`).
 - Ajustes → Ciudades: agregar/actualizar (nombre + WhatsApp, POST `/api/ciudades`), casilla "En la página" (POST `/api/ciudades/<id>/publica`) y ciudad de cada persona del equipo (POST `/api/equipo/ciudad`).
 - Página: `/api/publico` manda solo ciudades públicas. Con 2+ públicas aparece "¿En qué ciudad estás?" en Dónde encontrar y en Escoge tu sabor: filtra tiendas y cambia el WhatsApp de todos los botones; el pedido dice la ciudad. Kit (`/kit/ciudad.js`): "Tu ciudad" en Pide tu paquete y Mis pedidos, y el botón Resurtir (`data-wa-ciudad`). Se guarda en localStorage `crunchitos-ciudad-pub`.
-- /pago sigue mandando el comprobante al WhatsApp de Sebas (misma cuenta para todas).
+- /pago por ciudad: con 2+ ciudades públicas pregunta "¿En qué ciudad?", muestra solo las tiendas de esa ciudad y manda el comprobante al WhatsApp de esa ciudad (dice "Ciudad: …"). `?de=Tienda` elige solo la ciudad de esa tienda; también `?ciudad=id`. Los datos bancarios son los mismos para todas. Caja: una por ciudad + "Todas juntas" como global (decisión de Sebas, 26 nov 2026).
 
 ## Datos (D1)
 - 21 nov 2026: lo registrado como "plátano con sal" era plátano natural; se corrigió una sola vez (meta `fix_platano_sal_v1`).

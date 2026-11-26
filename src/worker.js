@@ -209,6 +209,7 @@ async function db(env) {
   // 26 nov 2026: varias ciudades (Chihuahua y Guadalajara). Todo lo anterior queda en Chihuahua.
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS ciudades (id TEXT PRIMARY KEY, nombre TEXT NOT NULL,
     whatsapp TEXT NOT NULL DEFAULT '', orden INTEGER NOT NULL DEFAULT 0, creado INTEGER NOT NULL, publica INTEGER NOT NULL DEFAULT 1)`).run();
+  try { await env.DB.prepare("ALTER TABLE ciudades ADD COLUMN publica INTEGER NOT NULL DEFAULT 1").run(); } catch (e) { /* ya existe */ }
   const cv1 = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'ciudades_v1'").first();
   if (!cv1) {
     for (const t of ["movimientos", "gastos", "puntos", "equipo"]) {

@@ -73,6 +73,7 @@ footer a{color:inherit}
     <div class="titular">A nombre de <strong>Sebastián Abramowicz</strong></div>
   </section>
   <section class="donde" aria-labelledby="tdonde">
+    <div id="bciudad" hidden><h2>¿En qué ciudad?</h2><div class="chips" id="ciudades" style="margin-bottom:14px"></div></div>
     <h2 id="tdonde">¿Dónde compraste tus Crunchitos?</h2>
     <div class="chips" id="lugares"></div>
     <input type="text" id="otro" placeholder="Escribe dónde o con quién" hidden>
@@ -91,6 +92,7 @@ footer a{color:inherit}
   // Dónde compró: tiendas de "Dónde encontrarnos" + opciones fijas. ?de=Nombre lo deja elegido (liga propia por tienda).
   var FIJOS = ["Con un vendedor", "Pedido a domicilio", "Otro"];
   var de = new URLSearchParams(location.search).get("de") || "";
+  var u = new URLSearchParams(location.search), CIUDADES = [], PUNTOS = [], ciudad = u.get("ciudad") || "", WA = "526142355166";
   var elegido = "", L = document.getElementById("lugares"), otro = document.getElementById("otro"), nom = document.getElementById("nombre"), btn = document.getElementById("enviar");
   function pintar(nombres) {
     var todos = nombres.concat(FIJOS);
@@ -106,8 +108,9 @@ footer a{color:inherit}
   function lugar() { return elegido === "Otro" ? otro.value.trim() : elegido; }
   function actualizar() {
     var l = lugar();
-    var t = "Hola, te mando mi comprobante de pago de Crunchitos 🙌" + (l ? "\nCompré en: " + l : "") + (nom.value.trim() ? "\nNombre: " + nom.value.trim() : "");
-    btn.href = "https://wa.me/526142355166?text=" + encodeURIComponent(t);
+    var cn = CIUDADES.length > 1 ? (CIUDADES.find(function (c) { return c.id === ciudad; }) || {}).nombre : "";
+    var t = "Hola, te mando mi comprobante de pago de Crunchitos 🙌" + (cn ? "\nCiudad: " + cn : "") + (l ? "\nCompré en: " + l : "") + (nom.value.trim() ? "\nNombre: " + nom.value.trim() : "");
+    btn.href = "https://wa.me/" + WA + "?text=" + encodeURIComponent(t);
     btn.setAttribute("aria-disabled", String(!l));
     if (l) document.getElementById("falta").hidden = true;
   }
@@ -116,8 +119,26 @@ footer a{color:inherit}
     e.preventDefault(); var f = document.getElementById("falta"); f.hidden = false; f.scrollIntoView({ behavior: "smooth", block: "center" });
   });
   pintar([]);
+  // Ciudad: la del punto de la liga (?de=), la de ?ciudad=, o la primera. Cambia las tiendas y a qué WhatsApp llega el comprobante.
+  function ponCiudad() {
+    var c = CIUDADES.find(function (x) { return x.id === ciudad; }) || CIUDADES[0];
+    if (!c) return; ciudad = c.id; if (c.whatsapp) WA = c.whatsapp;
+    var CB = document.getElementById("ciudades");
+    document.getElementById("bciudad").hidden = CIUDADES.length < 2;
+    CB.innerHTML = CIUDADES.map(function (x) { return '<button type="button" data-c="' + x.id + '" aria-pressed="' + (x.id === ciudad) + '">' + x.nombre.replace(/[<>&"]/g, "") + "</button>"; }).join("");
+    lista = PUNTOS.filter(function (p) { return CIUDADES.length < 2 || (p.ciudad || "chihuahua") === ciudad; }).map(function (p) { return p.nombre; }).filter(Boolean);
+    if (elegido && elegido !== de && lista.indexOf(elegido) < 0 && FIJOS.indexOf(elegido) < 0) elegido = "";
+    pintar(lista);
+  }
+  document.getElementById("ciudades").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-c]"); if (!b) return; ciudad = b.getAttribute("data-c"); if (elegido === de) { de = ""; elegido = ""; } ponCiudad();
+  });
   fetch("/api/publico").then(function (r) { return r.json(); }).then(function (d) {
-    lista = (d.puntos || []).map(function (p) { return p.nombre; }).filter(Boolean); pintar(lista);
+    CIUDADES = d.ciudades || []; var ids = CIUDADES.map(function (c) { return c.id; });
+    PUNTOS = (d.puntos || []).filter(function (p) { return ids.indexOf(p.ciudad || "chihuahua") >= 0; });
+    var pd = de && PUNTOS.find(function (p) { return p.nombre === de; });
+    if (pd) ciudad = pd.ciudad || "chihuahua";
+    ponCiudad();
   }).catch(function () {});
 })();
 document.querySelectorAll("[data-copiar]").forEach(function (b) {
