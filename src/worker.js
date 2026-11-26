@@ -402,12 +402,10 @@ async function guardarMovimiento(D, yo, body) {
   return json({ ok: true, grupo });
 }
 
-// Conteo real de bodega: guarda la diferencia por sabor como "ajuste" (+/-). El conteo físico incluye lo apartado.
+// Conteo real de bodega: guarda la diferencia por sabor como "ajuste" (+/-). Se cuentan solo las disponibles (lo apartado va en otra bolsa).
 async function ajustarConteo(D, yo, body) {
   const conteo = body.conteo && typeof body.conteo === "object" ? body.conteo : {};
   const stock = await stockPorProducto(D);
-  const { results: ap } = await D.prepare("SELECT producto_id, SUM(cantidad) AS n FROM movimientos WHERE tipo = 'apartado' GROUP BY producto_id").all();
-  const apartado = Object.fromEntries(ap.map((r) => [r.producto_id, Number(r.n) || 0]));
   const grupo = "g-" + crypto.randomUUID(), ahora = Date.now(), fecha = hoyChihuahua();
   const nota = texto(body.nota, 300) || "Ajuste por conteo";
   const st = [];
@@ -415,7 +413,7 @@ async function ajustarConteo(D, yo, body) {
     if (conteo[id] === undefined || conteo[id] === "") continue;
     const real = Math.trunc(Number(conteo[id]));
     if (!Number.isFinite(real) || real < 0 || real > 100000) return error("Revisa los números del conteo.");
-    const dif = real - ((stock[id] || 0) + (apartado[id] || 0));
+    const dif = real - (stock[id] || 0); // se cuentan solo las disponibles; lo apartado va aparte
     if (dif) st.push(D.prepare(`INSERT INTO movimientos (grupo, tipo, producto_id, cantidad, precio, cliente, nota, quien, fecha, creado)
       VALUES (?, 'ajuste', ?, ?, 0, '', ?, ?, ?, ?)`).bind(grupo, id, dif, nota, yo, fecha, ahora));
   }

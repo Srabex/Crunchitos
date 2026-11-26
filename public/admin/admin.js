@@ -566,7 +566,7 @@
     var apN = 0, apG = {}; D.movimientos.forEach(function (m) { if (m.tipo === "apartado") { apN += m.cantidad; apG[m.grupo] = 1; } });
     var apP = Object.keys(apG).length;
     v.innerHTML = '<div class="fila entre"><h2>Inventario</h2><span class="fila" style="gap:6px"><button class="btn chico claro" id="contar">Ajustar conteo</button><button class="btn chico" id="llego">+ Llegó mercancía</button></span></div>' +
-      '<div class="kpis"><div class="kpi amarillo"><span>Disponibles</span><strong>' + num(quedan) + "</strong><small>" + (apN ? "en tu mano: " + num(quedan + apN) + " con las apartadas" : "bolsas") + "</small></div>" +
+      '<div class="kpis"><div class="kpi amarillo"><span>Disponibles</span><strong>' + num(quedan) + "</strong><small>" + (apN ? "sin contar " + num(apN) + " apartadas" : "bolsas") + "</small></div>" +
       '<div class="kpi"><span>Apartadas</span><strong>' + num(apN) + "</strong><small>" + (apP ? "para " + apP + (apP === 1 ? " persona" : " personas") : "nada apartado") + "</small></div>" +
       '<div class="kpi"><span>Valor a costo</span><strong>' + pesos(quedan * cp) + "</strong><small>" + pesos(cp) + " por bolsa</small></div>" +
       '<div class="kpi"><span>Si se venden a público</span><strong>' + pesos(quedan * precioPublico()) + "</strong><small>" + pesos(precioPublico()) + " por bolsa</small></div>" +
@@ -603,8 +603,8 @@
   function vConteo(v) {
     var st = stock(), ap = {};
     D.movimientos.forEach(function (m) { if (m.tipo === "apartado") ap[m.producto_id] = (ap[m.producto_id] || 0) + m.cantidad; });
-    var fis = function (id) { return (st[id] || 0) + (ap[id] || 0); };
-    v.innerHTML = '<h2>Ajustar conteo</h2><p class="vacio" style="margin:-4px 0 14px">Cuenta las bolsas que tienes en la mano (incluye las apartadas, sin las de tiendas) y corrige el número de cada sabor. Se guarda solo la diferencia como "Ajuste" en el historial.</p>' +
+    var fis = function (id) { return st[id] || 0; };
+    v.innerHTML = '<h2>Ajustar conteo</h2><p class="vacio" style="margin:-4px 0 14px">Cuenta las bolsas disponibles que tienes, <b>sin las apartadas</b> (esas van aparte) y sin las de tiendas, y corrige el número de cada sabor. Se guarda solo la diferencia como "Ajuste" en el historial.</p>' +
       '<div class="sabores">' + D.productos.map(function (p) {
         return '<div class="it"><img src="/img/etiquetas/' + esc(p.id) + '.webp" alt="" loading="lazy"><div class="nom">' + esc(p.nombre_base + " " + p.sabor) + '<small data-dif="' + esc(p.id) + '"></small></div>' +
           '<div class="paso"><button type="button" data-cm="' + esc(p.id) + '" aria-label="Menos">−</button><input inputmode="numeric" data-c="' + esc(p.id) + '" value="' + fis(p.id) + '" aria-label="Conteo de ' + esc(p.nombre_base + " " + p.sabor) + '"><button type="button" data-cp="' + esc(p.id) + '" aria-label="Más">+</button></div></div>';
@@ -616,7 +616,7 @@
       var cambios = 0;
       D.productos.forEach(function (p) {
         var d = leer(p.id) - fis(p.id), s = v.querySelector('[data-dif="' + p.id + '"]');
-        s.textContent = "En mano según el panel: " + fis(p.id) + (ap[p.id] ? " (" + (st[p.id] || 0) + " disponibles + " + ap[p.id] + " apartadas)" : "") + (d ? " → " + (d > 0 ? "+" : "") + d : "");
+        s.textContent = "El panel dice " + fis(p.id) + (ap[p.id] ? " · aparte: " + ap[p.id] + " apartada" + (ap[p.id] === 1 ? "" : "s") : "") + (d ? " → " + (d > 0 ? "+" : "") + d : "");
         s.className = d ? "bajo" : ""; if (d) cambios++;
       });
       var b = document.getElementById("cguardar"); b.textContent = cambios ? "Guardar conteo · " + cambios + (cambios === 1 ? " sabor cambia" : " sabores cambian") : "Todo cuadra"; b.disabled = !cambios;
