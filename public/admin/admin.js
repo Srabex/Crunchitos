@@ -1038,6 +1038,22 @@
       '<div class="chips" style="margin-bottom:14px">' + tipos.map(function (t) {
         return '<button class="chip" data-f="' + t[0] + '" aria-pressed="' + (filtroHist === t[0]) + '">' + t[1] + "</button>";
       }).join("") + "</div>";
+    if (filtroHist === "consigna") {
+      var cu = {};
+      Object.keys(cob).forEach(function (k) {
+        var c = cob[k], t = cu[c.tienda] = cu[c.tienda] || { tienda: c.tienda, n: 0, dejadas: 0, valor: 0, cobradas: 0, cobrado: 0, regresaron: 0, merma: 0, faltan: 0, porCobrar: 0 };
+        t.n++; t.dejadas += c.dejadas; t.valor += c.dejadas * c.precio; t.cobradas += c.cobradas; t.cobrado += c.cobrado;
+        t.regresaron += c.regresaron; t.merma += c.merma; t.faltan += c.faltan; t.porCobrar += c.faltan * c.precio;
+      });
+      var lista = Object.keys(cu).map(function (k) { return cu[k]; }).sort(function (a, b) { return b.porCobrar - a.porCobrar; });
+      if (lista.length) h += '<h3 style="margin:4px 0 8px">Cuenta por tienda</h3>' + lista.map(function (t) {
+        return '<div class="mov"><div style="font-weight:700;font-size:16px">' + esc(t.tienda) + '</div>' +
+          '<div style="font-size:14px;margin-top:6px;line-height:1.6">Le has dejado <b>' + t.dejadas + " bolsas</b> en " + t.n + (t.n === 1 ? " consigna" : " consignas") + " (" + pesos(t.valor) + ")<br>" +
+          "Ya cobrado: <b>" + t.cobradas + " bolsas · " + pesos(t.cobrado) + "</b>" + (t.regresaron ? "<br>Regresaron: " + t.regresaron : "") + (t.merma ? "<br>Merma: " + t.merma : "") + "</div>" +
+          (t.faltan ? '<div class="cobro pend">⏳ <b>Falta cobrar: ' + pesos(t.porCobrar) + "</b> · " + t.faltan + (t.faltan === 1 ? " bolsa" : " bolsas") + ' en la tienda</div><button class="btn chico verde" style="margin-top:8px" data-cobrar="' + esc(t.tienda) + '">Pasar a cobrar</button>'
+            : '<div class="cobro ok">✅ <b>Al corriente</b>: no debe nada</div>') + "</div>";
+      }).join("") + '<h3 style="margin:16px 0 8px">Movimientos</h3>';
+    }
     h += gs.length ? gs.slice(0, 200).map(function (g) {
       var n = 0; g.items.forEach(function (m) { n += m.cantidad; });
       return '<div class="mov"><div class="cab"><span><span class="pill p-' + g.tipo + '">' + nombres[g.tipo] + (g.consigna && g.tipo !== "devolucion" ? " (consigna)" : "") + "</span> " + esc(fechaBonita(g.fecha)) + "</span><span>" + esc(nombrePersona(g.quien)) + "</span></div>" +
