@@ -5,6 +5,9 @@
   var D = null; // datos del servidor
   var vista = "inicio";
   var periodo = "30";
+  // Ciudad que se está viendo ("todas" = suma de todas, solo para ver; para registrar hay que elegir una).
+  var ciudad = null;
+  try { ciudad = localStorage.getItem("crunchitos-ciudad"); } catch (e) {}
   var filtroHist = "todos";
   var form = null; // estado del formulario de movimiento
 
@@ -24,6 +27,7 @@
     clearTimeout(aviso._t); aviso._t = setTimeout(function () { a.hidden = true; }, 2600);
   }
   function api(metodo, ruta, body) {
+    if (body && metodo !== "GET" && ciudad && ciudad !== "todas" && body.ciudad === undefined) body.ciudad = ciudad;
     return fetch("/api" + ruta, {
       method: metodo,
       headers: body ? { "content-type": "application/json" } : {},
@@ -103,7 +107,7 @@
     var s = {};
     D.productos.forEach(function (p) { s[p.id] = 0; });
     D.movimientos.forEach(function (m) {
-      var d = (m.tipo === "entrada" || m.tipo === "devolucion" || m.tipo === "ajuste") ? m.cantidad : (m.consigna ? 0 : -m.cantidad);
+      var d = (m.tipo === "entrada" || m.tipo === "devolucion" || m.tipo === "ajuste" || m.tipo === "traspaso") ? m.cantidad : (m.consigna ? 0 : -m.cantidad);
       s[m.producto_id] = (s[m.producto_id] || 0) + d;
     });
     return s;
@@ -166,9 +170,20 @@
       if (d._status === 401) { D = null; pintarLogin(); return; }
       if (!d.ok) { app.innerHTML = '<p class="cargando">' + esc(d.error || "No se pudo cargar.") + ' <button class="enlace" id="re">Reintentar</button></p>'; document.getElementById("re").onclick = cargar; return; }
       D = d; D.hoy = hoyLocal() > d.hoy ? hoyLocal() : d.hoy;
+      D.movTodos = d.movimientos; D.gasTodos = d.gastos || []; D.ptsTodos = d.puntos || [];
+      D.ciudades = d.ciudades || [];
+      if (!ciudad || (ciudad !== "todas" && !D.ciudades.some(function (c) { return c.id === ciudad; }))) ciudad = d.miCiudad || (D.ciudades[0] || {}).id || "chihuahua";
+      filtrarCiudad();
       pintar();
     });
   }
+
+  function filtrarCiudad() {
+    var es = function (x) { return ciudad === "todas" || (x.ciudad || "chihuahua") === ciudad; };
+    D.movimientos = D.movTodos.filter(es); D.gastos = D.gasTodos.filter(es); D.puntos = D.ptsTodos.filter(es);
+  }
+  function variasCiudades() { return D && D.ciudades && D.ciudades.length > 1; }
+  function nombreCiudad(id) { if (id === "todas") return "Todas las ciudades"; var c = (D.ciudades || []).find(function (x) { return x.id === id; }); return c ? c.nombre : id; }
 
   // ——— login
   function pintarLogin(emailPrevio) {
@@ -206,19 +221,31 @@
   function pintar() {
     var tabs = [["inicio", "Inicio"], ["vender", "Vender"], ["gastos", "Gastos"], ["inventario", "Inventario"], ["historial", "Historial"], ["archivos", "Archivos"], ["ajustes", "Ajustes"]];
     app.innerHTML =
-      '<header class="top"><img src="/img/logo.svg" alt="Crunchitos"><div class="quien">' + esc(nombrePersona(D.yo)) +
+      '<header class="top"><img src="/img/logo.svg" alt="Crunchitos"><div class="quien">' +
+      esc(nombrePersona(D.yo)) +
       ' <a class="enlace" href="/" target="_blank" rel="noopener">Página</a> <a class="enlace" href="/kit/" target="_blank" rel="noopener">Kit</a> <button class="enlace" id="salir">Salir</button></div></header>' +
+      (variasCiudades() ? '<div class="ciudadbar"><label for="selciudad">Ciudad</label><select id="selciudad">' +
+        D.ciudades.map(function (c) { return '<option value="' + esc(c.id) + '"' + (c.id === ciudad ? " selected" : "") + ">" + esc(c.nombre) + "</option>"; }).join("") +
+        '<option value="todas"' + (ciudad === "todas" ? " selected" : "") + ">Todas juntas</option></select></div>" : "") +
       '<main id="vista"></main>' +
       '<nav class="tabs" aria-label="Secciones">' + tabs.map(function (t) {
-        var actual = vista === "liquidar" || vista === "entrada" || vista === "remision" || vista === "conteo" ? "inventario" : vista;
+        var actual = vista === "liquidar" || vista === "entrada" || vista === "remision" || vista === "conteo" || vista === "traspaso" ? "inventario" : vista;
         return '<button data-v="' + t[0] + '"' + (actual === t[0] ? ' aria-current="page"' : "") + '><svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[t[0]] + "</svg>" + t[1] + "</button>";
       }).join("") + "</nav>";
     document.getElementById("salir").onclick = function () { api("POST", "/logout").then(function () { pintarLogin(); }); };
     app.querySelectorAll(".tabs button").forEach(function (b) {
       b.onclick = function () { ir(b.getAttribute("data-v")); };
     });
+    var sc = document.getElementById("selciudad");
+    if (sc) sc.onchange = function () { ciudad = sc.value; try { localStorage.setItem("crunchitos-ciudad", ciudad); } catch (e) {} filtrarCiudad(); form = null; gform = null; pintar(); };
     var v = document.getElementById("vista");
-    ({ inicio: vInicio, vender: vVender, gastos: vGastos, inventario: vInventario, historial: vHistorial, archivos: vArchivos, ajustes: vAjustes, entrada: vVender, liquidar: vLiquidar, remision: vRemision, conteo: vConteo })[vista](v);
+    if (ciudad === "todas" && ["vender", "gastos", "entrada", "conteo", "liquidar", "traspaso"].indexOf(vista) >= 0) {
+      v.innerHTML = '<div class="caja" style="margin-top:20px;text-align:center"><h3>Elige una ciudad</h3><p class="vacio" style="margin:8px 0 14px">Con "Todas" solo se ven los números juntos. Para registrar, elige arriba en qué ciudad.</p>' +
+        D.ciudades.map(function (c) { return '<button class="btn chico" style="margin:4px" data-elegirc="' + esc(c.id) + '">' + esc(c.nombre) + "</button>"; }).join("") + "</div>";
+      v.querySelectorAll("[data-elegirc]").forEach(function (b) { b.onclick = function () { ciudad = b.getAttribute("data-elegirc"); try { localStorage.setItem("crunchitos-ciudad", ciudad); } catch (e) {} filtrarCiudad(); pintar(); }; });
+      return;
+    }
+    ({ inicio: vInicio, vender: vVender, gastos: vGastos, inventario: vInventario, historial: vHistorial, archivos: vArchivos, ajustes: vAjustes, entrada: vVender, liquidar: vLiquidar, remision: vRemision, conteo: vConteo, traspaso: vTraspaso })[vista](v);
   }
   function ir(v) {
     vista = v;
@@ -319,7 +346,7 @@
     document.getElementById("repimg").onclick = function () {
       var cs = consignas(), tn = 0; cs.forEach(function (c) { tn += c.bolsas; });
       imagenReporte({
-        periodo: nomPer,
+        periodo: (variasCiudades() ? nombreCiudad(ciudad) + " · " : "") + nomPer,
         caja: cobrado - deCaja, porCobrar: pc + apV, pcTxt: (pcB ? pcB + " a consigna" : "") + (apB ? (pcB ? " · " : "") + apB + " apartadas" : ""),
         vendido: dinero, bolsas: bolsas, ganBolsas: gananciaBolsas, cp: cp, gastos: totGastos, real: gananciaBolsas - totGastos,
         bodega: enStock, tiendas: tn, merma: tomadas + merma,
@@ -581,7 +608,7 @@
     var quedan = 0; D.productos.forEach(function (p) { quedan += st[p.id]; });
     var apN = 0, apG = {}; D.movimientos.forEach(function (m) { if (m.tipo === "apartado") { apN += m.cantidad; apG[m.grupo] = 1; } });
     var apP = Object.keys(apG).length;
-    v.innerHTML = '<div class="fila entre"><h2>Inventario</h2><span class="fila" style="gap:6px"><button class="btn chico claro" id="contar">Ajustar conteo</button><button class="btn chico" id="llego">+ Llegó mercancía</button></span></div>' +
+    v.innerHTML = '<div class="fila entre"><h2>Inventario</h2><span class="fila" style="gap:6px">' + (variasCiudades() && ciudad !== "todas" ? '<button class="btn chico claro" id="traspasar">Traspasar</button>' : "") + '<button class="btn chico claro" id="contar">Ajustar conteo</button><button class="btn chico" id="llego">+ Llegó mercancía</button></span></div>' +
       '<div class="kpis"><div class="kpi amarillo"><span>Disponibles</span><strong>' + num(quedan) + "</strong><small>" + (apN ? "sin contar " + num(apN) + " apartadas" : "bolsas") + "</small></div>" +
       '<div class="kpi"><span>Apartadas</span><strong>' + num(apN) + "</strong><small>" + (apP ? "para " + apP + (apP === 1 ? " persona" : " personas") : "nada apartado") + "</small></div>" +
       '<div class="kpi"><span>Valor a costo</span><strong>' + pesos(quedan * cp) + "</strong><small>" + pesos(cp) + " por bolsa</small></div>" +
@@ -593,6 +620,7 @@
       '<p class="vacio">Quedan = disponibles en tu bodega (sin contar las apartadas). Tiendas = dejadas a consigna. Otras = bolsas que se tomaron o se echaron a perder. En rojo: sabores con ' + (D.ajustes.stockBajo || 0) + " bolsas o menos. Si lo que tienes en la mano no cuadra, toca «Ajustar conteo».</p>";
     document.getElementById("llego").onclick = function () { ir("entrada"); };
     document.getElementById("contar").onclick = function () { ir("conteo"); };
+    var tb = document.getElementById("traspasar"); if (tb) tb.onclick = function () { ir("traspaso"); };
     document.getElementById("invimg").onclick = function () { imagenInventario(inv, t, quedan, cs, this); };
     v.querySelectorAll("[data-cobrar]").forEach(function (b) { b.onclick = function () { lform = null; ltienda = b.getAttribute("data-cobrar"); ir("liquidar"); }; });
     v.querySelectorAll("[data-recibo]").forEach(function (b) { b.onclick = function () { rgrupo = b.getAttribute("data-recibo"); ir("remision"); }; });
@@ -652,6 +680,38 @@
     };
     pintaDif();
   }
+  // Traspaso: bolsas que se mandan de esta ciudad a otra (no es venta).
+  function vTraspaso(v) {
+    var st = stock(), otras = D.ciudades.filter(function (c) { return c.id !== ciudad; });
+    var t = { a: (otras[0] || {}).id, items: {} };
+    v.innerHTML = '<h2>Traspasar a otra ciudad</h2><p class="vacio" style="margin:-4px 0 14px">Salen de ' + esc(nombreCiudad(ciudad)) + ' y entran a la otra ciudad. No cuenta como venta.</p>' +
+      '<div class="caja"><label>¿A qué ciudad?<select id="tdest" style="width:100%;font:500 16px Poppins,sans-serif;padding:12px;border-radius:14px;border:2px solid var(--linea)">' +
+      otras.map(function (c) { return '<option value="' + esc(c.id) + '">' + esc(c.nombre) + "</option>"; }).join("") + "</select></label></div>" +
+      '<div class="sabores">' + D.productos.map(function (p) {
+        return '<div class="it"><img src="/img/etiquetas/' + esc(p.id) + '.webp" alt="" loading="lazy"><div class="nom">' + esc(p.nombre_base + " " + p.sabor) + "<small>Hay " + (st[p.id] || 0) + "</small></div>" +
+          '<div class="paso"><button type="button" data-tm="' + esc(p.id) + '" aria-label="Menos">−</button><input inputmode="numeric" data-t="' + esc(p.id) + '" value="0" aria-label="Bolsas de ' + esc(p.nombre_base + " " + p.sabor) + '"><button type="button" data-tp="' + esc(p.id) + '" aria-label="Más">+</button></div></div>';
+      }).join("") + "</div>" +
+      '<div class="caja" style="margin-top:14px"><label>Nota (opcional)<input id="tnota" placeholder="Ej. mandadas con Pao"></label><p class="error" id="terr" role="alert" style="margin-top:10px"></p></div>' +
+      '<button class="enlace" id="tcancel">Cancelar</button><div class="barra"><button class="btn" id="tguardar">Traspasar</button></div>';
+    var leer = function (id) { var n = parseInt(v.querySelector('[data-t="' + id + '"]').value, 10); return n > 0 ? n : 0; };
+    var total = function () { var n = 0; D.productos.forEach(function (p) { n += leer(p.id); }); return n; };
+    var pinta = function () { var n = total(), b = document.getElementById("tguardar"); b.textContent = n ? "Traspasar " + n + (n === 1 ? " bolsa" : " bolsas") + " a " + nombreCiudad(document.getElementById("tdest").value) : "Elige las bolsas"; b.disabled = !n; };
+    v.querySelectorAll("[data-t]").forEach(function (i) { i.oninput = pinta; });
+    v.querySelectorAll("[data-tm],[data-tp]").forEach(function (b) { b.onclick = function () { var id = b.getAttribute("data-tm") || b.getAttribute("data-tp"), i = v.querySelector('[data-t="' + id + '"]'); i.value = Math.max(0, (parseInt(i.value, 10) || 0) + (b.hasAttribute("data-tp") ? 1 : -1)); pinta(); }; });
+    document.getElementById("tdest").onchange = pinta;
+    document.getElementById("tcancel").onclick = function () { ir("inventario"); };
+    var enviar = function (forzar) {
+      var items = D.productos.filter(function (p) { return leer(p.id); }).map(function (p) { return { producto_id: p.id, cantidad: leer(p.id) }; });
+      var e = document.getElementById("terr"), b = document.getElementById("tguardar"); b.disabled = true;
+      api("POST", "/traspaso", { de: ciudad, a: document.getElementById("tdest").value, items: items, nota: document.getElementById("tnota").value, forzar: !!forzar, fecha: D.hoy }).then(function (r) {
+        if (r.sinStock) { b.disabled = false; e.innerHTML = "No alcanza: " + r.sinStock.map(function (x) { return esc(nombreProd(x.id)) + " (hay " + x.hay + ")"; }).join(", ") + '. <button class="enlace" id="tforzar">Traspasar de todos modos</button>'; aviso("No alcanza el inventario ⬇", true); e.scrollIntoView({ behavior: "smooth", block: "center" }); document.getElementById("tforzar").onclick = function () { enviar(true); }; return; }
+        if (!r.ok) { b.disabled = false; e.textContent = r.error || "No se pudo."; aviso(r.error || "No se pudo", true); return; }
+        aviso("Traspaso guardado ✅"); cargar().then(function () { ir("inventario"); });
+      });
+    };
+    document.getElementById("tguardar").onclick = function () { enviar(false); };
+    pinta();
+  }
   function vApartados() {
     var gs = grupos(D.movimientos).filter(function (g) { return g.tipo === "apartado"; });
     var tn = 0; gs.forEach(function (g) { g.items.forEach(function (m) { tn += m.cantidad; }); });
@@ -661,7 +721,7 @@
       var n = 0; g.items.forEach(function (m) { n += m.cantidad; });
       var d = diasDesde(g.fecha);
       return '<div class="mov"><div class="cab"><span style="font-weight:700;color:var(--tinta);font-size:16px">' + esc(g.cliente || "Sin nombre") + "</span><span>" + (d ? "hace " + d + (d === 1 ? " día" : " días") : "hoy") + "</span></div>" +
-        "<ul>" + g.items.map(function (m) { return "<li>" + (g.tipo === "ajuste" && m.cantidad > 0 ? "+" : "") + m.cantidad + " × " + esc(nombreProd(m.producto_id)) + "</li>"; }).join("") + "</ul>" +
+        "<ul>" + g.items.map(function (m) { return "<li>" + ((g.tipo === "ajuste" || g.tipo === "traspaso") && m.cantidad > 0 ? "+" : "") + m.cantidad + (g.tipo === "traspaso" && variasCiudades() ? " (" + esc(nombreCiudad(m.ciudad)) + ")" : "") + " × " + esc(nombreProd(m.producto_id)) + "</li>"; }).join("") + "</ul>" +
         (g.nota ? '<div style="font-size:13px;color:var(--suave);margin-bottom:8px">' + esc(g.nota) + "</div>" : "") +
         '<div class="pie"><span><strong>' + n + (n === 1 ? " bolsa" : " bolsas") + "</strong>" + (g.precio ? " · " + pesos(g.precio) + " c/u · <strong>" + pesos(n * g.precio) + "</strong>" : "") + "</span></div>" +
         '<div class="fila" style="gap:6px;margin-top:10px;flex-wrap:wrap"><button class="btn chico verde" data-entregar="' + esc(g.grupo) + '" data-como="venta">Entregar como venta</button>' +
@@ -682,7 +742,7 @@
       g.fillStyle = "#ECBE48"; g.fillRect(0, 0, W, 300);
       try { g.drawImage(logo, (W - 420) / 2, 34, 420, 137); } catch (e) {}
       g.textAlign = "center"; g.fillStyle = "#3B2216";
-      g.font = "700 26px Poppins, sans-serif"; g.fillText("I N V E N T A R I O", W / 2, 212);
+      g.font = "700 26px Poppins, sans-serif"; g.fillText("I N V E N T A R I O" + (variasCiudades() ? "  ·  " + nombreCiudad(ciudad).toUpperCase() : ""), W / 2, 212);
       var ahora = new Date();
       g.font = "500 30px Poppins, sans-serif";
       g.fillText(ahora.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" }) + " · " + ahora.toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" }), W / 2, 258);
@@ -763,7 +823,7 @@
       g.fillStyle = "#ECBE48"; g.fillRect(0, 0, W, 280);
       try { g.drawImage(logo, (W - 400) / 2, 30, 400, 131); } catch (e) {}
       g.textAlign = "center"; g.fillStyle = "#3B2216";
-      g.font = "700 26px Poppins, sans-serif"; g.fillText("C Ó M O   V A M O S  ·  " + r.periodo.toUpperCase(), W / 2, 202);
+      g.font = "700 26px Poppins, sans-serif"; g.fillText("CÓMO VAMOS  ·  " + r.periodo.toUpperCase(), W / 2, 202);
       var ahora = new Date();
       g.font = "500 28px Poppins, sans-serif";
       g.fillText(ahora.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" }) + " · " + ahora.toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" }), W / 2, 246);
@@ -933,7 +993,7 @@
       if (filtroHist === "consigna") return g.tipo === "consigna" || g.consigna;
       return g.tipo === filtroHist;
     });
-    var nombres = { venta: "Venta", apartado: "Apartado", ajuste: "Ajuste de conteo", entrada: "Entrada", tomada: "Tomada", merma: "Merma", consigna: "Consigna", devolucion: "Regresó" };
+    var nombres = { venta: "Venta", apartado: "Apartado", ajuste: "Ajuste de conteo", traspaso: "Traspaso", entrada: "Entrada", tomada: "Tomada", merma: "Merma", consigna: "Consigna", devolucion: "Regresó" };
     var h = '<div class="fila entre"><h2>Historial</h2><a class="btn chico claro" href="/api/movimientos.csv">Descargar Excel</a></div>' +
       '<div class="chips" style="margin-bottom:14px">' + tipos.map(function (t) {
         return '<button class="chip" data-f="' + t[0] + '" aria-pressed="' + (filtroHist === t[0]) + '">' + t[1] + "</button>";
@@ -1016,7 +1076,7 @@
       '<label style="display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:500"><input type="checkbox" id="aagot" style="width:22px;height:22px"' + (a.mostrarAgotados ? " checked" : "") + '> Marcar en la página los sabores agotados</label>' +
       '<p class="vacio" style="margin-top:4px">Apagado: todos los sabores salen disponibles y tú confirmas por WhatsApp qué hay.</p>' +
       '<label style="margin-top:10px">WhatsApp de la página (10 dígitos)<input id="awa" inputmode="tel" value="' + esc(tel) + '"></label>' +
-      '<p class="vacio" style="margin-top:6px">A este número llegan los pedidos de crunchitos.mx.</p></div>' +
+      '<p class="vacio" style="margin-top:6px">' + (variasCiudades() ? "Respaldo: los pedidos llegan al WhatsApp de cada ciudad (abajo, en Ciudades)." : "A este número llegan los pedidos de crunchitos.mx.") + '</p></div>' +
       '<button class="btn" id="gaj" style="width:100%;margin-bottom:20px">Guardar ajustes</button><p class="error" id="aerr"></p>';
     h += '<div class="caja"><h3>Dónde encontrarnos (sale en la página)</h3>' +
       ((D.puntos || []).length ? "<table><tbody>" + D.puntos.map(function (x) {
@@ -1031,9 +1091,16 @@
       '<label style="margin-top:8px">Liga de Google Maps (opcional)<input id="pmap" inputmode="url" placeholder="https://maps.app.goo.gl/…"></label>' +
       '<p class="vacio" style="margin-top:6px">En Google Maps busca el lugar → Compartir → Copiar vínculo, y pégalo aquí.</p>' +
       '<button class="btn chico" style="width:100%;margin-top:10px">Agregar lugar</button></form></div>';
+    h += '<div class="caja"><h3>Ciudades</h3><p class="vacio" style="margin-bottom:10px">Cada ciudad lleva su inventario, su caja y sus puntos de venta. A su WhatsApp llegan los pedidos de esa ciudad.</p><table><tbody>' +
+      D.ciudades.map(function (c) { return "<tr><td><strong>" + esc(c.nombre) + "</strong><br><span class=vacio>" + esc(String(c.whatsapp || "").replace(/^52/, "")) + "</span></td><td class=num>" +
+        '<label style="display:inline-flex;align-items:center;gap:6px;font-weight:500;font-size:13px"><input type="checkbox" data-cpub="' + esc(c.id) + '"' + (c.publica ? " checked" : "") + (D.esDueno ? "" : " disabled") + ' style="width:20px;height:20px"> En la página</label></td></tr>'; }).join("") + "</tbody></table>" +
+      '<p class="vacio" style="margin-top:6px">"En la página": la ciudad sale para elegir en crunchitos.mx y en el kit. Apágala mientras no haya mercancía ahí.</p>' +
+      (D.esDueno ? '<form id="fciu" class="rejilla2" style="margin-top:12px"><label>Ciudad<input id="cnom" placeholder="Ej. Monterrey"></label><label>WhatsApp (10 dígitos)<input id="cwa" inputmode="tel" placeholder="81…"></label><button class="btn chico" style="grid-column:1/-1">Agregar o actualizar ciudad</button></form><p class="vacio" style="margin-top:6px">Para cambiar el WhatsApp de una ciudad, escribe el mismo nombre con el número nuevo.</p>' : "") + "</div>";
     h += '<div class="caja"><h3>Equipo con acceso</h3><table><tbody><tr><td>Sebas</td><td>' + esc(D.dueno) + "</td><td></td></tr>" +
       D.equipo.map(function (e) {
-        return "<tr><td>" + esc(e.nombre || "—") + "</td><td>" + esc(e.email) + "</td><td class=num>" + (D.esDueno ? '<button class="btn chico peligro" data-quitar="' + esc(e.email) + '">Quitar</button>' : "") + "</td></tr>";
+        return "<tr><td>" + esc(e.nombre || "—") + "</td><td>" + esc(e.email) +
+          (variasCiudades() ? '<br><select data-eqc="' + esc(e.email) + '"' + (D.esDueno ? "" : " disabled") + ' style="margin-top:4px;font:500 13px Poppins,sans-serif;border-radius:8px;padding:3px 6px">' + D.ciudades.map(function (c) { return '<option value="' + esc(c.id) + '"' + ((e.ciudad || "chihuahua") === c.id ? " selected" : "") + ">" + esc(c.nombre) + "</option>"; }).join("") + "</select>" : "") +
+          "</td><td class=num>" + (D.esDueno ? '<button class="btn chico peligro" data-quitar="' + esc(e.email) + '">Quitar</button>' : "") + "</td></tr>";
       }).join("") + "</tbody></table>" +
       (D.esDueno ? '<form id="feq" class="rejilla2" style="margin-top:12px"><label>Nombre<input id="enom" placeholder="Paola"></label><label>Correo<input id="eem" type="email" placeholder="correo@gmail.com"></label><button class="btn chico" style="grid-column:1/-1">Dar acceso</button></form>'
         : '<p class="vacio" style="margin-top:8px">Solo Sebas puede agregar o quitar personas.</p>') + "</div>";
@@ -1041,6 +1108,19 @@
     function filaPrecio(p) {
       return '<div class="fila" style="margin-bottom:8px;flex-wrap:nowrap"><input class="pn" value="' + esc(p.nombre) + '" placeholder="Nombre" aria-label="Nombre del precio"><input class="pv" inputmode="decimal" value="' + esc(p.valor) + '" style="width:90px" aria-label="Precio"><button class="btn chico peligro qp" type="button" aria-label="Quitar precio">×</button></div>';
     }
+    var fc = document.getElementById("fciu");
+    if (fc) fc.onsubmit = function (ev) {
+      ev.preventDefault();
+      api("POST", "/ciudades", { nombre: document.getElementById("cnom").value, whatsapp: document.getElementById("cwa").value, ciudad: undefined }).then(function (r) {
+        if (!r.ok) { aviso(r.error || "No se pudo", true); return; } aviso("Ciudad guardada"); cargar();
+      });
+    };
+    v.querySelectorAll("[data-cpub]").forEach(function (cb) {
+      cb.onchange = function () { api("POST", "/ciudades/" + cb.getAttribute("data-cpub") + "/publica", { publica: cb.checked }).then(function (r) { aviso(r.ok ? (cb.checked ? "Ya sale en la página" : "Ya no sale en la página") : (r.error || "No se pudo"), !r.ok); cargar(); }); };
+    });
+    v.querySelectorAll("[data-eqc]").forEach(function (sel) {
+      sel.onchange = function () { api("POST", "/equipo/ciudad", { email: sel.getAttribute("data-eqc"), ciudad: sel.value }).then(function (r) { aviso(r.ok ? "Listo" : (r.error || "No se pudo"), !r.ok); cargar(); }); };
+    });
     function engancharQuitar() { v.querySelectorAll(".qp").forEach(function (b) { b.onclick = function () { b.parentNode.remove(); }; }); }
     engancharQuitar();
     document.getElementById("addp").onclick = function () {

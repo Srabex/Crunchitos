@@ -206,6 +206,21 @@ async function db(env) {
     }
     await env.DB.batch(st);
   }
+  // 26 nov 2026: varias ciudades (Chihuahua y Guadalajara). Todo lo anterior queda en Chihuahua.
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS ciudades (id TEXT PRIMARY KEY, nombre TEXT NOT NULL,
+    whatsapp TEXT NOT NULL DEFAULT '', orden INTEGER NOT NULL DEFAULT 0, creado INTEGER NOT NULL, publica INTEGER NOT NULL DEFAULT 1)`).run();
+  const cv1 = await env.DB.prepare("SELECT valor FROM meta WHERE llave = 'ciudades_v1'").first();
+  if (!cv1) {
+    for (const t of ["movimientos", "gastos", "puntos", "equipo"]) {
+      try { await env.DB.prepare(`ALTER TABLE ${t} ADD COLUMN ciudad TEXT NOT NULL DEFAULT 'chihuahua'`).run(); } catch (e) { /* ya existe */ }
+    }
+    await env.DB.batch([
+      env.DB.prepare("INSERT OR IGNORE INTO ciudades (id, nombre, whatsapp, orden, creado) VALUES ('chihuahua', 'Chihuahua', '526142355166', 0, ?)").bind(Date.now()),
+      env.DB.prepare("INSERT OR IGNORE INTO ciudades (id, nombre, whatsapp, orden, creado, publica) VALUES ('guadalajara', 'Guadalajara', '523317608242', 1, ?, 0)").bind(Date.now()),
+      env.DB.prepare("UPDATE equipo SET ciudad = 'guadalajara' WHERE email = 'paolardzmq@gmail.com'"),
+      env.DB.prepare("INSERT OR REPLACE INTO meta (llave, valor) VALUES ('ciudades_v1', '1')"),
+    ]);
+  }
   // Sabores nuevos (p. ej. plátano natural) entran solos a una base que ya existía, con su orden.
   await env.DB.batch(PRODUCTOS.flatMap(([id, base, nb, sabor, color], i) => [
     env.DB.prepare("INSERT OR IGNORE INTO productos (id, base, nombre_base, sabor, color, orden) VALUES (?,?,?,?,?,?)").bind(id, base, nb, sabor, color, i),
@@ -334,13 +349,16 @@ async function datos(D, yo) {
   const [prod, mov, eq, aj, gas] = await Promise.all([
     D.prepare("SELECT * FROM productos ORDER BY orden").all(),
     D.prepare("SELECT * FROM movimientos ORDER BY fecha DESC, creado DESC, id").all(),
-    D.prepare("SELECT email, nombre FROM equipo ORDER BY creado").all(),
+    D.prepare("SELECT email, nombre, ciudad FROM equipo ORDER BY creado").all(),
     ajustes(D),
     D.prepare("SELECT * FROM gastos ORDER BY fecha DESC, creado DESC").all(),
   ]);
   const rem = await D.prepare("SELECT * FROM remisiones").all();
-  const pts = await D.prepare("SELECT id, nombre, direccion, mapa, creado, length(foto) AS tieneFoto FROM puntos ORDER BY creado").all();
+  const pts = await D.prepare("SELECT id, nombre, direccion, mapa, creado, ciudad, length(foto) AS tieneFoto FROM puntos ORDER BY creado").all();
+  const eqC = await D.prepare("SELECT email, ciudad FROM equipo").all();
   return {
+    ciudades: await ciudades(D),
+    miCiudad: await ciudadDe(D, {}, yo),
     ok: true,
     yo,
     esDueno: yo === DUENO,
@@ -353,14 +371,27 @@ async function datos(D, yo) {
     gastos: gas.results,
     remisiones: rem.results,
     puntos: pts.results,
+    equipoCiudad: Object.fromEntries(eqC.results.map((e) => [e.email, e.ciudad])),
   };
 }
 
-async function stockPorProducto(D) {
+async function ciudades(D) {
+  const { results } = await D.prepare("SELECT id, nombre, whatsapp, orden, publica FROM ciudades ORDER BY orden, creado").all();
+  return results;
+}
+// Ciudad de una operación: la que manda el panel si existe; si no, la de la persona; si no, Chihuahua.
+async function ciudadDe(D, body, yo) {
+  const cs = await ciudades(D);
+  if (body && cs.some((c) => c.id === body.ciudad)) return body.ciudad;
+  const e = yo ? await D.prepare("SELECT ciudad FROM equipo WHERE email = ?").bind(yo).first() : null;
+  return e && cs.some((c) => c.id === e.ciudad) ? e.ciudad : (cs[0] ? cs[0].id : "chihuahua");
+}
+
+async function stockPorProducto(D, ciudad) {
   const { results } = await D.prepare(
-    `SELECT producto_id, SUM(CASE WHEN tipo IN ('entrada','devolucion','ajuste') THEN cantidad
+    `SELECT producto_id, SUM(CASE WHEN tipo IN ('entrada','devolucion','ajuste','traspaso') THEN cantidad
        WHEN consigna = 1 THEN 0 ELSE -cantidad END) AS stock
-     FROM movimientos GROUP BY producto_id`).all();
+     FROM movimientos ${ciudad ? "WHERE ciudad = ?" : ""} GROUP BY producto_id`).bind(...(ciudad ? [ciudad] : [])).all();
   return Object.fromEntries(results.map((r) => [r.producto_id, Number(r.stock) || 0]));
 }
 
@@ -380,8 +411,9 @@ async function guardarMovimiento(D, yo, body) {
     .filter((i) => validos.has(i.id) && i.n > 0 && i.n <= 10000);
   if (!items.length) return error("Agrega al menos una bolsa.");
 
+  const ciudad = await ciudadDe(D, body, yo);
   if (tipo !== "entrada" && tipo !== "devolucion" && !body.forzar) {
-    const stock = await stockPorProducto(D);
+    const stock = await stockPorProducto(D, ciudad);
     const faltan = items.filter((i) => (stock[i.id] ?? 0) < i.n);
     if (faltan.length) return json({ ok: false, sinStock: faltan.map((i) => ({ id: i.id, hay: stock[i.id] ?? 0, pides: i.n })) }, 409);
   }
@@ -391,8 +423,8 @@ async function guardarMovimiento(D, yo, body) {
   const cliente = texto(body.cliente, 80);
   const nota = texto(body.nota, 300);
   const st = items.map((i) =>
-    D.prepare(`INSERT INTO movimientos (grupo, tipo, producto_id, cantidad, precio, cliente, nota, quien, fecha, creado)
-      VALUES (?,?,?,?,?,?,?,?,?,?)`).bind(grupo, tipo, i.id, i.n, precio, cliente, nota, yo, fecha, ahora));
+    D.prepare(`INSERT INTO movimientos (grupo, tipo, producto_id, cantidad, precio, cliente, nota, quien, fecha, creado, ciudad)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?)`).bind(grupo, tipo, i.id, i.n, precio, cliente, nota, yo, fecha, ahora, ciudad));
   if (tipo === "consigna") {
     let tel = String(body.telefono ?? "").replace(/\D/g, "");
     if (tel.length === 10) tel = "52" + tel;
@@ -405,7 +437,8 @@ async function guardarMovimiento(D, yo, body) {
 // Conteo real de bodega: guarda la diferencia por sabor como "ajuste" (+/-). Se cuentan solo las disponibles (lo apartado va en otra bolsa).
 async function ajustarConteo(D, yo, body) {
   const conteo = body.conteo && typeof body.conteo === "object" ? body.conteo : {};
-  const stock = await stockPorProducto(D);
+  const ciudad = await ciudadDe(D, body, yo);
+  const stock = await stockPorProducto(D, ciudad);
   const grupo = "g-" + crypto.randomUUID(), ahora = Date.now(), fecha = hoyChihuahua();
   const nota = texto(body.nota, 300) || "Ajuste por conteo";
   const st = [];
@@ -414,12 +447,40 @@ async function ajustarConteo(D, yo, body) {
     const real = Math.trunc(Number(conteo[id]));
     if (!Number.isFinite(real) || real < 0 || real > 100000) return error("Revisa los números del conteo.");
     const dif = real - (stock[id] || 0); // se cuentan solo las disponibles; lo apartado va aparte
-    if (dif) st.push(D.prepare(`INSERT INTO movimientos (grupo, tipo, producto_id, cantidad, precio, cliente, nota, quien, fecha, creado)
-      VALUES (?, 'ajuste', ?, ?, 0, '', ?, ?, ?, ?)`).bind(grupo, id, dif, nota, yo, fecha, ahora));
+    if (dif) st.push(D.prepare(`INSERT INTO movimientos (grupo, tipo, producto_id, cantidad, precio, cliente, nota, quien, fecha, creado, ciudad)
+      VALUES (?, 'ajuste', ?, ?, 0, '', ?, ?, ?, ?, ?)`).bind(grupo, id, dif, nota, yo, fecha, ahora, ciudad));
   }
   if (!st.length) return json({ ok: true, cambios: 0 });
   await D.batch(st);
   return json({ ok: true, cambios: st.length, grupo });
+}
+
+// Traspaso entre ciudades: sale de una bodega y entra a la otra en el mismo grupo (no es venta).
+async function traspasar(D, yo, body) {
+  const cs = await ciudades(D), ids = cs.map((c) => c.id);
+  const de = String(body.de || ""), a = String(body.a || "");
+  if (!ids.includes(de) || !ids.includes(a) || de === a) return error("Elige de qué ciudad sale y a cuál llega.");
+  const { results: prods } = await D.prepare("SELECT id FROM productos").all();
+  const validos = new Set(prods.map((p) => p.id));
+  const items = (Array.isArray(body.items) ? body.items : []).map((i) => ({ id: String(i.producto_id), n: Math.trunc(Number(i.cantidad)) }))
+    .filter((i) => validos.has(i.id) && i.n > 0 && i.n <= 10000);
+  if (!items.length) return error("Agrega al menos una bolsa.");
+  if (!body.forzar) {
+    const stock = await stockPorProducto(D, de);
+    const faltan = items.filter((i) => (stock[i.id] ?? 0) < i.n);
+    if (faltan.length) return json({ ok: false, sinStock: faltan.map((i) => ({ id: i.id, hay: stock[i.id] ?? 0, pides: i.n })) }, 409);
+  }
+  const nom = (id) => (cs.find((c) => c.id === id) || {}).nombre || id;
+  const grupo = "g-" + crypto.randomUUID(), ahora = Date.now(), fecha = esFecha(body.fecha) ? body.fecha : hoyChihuahua(), nota = texto(body.nota, 300);
+  const st = [];
+  for (const i of items) {
+    st.push(D.prepare(`INSERT INTO movimientos (grupo, tipo, producto_id, cantidad, precio, cliente, nota, quien, fecha, creado, ciudad)
+      VALUES (?, 'traspaso', ?, ?, 0, ?, ?, ?, ?, ?, ?)`).bind(grupo, i.id, -i.n, "→ " + nom(a), nota, yo, fecha, ahora, de));
+    st.push(D.prepare(`INSERT INTO movimientos (grupo, tipo, producto_id, cantidad, precio, cliente, nota, quien, fecha, creado, ciudad)
+      VALUES (?, 'traspaso', ?, ?, 0, ?, ?, ?, ?, ?, ?)`).bind(grupo, i.id, i.n, "← " + nom(de), nota, yo, fecha, ahora, a));
+  }
+  await D.batch(st);
+  return json({ ok: true, grupo });
 }
 
 // Visita a una tienda con consigna: lo vendido cuenta como venta, lo que regresa vuelve a bodega.
@@ -434,9 +495,9 @@ async function liquidar(D, yo, body) {
   const lista = (o) => Object.entries(o || {}).map(([id, n]) => ({ id, n: Math.trunc(Number(n)) })).filter((x) => validos.has(x.id) && x.n > 0 && x.n <= 10000);
   const vendidas = lista(body.vendidas), devueltas = lista(body.devueltas), merma = lista(body.merma);
   if (!vendidas.length && !devueltas.length && !merma.length) return error("Pon cuántas se vendieron o regresan.");
-  const ahora = Date.now(), nota = texto(body.nota, 300);
-  const ins = (grupo, tipo, x, p, consigna) => D.prepare(`INSERT INTO movimientos (grupo, tipo, producto_id, cantidad, precio, cliente, nota, quien, fecha, creado, consigna)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?)`).bind(grupo, tipo, x.id, x.n, p, tienda, nota, yo, fecha, ahora, consigna);
+  const ahora = Date.now(), nota = texto(body.nota, 300), ciudad = await ciudadDe(D, body, yo);
+  const ins = (grupo, tipo, x, p, consigna) => D.prepare(`INSERT INTO movimientos (grupo, tipo, producto_id, cantidad, precio, cliente, nota, quien, fecha, creado, consigna, ciudad)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).bind(grupo, tipo, x.id, x.n, p, tienda, nota, yo, fecha, ahora, consigna, ciudad);
   const gV = "g-" + crypto.randomUUID(), gD = "g-" + crypto.randomUUID(), gM = "g-" + crypto.randomUUID();
   await D.batch([
     ...vendidas.map((x) => ins(gV, "venta", x, precio, 1)),
@@ -516,10 +577,10 @@ async function api(req, env, url) {
   // Público: lo usa la página para el WhatsApp y los sabores agotados.
   if (ruta === "/publico" && metodo === "GET") {
     const [aj, stock, pts] = await Promise.all([ajustes(D), stockPorProducto(D),
-      D.prepare(`SELECT nombre, direccion, mapa, CASE WHEN foto LIKE '/%' THEN foto WHEN foto <> '' THEN '/api/punto-foto/' || id || '?v=' || length(foto) ELSE '' END AS foto
+      D.prepare(`SELECT nombre, direccion, mapa, ciudad, CASE WHEN foto LIKE '/%' THEN foto WHEN foto <> '' THEN '/api/punto-foto/' || id || '?v=' || length(foto) ELSE '' END AS foto
         FROM puntos ORDER BY creado`).all()]);
     const precio = Math.max(0, ...aj.precios.map((p) => Number(p.valor) || 0));
-    return json({ whatsapp: aj.whatsapp, precio, minimo: aj.minimo || 10, agotados: aj.mostrarAgotados ? Object.keys(stock).filter((k) => stock[k] <= 0) : [], puntos: pts.results }, 200, {
+    return json({ whatsapp: aj.whatsapp, precio, minimo: aj.minimo || 10, agotados: aj.mostrarAgotados ? Object.keys(stock).filter((k) => stock[k] <= 0) : [], puntos: pts.results, ciudades: (await ciudades(D)).filter((c) => c.publica).map(({ id, nombre, whatsapp }) => ({ id, nombre, whatsapp })) }, 200, {
       "cache-control": "public, max-age=60",
     });
   }
@@ -576,6 +637,31 @@ async function api(req, env, url) {
   if (ruta === "/movimientos" && metodo === "POST") return guardarMovimiento(D, yo, body);
   if (ruta === "/consigna/liquidar" && metodo === "POST") return liquidar(D, yo, body);
   if (ruta === "/ajuste" && metodo === "POST") return ajustarConteo(D, yo, body);
+  if (ruta === "/traspaso" && metodo === "POST") return traspasar(D, yo, body);
+  if (ruta === "/ciudades" && metodo === "POST") {
+    if (!esDueno) return error("Solo Sebas puede agregar ciudades.", 403);
+    const nombre = texto(body.nombre, 40);
+    if (!nombre) return error("Pon el nombre de la ciudad.");
+    const id = nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "ciudad";
+    let tel = String(body.whatsapp ?? "").replace(/\D/g, ""); if (tel.length === 10) tel = "52" + tel;
+    const n = await D.prepare("SELECT COUNT(*) AS n FROM ciudades").first();
+    await D.prepare("INSERT INTO ciudades (id, nombre, whatsapp, orden, creado) VALUES (?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET nombre = excluded.nombre, whatsapp = excluded.whatsapp")
+      .bind(id, nombre, tel.slice(0, 15), Number(n.n) || 0, Date.now()).run();
+    return json({ ok: true, id });
+  }
+  const mCiuP = /^\/ciudades\/([\w-]+)\/publica$/.exec(ruta);
+  if (mCiuP && metodo === "POST") {
+    if (!esDueno) return error("Solo Sebas puede cambiar esto.", 403);
+    await D.prepare("UPDATE ciudades SET publica = ? WHERE id = ?").bind(body.publica ? 1 : 0, mCiuP[1]).run();
+    return json({ ok: true });
+  }
+  if (ruta === "/equipo/ciudad" && metodo === "POST") {
+    if (!esDueno) return error("Solo Sebas puede cambiar esto.", 403);
+    const cs = await ciudades(D);
+    if (!cs.some((c) => c.id === body.ciudad)) return error("Ciudad no válida.");
+    await D.prepare("UPDATE equipo SET ciudad = ? WHERE email = ?").bind(body.ciudad, limpiarCorreo(body.email)).run();
+    return json({ ok: true });
+  }
   const mBorrar = /^\/movimientos\/(g-[\w-]+)$/.exec(ruta);
   if (mBorrar && metodo === "DELETE") {
     await D.prepare("DELETE FROM movimientos WHERE grupo = ?").bind(mBorrar[1]).run();
@@ -609,8 +695,8 @@ async function api(req, env, url) {
     const categoria = CATEGORIAS.includes(body.categoria) ? body.categoria : "otro";
     const fecha = esFecha(body.fecha) ? body.fecha : hoyChihuahua();
     const pago = limpiarCorreo(body.pago) || yo;
-    await D.prepare(`INSERT INTO gastos (fecha, categoria, concepto, monto, pago, nota, quien, creado) VALUES (?,?,?,?,?,?,?,?)`)
-      .bind(fecha, categoria, texto(body.concepto, 80), Math.round(monto * 100) / 100, pago, texto(body.nota, 300), yo, Date.now()).run();
+    await D.prepare(`INSERT INTO gastos (fecha, categoria, concepto, monto, pago, nota, quien, creado, ciudad) VALUES (?,?,?,?,?,?,?,?,?)`)
+      .bind(fecha, categoria, texto(body.concepto, 80), Math.round(monto * 100) / 100, pago, texto(body.nota, 300), yo, Date.now(), await ciudadDe(D, body, yo)).run();
     return json({ ok: true });
   }
   const mGasto = /^\/gastos\/(\d+)$/.exec(ruta);
@@ -642,8 +728,9 @@ async function api(req, env, url) {
     if (!esDueno) return error("Solo Sebas puede agregar personas.", 403);
     const email = limpiarCorreo(body.email);
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return error("Revisa el correo.");
-    await D.prepare("INSERT OR REPLACE INTO equipo (email, nombre, creado) VALUES (?, ?, ?)")
-      .bind(email, texto(body.nombre, 40), Date.now()).run();
+    const cs = await ciudades(D);
+    await D.prepare("INSERT OR REPLACE INTO equipo (email, nombre, creado, ciudad) VALUES (?, ?, ?, ?)")
+      .bind(email, texto(body.nombre, 40), Date.now(), cs.some((c) => c.id === body.ciudad) ? body.ciudad : (cs[0] || {}).id || "chihuahua").run();
     return json({ ok: true });
   }
   // Puntos de venta que salen en la página ("Dónde encontrar Crunchitos").
@@ -652,8 +739,8 @@ async function api(req, env, url) {
     if (!nombre) return error("Pon el nombre del lugar.");
     const mapa = String(body.mapa ?? "").trim().slice(0, 300);
     if (mapa && !/^https:\/\//.test(mapa)) return error("La liga del mapa debe empezar con https://");
-    await D.prepare("INSERT INTO puntos (nombre, direccion, mapa, foto, creado) VALUES (?, ?, ?, ?, ?)")
-      .bind(nombre, texto(body.direccion, 120), mapa, fotoValida(body.foto), Date.now()).run();
+    await D.prepare("INSERT INTO puntos (nombre, direccion, mapa, foto, creado, ciudad) VALUES (?, ?, ?, ?, ?, ?)")
+      .bind(nombre, texto(body.direccion, 120), mapa, fotoValida(body.foto), Date.now(), await ciudadDe(D, body, yo)).run();
     return json({ ok: true });
   }
   const mPtF = /^\/puntos\/(\d+)\/foto$/.exec(ruta);

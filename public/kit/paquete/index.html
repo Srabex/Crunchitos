@@ -88,6 +88,9 @@ input:focus{outline:none;border-color:var(--amarillo)}
 .opc button{min-height:42px;font-size:14px}
 .opc button[aria-pressed=true]{background:var(--tinta);color:var(--crema);border-color:var(--tinta)}
 .msg{background:#FDECEA;color:#8C2C20;border-radius:14px;padding:10px 14px;font-size:14px;font-weight:600;margin-top:10px}
+.elige-ciudad{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 12px;font-weight:700;font-size:14px}
+.elige-ciudad button{min-height:40px;padding:0 16px;border-radius:999px;border:2px solid var(--linea);background:#fff;color:var(--tinta);font:700 14px Poppins,sans-serif;cursor:pointer}
+.elige-ciudad button[aria-pressed=true]{background:var(--tinta);border-color:var(--tinta);color:var(--crema)}
 </style>
 </head>
 <body>
@@ -101,6 +104,7 @@ input:focus{outline:none;border-color:var(--amarillo)}
 </header>
 
 <main class="env">
+  <div class="elige-ciudad" hidden style="margin-top:16px"></div>
   <h2>1. Tu paquete</h2>
   <div class="paqs" id="paqs"></div>
 
@@ -144,6 +148,8 @@ input:focus{outline:none;border-color:var(--amarillo)}
 <script>
 (function () {
   var WA = "526142355166";
+  window.alCambiarCiudad = function (w) { WA = w; pintar(); };
+
   var SABORES = [
     ["jicama-limon", "Jícama", "limón y sal", "#5E9A2A"], ["jicama-chile", "Jícama", "con chile", "#D33A2A"],
     ["jicama-rancherito", "Jícama", "rancherito", "#D9572A"], ["jicama-esquite", "Jícama", "esquite", "#E9B91E"],
@@ -242,5 +248,6 @@ input:focus{outline:none;border-color:var(--amarillo)}
   pintar();
 })();
 </script>
+<script src="/kit/ciudad.js"></script>
 </body>
 </html>

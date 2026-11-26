@@ -97,6 +97,9 @@ h2{font-family:"Bubblegum Sans",sans-serif;font-weight:400;font-size:clamp(36px,
 .punto .btn{margin-top:10px;align-self:flex-start;min-height:46px;padding:10px 20px;font-size:16px}
 .puntos .mas{margin:20px 0 0;font-size:15px;color:var(--tinta)}
 .puntos .mas a{color:var(--tinta);font-weight:700}
+.elige-ciudad{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0 6px;font-weight:700;font-size:15px}
+.elige-ciudad button{min-height:42px;padding:0 18px;border-radius:999px;border:2px solid var(--tinta);background:var(--crema);color:var(--tinta);font:700 15px Poppins,sans-serif;cursor:pointer}
+.elige-ciudad button[aria-pressed=true]{background:var(--tinta);color:var(--crema)}
 .tarjetas{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:28px}
 .tarjeta{border-radius:28px;padding:26px;display:flex;flex-direction:column;gap:12px;color:var(--tinta)}
 .tarjeta h3{font-family:"Bubblegum Sans",sans-serif;font-weight:400;font-size:32px;margin:0;line-height:1.05}
@@ -178,8 +181,10 @@ body.con-barra{padding-bottom:96px}
 <section class="puntos" id="donde" hidden>
   <div class="envoltura">
     <h2>Dónde encontrar Crunchitos</h2>
-    <p class="intro">Pásate por tus snacks deshidratados a estos lugares en Chihuahua.</p>
+    <p class="intro">Pásate por tus snacks deshidratados a estos lugares en <span data-ciudad>Chihuahua</span>.</p>
+    <div class="elige-ciudad" hidden></div>
     <div class="lista-puntos" id="puntos"></div>
+    <p class="mas" id="sin-puntos" hidden style="font-weight:600">Todavía no hay tiendas en <span data-ciudad></span>, pero te los llevamos a domicilio.</p>
     <p class="mas" style="margin-top:24px;font-weight:600">¿No te queda cerca? <a href="#sabores">Te los llevamos a partir de <span data-minimo>10</span> bolsas</a>.</p>
     <p class="mas">¿Tienes un negocio? <a href="#vende">Véndelos tú también</a></p>
   </div>
@@ -190,6 +195,7 @@ body.con-barra{padding-bottom:96px}
     <h2>Escoge tu sabor</h2>
     <p class="intro">Cuatro bases y doce sabores. El color de la etiqueta te dice cuál es: verde limón, rojo chile, naranja habanero… Arma tu surtido con los botones <b>+</b> y te lo llevamos.</p>
     <div class="aviso-min"><svg viewBox="0 0 24 24" fill="none" stroke="#3B2216" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8" fill="#ECBE48"/><circle cx="17" cy="17.5" r="1.8" fill="#ECBE48"/></svg><span><b>¿No hay tienda cerca? Te los llevamos</b> a partir de <b><span data-minimo>10</span> bolsas surtidas</b>. Arma tu combinación y te mandamos por WhatsApp el precio y el costo del envío según tu colonia. ¿Quieres menos, o prefieres no pagar envío? Búscalos en una de nuestras <a href="#donde">tiendas</a>.</span></div>
+    <div class="elige-ciudad" hidden></div>
     <div class="filtros" role="group" aria-label="Filtrar sabores">
       <button class="filtro" data-base="todos" aria-pressed="true">Todos</button>
       <button class="filtro" data-base="jicama" aria-pressed="false">Jícama</button>
@@ -290,6 +296,9 @@ body.con-barra{padding-bottom:96px}
     "camote-limon", "camote-adobado", "platano-natural", "platano-sal", "platano-canela"];
   var wa = "526142355166";
   var PRECIO = 55, MINIMO = 10;
+  var CIUDADES = [], ciudadSel = "", PUNTOS = [];
+  try { ciudadSel = localStorage.getItem("crunchitos-ciudad-pub") || ""; } catch (e) {}
+  function nomCiudad() { var c = CIUDADES.find(function (x) { return x.id === ciudadSel; }); return c ? c.nombre : "Chihuahua"; }
   var pedido = {};
   var rejilla = document.getElementById("rejilla");
   var fmt = new Intl.NumberFormat("es-MX");
@@ -335,7 +344,7 @@ body.con-barra{padding-bottom:96px}
     document.getElementById("b-falta").textContent = falta > 0 ? "Te " + (falta === 1 ? "falta 1 bolsa" : "faltan " + falta + " bolsas") + " para el envío" : "¡Listo para enviar!";
     document.getElementById("b-prog").style.width = Math.min(100, n / MINIMO * 100) + "%";
     enviar.setAttribute("aria-disabled", String(falta > 0));
-    enviar.href = falta > 0 ? "#" : liga("Hola, vengo de crunchitos.mx 🙌 Quiero este pedido a domicilio:\n" + lineas.join("\n") +
+    enviar.href = falta > 0 ? "#" : liga("Hola, vengo de crunchitos.mx 🙌 Quiero este pedido a domicilio" + (CIUDADES.length > 1 ? " en " + nomCiudad() : "") + ":\n" + lineas.join("\n") +
       "\n\nTotal: " + n + " bolsas. ¿Me pasas el precio y el costo del envío?\nMi colonia es: ");
   }
   rejilla.addEventListener("click", function (e) {
@@ -375,21 +384,40 @@ body.con-barra{padding-bottom:96px}
     });
     pintarDatos();
     pintarPedido();
-    var pts = d.puntos || [];
-    if (pts.length) {
-      var esc = function (s) { return String(s || "").replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
-      document.getElementById("puntos").innerHTML = pts.map(function (x) {
-        var mapa = x.mapa || "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(x.nombre + " " + x.direccion + " Chihuahua");
-        return '<article class="punto">' + (x.foto ? '<img src="' + esc(x.foto) + '" alt="Fachada de ' + esc(x.nombre) + '" loading="lazy" decoding="async">' : "") + "<h3>" + esc(x.nombre) + "</h3>" + (x.direccion ? "<p>" + esc(x.direccion) + ", Chihuahua</p>" : "") +
-          '<a class="btn btn-claro" href="' + esc(mapa) + '" target="_blank" rel="noopener">Cómo llegar</a></article>';
-      }).join("");
-      document.getElementById("donde").hidden = false;
-    } else {
-      document.getElementById("ir-donde").href = "#vende";
-      document.getElementById("ir-donde").textContent = "Véndelos tú";
-    }
-    pintarLigas();
+    PUNTOS = d.puntos || [];
+    CIUDADES = d.ciudades || [];
+    if (!CIUDADES.some(function (c) { return c.id === ciudadSel; })) ciudadSel = (CIUDADES[0] || {}).id || "";
+    pintarCiudad();
   }).catch(function () {});
+
+  // Ciudad: cambia las tiendas que se ven y a qué WhatsApp llegan los pedidos.
+  function pintarCiudad() {
+    var esc = function (s) { return String(s || "").replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+    var c = CIUDADES.find(function (x) { return x.id === ciudadSel; });
+    if (c && c.whatsapp) wa = c.whatsapp;
+    var varias = CIUDADES.length > 1;
+    document.querySelectorAll(".elige-ciudad").forEach(function (el) {
+      el.hidden = !varias;
+      el.innerHTML = "<span>¿En qué ciudad estás?</span>" + CIUDADES.map(function (x) { return '<button type="button" data-ciudad-id="' + esc(x.id) + '" aria-pressed="' + (x.id === ciudadSel) + '">' + esc(x.nombre) + "</button>"; }).join("");
+    });
+    document.querySelectorAll("[data-ciudad]").forEach(function (e) { e.textContent = nomCiudad(); });
+    var pts = PUNTOS.filter(function (x) { return !varias || (x.ciudad || "chihuahua") === ciudadSel; });
+    document.getElementById("puntos").innerHTML = pts.map(function (x) {
+      var mapa = x.mapa || "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(x.nombre + " " + x.direccion + " " + nomCiudad());
+      return '<article class="punto">' + (x.foto ? '<img src="' + esc(x.foto) + '" alt="Fachada de ' + esc(x.nombre) + '" loading="lazy" decoding="async">' : "") + "<h3>" + esc(x.nombre) + "</h3>" + (x.direccion ? "<p>" + esc(x.direccion) + ", " + esc(nomCiudad()) + "</p>" : "") +
+        '<a class="btn btn-claro" href="' + esc(mapa) + '" target="_blank" rel="noopener">Cómo llegar</a></article>';
+    }).join("");
+    document.getElementById("sin-puntos").hidden = !!pts.length || !varias;
+    var hay = PUNTOS.length > 0 || varias;
+    document.getElementById("donde").hidden = !hay;
+    if (!hay) { document.getElementById("ir-donde").href = "#vende"; document.getElementById("ir-donde").textContent = "Véndelos tú"; }
+    pintarLigas(); pintarPedido();
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-ciudad-id]"); if (!b) return;
+    ciudadSel = b.getAttribute("data-ciudad-id"); try { localStorage.setItem("crunchitos-ciudad-pub", ciudadSel); } catch (er) {}
+    pintarCiudad();
+  });
 })();
 </script>
 </body>
