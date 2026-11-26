@@ -1136,10 +1136,11 @@
 
   // ——— historial
   function vHistorial(v) {
-    var tipos = [["todos", "Todo"], ["venta", "Ventas"], ["apartado", "Apartados"], ["ajuste", "Ajustes"], ["consigna", "Consigna"], ["entrada", "Entradas"], ["tomada", "Tomadas"], ["merma", "Merma"]];
+    var tipos = [["todos", "Todo"], ["venta", "Ventas"], ["apartado", "Apartados"], ["ajuste", "Ajustes"], ["consigna", "Consigna"], ["cobros", "Cobros de consigna"], ["entrada", "Entradas"], ["tomada", "Tomadas"], ["merma", "Merma"]];
     var gs = grupos(D.movimientos).filter(function (g) {
       if (filtroHist === "todos") return true;
       if (filtroHist === "consigna") return g.tipo === "consigna" || g.consigna;
+      if (filtroHist === "cobros") return g.consigna && g.tipo !== "consigna";
       return g.tipo === filtroHist;
     });
     var cob = cobroConsignas();
@@ -1148,6 +1149,13 @@
       '<div class="chips" style="margin-bottom:14px">' + tipos.map(function (t) {
         return '<button class="chip" data-f="' + t[0] + '" aria-pressed="' + (filtroHist === t[0]) + '">' + t[1] + "</button>";
       }).join("") + "</div>";
+    if (filtroHist === "cobros") {
+      var tot = 0, tb = 0, pt = {};
+      gs.forEach(function (g) { if (g.tipo !== "venta") return; g.items.forEach(function (m) { var k = g.cliente || "Sin nombre", x = pt[k] = pt[k] || { b: 0, d: 0 }; x.b += m.cantidad; x.d += m.cantidad * m.precio; tb += m.cantidad; tot += m.cantidad * m.precio; }); });
+      h += '<div class="mov"><div style="font-size:14px;color:var(--suave)">Lo que ya cobraste de consignas</div><div style="font-size:26px;font-weight:700;margin:2px 0 8px">' + pesos(tot) + ' <small style="font-size:14px;font-weight:500">· ' + tb + ' bolsas</small></div>' +
+        (Object.keys(pt).length ? "<table><tbody>" + Object.keys(pt).sort(function (a, b) { return pt[b].d - pt[a].d; }).map(function (k) { return "<tr><td>" + esc(k) + "</td><td class=num>" + pt[k].b + " bolsas</td><td class=num><b>" + pesos(pt[k].d) + "</b></td></tr>"; }).join("") + "</tbody></table>" : '<p class="vacio">Todavía no has registrado cobros.</p>') + "</div>" +
+        '<h3 style="margin:16px 0 8px">Cada cobro</h3>';
+    }
     if (filtroHist === "consigna") {
       var cu = {};
       Object.keys(cob).forEach(function (k) {
@@ -1168,7 +1176,7 @@
     }
     h += gs.length ? gs.slice(0, 200).map(function (g) {
       var n = 0; g.items.forEach(function (m) { n += m.cantidad; });
-      return '<div class="mov"><div class="cab"><span><span class="pill p-' + g.tipo + '">' + nombres[g.tipo] + (g.consigna && g.tipo !== "devolucion" ? " (consigna)" : "") + "</span> " + esc(fechaBonita(g.fecha)) + "</span><span>" + esc(nombrePersona(g.quien)) + "</span></div>" +
+      return '<div class="mov"><div class="cab"><span><span class="pill p-' + g.tipo + '">' + (g.consigna && g.tipo === "venta" ? "Cobro de consigna" : nombres[g.tipo] + (g.consigna && g.tipo !== "devolucion" ? " (consigna)" : "")) + "</span> " + esc(fechaBonita(g.fecha)) + "</span><span>" + esc(nombrePersona(g.quien)) + "</span></div>" +
         (g.cliente ? '<div style="font-weight:600;margin-top:6px">' + esc(g.cliente) + "</div>" : "") +
         "<ul>" + g.items.map(function (m) { return "<li>" + m.cantidad + " × " + esc(nombreProd(m.producto_id)) + "</li>"; }).join("") + "</ul>" +
         (g.nota ? '<div style="font-size:13px;color:var(--suave);margin-bottom:8px">' + esc(g.nota) + "</div>" : "") +
