@@ -28,6 +28,8 @@ Panel para Sebas, Paola (Pao, paolardzmq@gmail.com) y Víctor (victor.hernandez.
 - Migración `precios_v2`: si los precios seguían en 30/40/50, pasan a Costo / socio 30 · Paquete Mayorista 38.46 · Paquete Emprendedor 40 · Paquete Inicial 41.67 · Consigna 45 · Público / domicilio 55 (iguales al PDF de emprendedores).
 - Carteles QR media carta (tienditas y a domicilio): fuente editable `diseno/cartel.html?tipo=tienda|domicilio`, captura 600×927 a escala 2.75 (≈300 dpi). Sin gramaje (23 nov 2026).
 
+- **/pago** (26 nov 2026): `public/pago/index.html`, datos de transferencia (los mismos de Asesor Sebas: Scotiabank, CLABE 044694256053897350, tarjeta 4043 1300 2902 4821, titular Sebastián Abramowicz; CLABE y Luhn validados) con la marca Crunchitos, tocar copia, botón "Enviar comprobante" al WhatsApp de Sebas. `noindex`; robots bloquea /pago salvo facebookexternalhit y WhatsApp. Imagen para compartir `public/og-pago-v1.jpg` (fuente `diseno/og-pago.html`; si cambian los datos, cambiar los dos y renombrar el JPG). Ligado en la pregunta "¿Cómo pago?" del kit.
+
 ## Panel (`/admin/`)
 - Sin contraseñas: código de 6 dígitos por correo (Resend). Entra el dueño (`DUENO` en src/worker.js = Sebas) y los correos de la tabla `equipo`, que Sebas agrega en Ajustes → Equipo.
 - **Inicio**: vendido, ganancia (con costo promedio de las entradas), lo que queda, tomadas/merma; ventas por precio ($30/$40/$50…), por sabor, por persona y mejores clientes; filtro por periodo; aviso de sabores por acabarse.

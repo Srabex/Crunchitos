@@ -1,6 +1,13 @@
+User-agent: facebookexternalhit
+Allow: /pago
+
+User-agent: WhatsApp
+Allow: /pago
+
 User-agent: *
 Disallow: /admin/
 Disallow: /api/
 Disallow: /kit/
+Disallow: /pago
 
 Sitemap: https://crunchitos.mx/sitemap.xml

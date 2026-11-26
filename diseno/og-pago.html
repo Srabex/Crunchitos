@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>OG pago Crunchitos</title>
+<!-- Imagen para compartir de /pago, 1200x630. Si cambian los datos bancarios, cambiar aquí, en public/pago/index.html y renombrar el JPG (og-pago-vN.jpg). -->
+<style>
+@font-face{font-family:"Bubblegum Sans";src:url(../public/fonts/BubblegumSans.woff) format("woff")}
+@font-face{font-family:"Gochi Hand";src:url(../public/fonts/GochiHand.woff) format("woff")}
+@font-face{font-family:"Poppins";src:url(../public/fonts/Poppins-Regular.woff) format("woff");font-weight:400}
+@font-face{font-family:"Poppins";src:url(../public/fonts/Poppins-Bold.woff) format("woff");font-weight:700}
+*{box-sizing:border-box;margin:0}
+html,body{width:1200px;height:630px;overflow:hidden}
+body{font-family:Poppins,sans-serif;background:#ECBE48 repeating-conic-gradient(from 0deg at 0% 50%,rgba(255,246,230,.2) 0deg 6deg,rgba(255,246,230,0) 6deg 12deg);color:#3B2216;position:relative}
+.izq{position:absolute;left:64px;top:0;bottom:0;width:440px;display:flex;flex-direction:column;justify-content:center}
+.izq img{width:380px;filter:drop-shadow(0 5px 0 #9A6A25)}
+.izq h1{font-family:"Gochi Hand";font-weight:400;font-size:64px;line-height:1;color:#FFF6E6;text-shadow:3px 4px 0 #9A6A25;margin-top:18px}
+.izq p{font-weight:700;font-size:22px;margin-top:14px}
+.tarjeta{position:absolute;right:60px;top:95px;width:600px;height:440px;background:#3B2216;border-radius:32px;padding:42px 46px;color:#FFF6E6;overflow:hidden;box-shadow:0 30px 60px -28px rgba(59,34,22,.7)}
+.tarjeta::before{content:"";position:absolute;right:-100px;top:-100px;width:300px;height:300px;border-radius:50%;background:#5a3a2a}
+.chip{position:absolute;right:46px;top:44px;width:64px;height:46px;border-radius:10px;background:#ECBE48}
+.b{position:relative;font-weight:700;font-size:20px;letter-spacing:4px;color:#ECBE48}
+.l{position:relative;font-weight:700;font-size:15px;letter-spacing:3px;opacity:.7;margin-top:28px}
+.v{position:relative;font-weight:700;font-size:35px;letter-spacing:1px;margin-top:2px;white-space:nowrap}
+.t{position:relative;font-size:21px;margin-top:26px}
+.toca{position:absolute;right:46px;bottom:38px;background:#ECBE48;color:#3B2216;font-weight:700;font-size:18px;border-radius:999px;padding:8px 20px}
+</style></head><body>
+<div class="izq"><img src="../public/img/logo.svg" alt=""><h1>Datos de pago</h1><p>Transferencia o depósito</p></div>
+<div class="tarjeta"><span class="chip"></span>
+  <div class="b">SCOTIABANK</div>
+  <div class="l">CLABE</div><div class="v">0446 9425 6053 8973 50</div>
+  <div class="l">TARJETA</div><div class="v">4043 1300 2902 4821</div>
+  <div class="t">Sebastián Abramowicz</div>
+  <div class="toca">Toca para copiar</div>
+</div>
+</body></html>
