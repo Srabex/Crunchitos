@@ -1170,8 +1170,15 @@
         leer();
         var k = b.getAttribute("data-l"), id = b.getAttribute("data-id"), d = Number(b.getAttribute("data-d"));
         if (k === "merma") {
-          var libre = f.modo === "quedan" ? c.items[id] - (f.quedan[id] || 0) : c.items[id] - (f.vendidas[id] || 0) - (f.devueltas[id] || 0);
-          f.merma[id] = Math.max(0, Math.min((f.merma[id] || 0) + libre, (f.merma[id] || 0) + d));
+          if (f.modo === "quedan") {
+            // Las muestras ya no están en la tienda: al subirlas, bajan las que quedan.
+            f.merma[id] = Math.max(0, Math.min(c.items[id], (f.merma[id] || 0) + d));
+            if ((f.quedan[id] || 0) + f.merma[id] > c.items[id]) f.quedan[id] = c.items[id] - f.merma[id];
+            if ((f.devueltas[id] || 0) > f.quedan[id]) f.devueltas[id] = f.quedan[id];
+          } else {
+            var libre = c.items[id] - (f.vendidas[id] || 0) - (f.devueltas[id] || 0);
+            f.merma[id] = Math.max(0, Math.min((f.merma[id] || 0) + libre, (f.merma[id] || 0) + d));
+          }
           pintar(); return;
         }
         if (f.modo === "quedan") {
