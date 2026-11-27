@@ -73,6 +73,12 @@
 
   // Archivos del equipo (public/admin/docs/, solo con sesión). falta: true = todavía no se sube.
   var DOCS = [
+    { grupo: "Ligas para mandar", items: [
+      { t: "Hacer pedido (crunchitos.mx/pedido)", d: "Para tienditas y vendedores que piden por cliente: anotan, ven el total por sabor y te lo mandan por WhatsApp.", f: [["Abrir", "/pedido/"]] },
+      { t: "Pedir paquete (crunchitos.mx/paquete)", d: "Para quien quiere empezar a vender o resurtir: Inicial, Emprendedor o Mayorista.", f: [["Abrir", "/paquete/"]] },
+      { t: "Material para vender (crunchitos.mx/kit)", d: "Solo para emprendedores activos: estados para WhatsApp, catálogo, fotos de los 12 sabores, textos para copiar, cartel con QR y logos.", f: [["Abrir", "/kit/"]] },
+      { t: "Cartel QR para tienditas", d: "Media carta, \"¡Pídelos aquí en caja!\" con precio a mano. Para el mostrador de cada punto de venta.", f: [["PDF para imprimir", "/kit/crunchitos-cartel-qr-tienda.pdf"], ["Imagen", "/kit/crunchitos-cartel-qr-tienda.png"]] }
+    ] },
     { grupo: "Para emprendedores", items: [
       { t: "PDF Emprende con Crunchitos", d: "2 hojas: paquetes, beneficios para emprendedores activos y cómo empezar. Es el que se manda.", f: [["PDF", "crunchitos-emprende.pdf"], ["Hoja 1 (imagen)", "crunchitos-emprende-hoja1.jpg"], ["Hoja 2 (imagen)", "crunchitos-emprende-hoja2.jpg"]] },
       { t: "Tabla de paquetes", d: "Versión horizontal para WhatsApp, sin precios internos.", f: [["Imagen", "crunchitos-tabla-paquetes.jpg"]] },
@@ -86,12 +92,6 @@
       { t: "2 · ¿Buscas un ingreso extra?", d: "Fondo café con los 4 Crunchis.", f: [["Post", "redes/crunchitos-post-2-ingreso-extra.jpg"], ["Historia", "redes/crunchitos-historia-2-ingreso-extra.jpg"]] },
       { t: "3 · Listos para surtir tu negocio", d: "Tiendas, gyms, cafeterías y oficinas en Chihuahua.", f: [["Post", "redes/crunchitos-post-3-listos-para-surtir.jpg"], ["Historia", "redes/crunchitos-historia-3-listos-para-surtir.jpg"]] },
       { t: "4 · No te competimos: te ayudamos a vender", d: "Los beneficios para emprendedores.", f: [["Post", "redes/crunchitos-post-4-te-ayudamos-a-vender.jpg"], ["Historia", "redes/crunchitos-historia-4-te-ayudamos-a-vender.jpg"]] }
-    ] },
-    { grupo: "Ligas para mandar", items: [
-      { t: "Hacer pedido (crunchitos.mx/pedido)", d: "Para tienditas y vendedores que piden por cliente: anotan, ven el total por sabor y te lo mandan por WhatsApp.", f: [["Abrir", "/pedido/"]] },
-      { t: "Pedir paquete (crunchitos.mx/paquete)", d: "Para quien quiere empezar a vender o resurtir: Inicial, Emprendedor o Mayorista.", f: [["Abrir", "/paquete/"]] },
-      { t: "Material para vender (crunchitos.mx/kit)", d: "Solo para emprendedores activos: estados para WhatsApp, catálogo, fotos de los 12 sabores, textos para copiar, cartel con QR y logos.", f: [["Abrir", "/kit/"]] },
-      { t: "Cartel QR para tienditas", d: "Media carta, \"¡Pídelos aquí en caja!\" con precio a mano. Para el mostrador de cada punto de venta.", f: [["PDF para imprimir", "/kit/crunchitos-cartel-qr-tienda.pdf"], ["Imagen", "/kit/crunchitos-cartel-qr-tienda.png"]] }
     ] },
     { grupo: "Etiquetas para imprenta", items: [
       { t: "Etiquetas sin teléfono", d: "CMYK (FOGRA39), un fondo por base. Hoja A4 con las 12, las 12 por separado en PDF a 1200 ppp con línea de corte de 6 cm, y TIFF por si la imprenta lo prefiere. Acabado brillante; pedir prueba de color.", f: [["Hoja A4 (PDF)", "etiquetas/Crunchitos-etiquetas-A4-sin-telefono-CMYK.pdf"], ["12 etiquetas en PDF (ZIP)", "etiquetas/Crunchitos-etiquetas-CMYK-PDF-sin-telefono.zip"], ["TIFF 01–06 (ZIP)", "etiquetas/Crunchitos-etiquetas-CMYK-TIFF-01-06-sin-telefono.zip"], ["TIFF 07–12 (ZIP)", "etiquetas/Crunchitos-etiquetas-CMYK-TIFF-07-12-sin-telefono.zip"]] },
