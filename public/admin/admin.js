@@ -87,8 +87,10 @@
       { t: "3 · Listos para surtir tu negocio", d: "Tiendas, gyms, cafeterías y oficinas en Chihuahua.", f: [["Post", "redes/crunchitos-post-3-listos-para-surtir.jpg"], ["Historia", "redes/crunchitos-historia-3-listos-para-surtir.jpg"]] },
       { t: "4 · No te competimos: te ayudamos a vender", d: "Los beneficios para emprendedores.", f: [["Post", "redes/crunchitos-post-4-te-ayudamos-a-vender.jpg"], ["Historia", "redes/crunchitos-historia-4-te-ayudamos-a-vender.jpg"]] }
     ] },
-    { grupo: "Kit para distribuidores", items: [
-      { t: "Página del kit (crunchitos.mx/kit)", d: "Mándales esta liga a los distribuidores: estados para WhatsApp, fotos de los 12 sabores, textos para copiar, cartel con QR y logos.", f: [["Abrir el kit", "/kit/"]] },
+    { grupo: "Ligas para mandar", items: [
+      { t: "Hacer pedido (crunchitos.mx/pedido)", d: "Para tienditas y vendedores que piden por cliente: anotan, ven el total por sabor y te lo mandan por WhatsApp.", f: [["Abrir", "/pedido/"]] },
+      { t: "Pedir paquete (crunchitos.mx/paquete)", d: "Para quien quiere empezar a vender o resurtir: Inicial, Emprendedor o Mayorista.", f: [["Abrir", "/paquete/"]] },
+      { t: "Material para vender (crunchitos.mx/kit)", d: "Solo para emprendedores activos: estados para WhatsApp, catálogo, fotos de los 12 sabores, textos para copiar, cartel con QR y logos.", f: [["Abrir", "/kit/"]] },
       { t: "Cartel QR para tienditas", d: "Media carta, \"¡Pídelos aquí en caja!\" con precio a mano. Para el mostrador de cada punto de venta.", f: [["PDF para imprimir", "/kit/crunchitos-cartel-qr-tienda.pdf"], ["Imagen", "/kit/crunchitos-cartel-qr-tienda.png"]] }
     ] },
     { grupo: "Etiquetas para imprenta", items: [

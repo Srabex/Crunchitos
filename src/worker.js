@@ -844,6 +844,10 @@ export default {
       }
     }
     if (url.pathname === "/admin") return Response.redirect(new URL("/admin/", url).toString(), 301);
+    // Ligas cortas (27 nov 2026): /pedido para tienditas y vendedores, /paquete para emprendedores. Las viejas del kit redirigen.
+    if (url.pathname === "/pedido" || url.pathname === "/paquete") return Response.redirect(new URL(url.pathname + "/" + url.search, url).toString(), 301);
+    const viejaKit = /^\/kit\/(pedidos|paquete)(\/.*)?$/.exec(url.pathname);
+    if (viejaKit) return Response.redirect(new URL((viejaKit[1] === "pedidos" ? "/pedido/" : "/paquete/") + (viejaKit[2] || "").replace(/^\//, "") + url.search, url).toString(), 301);
     if (/^\/r\/g-[\w-]+\/?$/.test(url.pathname)) {
       const page = await env.ASSETS.fetch(new Request(new URL("/r/", url), req));
       const r = new Response(page.body, page);
