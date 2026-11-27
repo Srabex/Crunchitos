@@ -185,7 +185,7 @@
   }
   function estadoCobro(c) {
     if (!c) return "";
-    var extra = (c.regresaron ? " · regresaron " + c.regresaron : "") + (c.merma ? " · merma " + c.merma : "");
+    var extra = (c.regresaron ? " · regresaron " + c.regresaron : "") + (c.merma ? " · muestra/merma " + c.merma : "");
     var cobr = c.cobradas ? "vendidas " + c.cobradas + " (" + pesos(c.cobrado) + ")" : "";
     if (!c.faltan) return '<div class="cobro ok">✅ <b>Cerrada</b>' + (cobr ? " · " + cobr : " · no se vendió ninguna") + extra + (c.ultimoCobro ? " · " + esc(fechaBonita(c.ultimoCobro)) : "") + "</div>";
     var pend = c.faltan + (c.faltan === 1 ? " bolsa sigue" : " bolsas siguen") + " en la tienda (" + pesos(c.faltan * c.precio) + ")";
@@ -1126,12 +1126,13 @@
   function vLiquidar(v) {
     var c = consignas().find(function (x) { return x.tienda === ltienda; });
     if (!c) { vista = "inventario"; pintar(); return; }
-    if (!lform) lform = { precio: c.precio, vendidas: {}, devueltas: {}, quedan: {}, modo: "quedan", fecha: D.hoy, nota: "" };
-    var f = lform;
+    if (!lform) lform = { precio: c.precio, vendidas: {}, devueltas: {}, quedan: {}, merma: {}, modo: "quedan", fecha: D.hoy, nota: "" };
+    var f = lform; if (!f.merma) f.merma = {};
     // Modo "quedan": se cuenta lo que hay en la tienda y el sistema calcula lo vendido (tiene − quedan).
     if (f.modo === "quedan") Object.keys(c.items).forEach(function (id) {
       if (f.quedan[id] === undefined) f.quedan[id] = c.items[id];
-      f.vendidas[id] = c.items[id] - f.quedan[id];
+      if (f.quedan[id] + (f.merma[id] || 0) > c.items[id]) f.merma[id] = c.items[id] - f.quedan[id];
+      f.vendidas[id] = c.items[id] - f.quedan[id] - (f.merma[id] || 0);
       if ((f.devueltas[id] || 0) > f.quedan[id]) f.devueltas[id] = f.quedan[id];
     });
     function total(o) { var n = 0; Object.keys(o).forEach(function (k) { n += o[k] || 0; }); return n; }
@@ -1145,8 +1146,8 @@
       '<div class="sabores">' + Object.keys(c.items).map(function (id) {
         var tiene = c.items[id], vnd = f.vendidas[id] || 0, dev = f.devueltas[id] || 0;
         return '<div class="caja" style="margin:0;padding:12px"><div class="fila entre"><strong style="font-size:15px">' + esc(nombreProd(id)) + '</strong><small class="vacio">tiene ' + tiene + "</small></div>" +
-          '<div class="rejilla2" style="margin-top:8px">' + (f.modo === "quedan" ? ["quedan", "devueltas"] : ["vendidas", "devueltas"]).map(function (k) {
-            var n = k === "vendidas" ? vnd : k === "quedan" ? f.quedan[id] : dev, et = { vendidas: "Se vendieron", quedan: "Quedan en la tienda", devueltas: "Regresan" }[k];
+          '<div class="rejilla2" style="margin-top:8px;grid-template-columns:repeat(3,1fr)">' + (f.modo === "quedan" ? ["quedan", "devueltas", "merma"] : ["vendidas", "devueltas", "merma"]).map(function (k) {
+            var n = k === "vendidas" ? vnd : k === "quedan" ? f.quedan[id] : k === "merma" ? (f.merma[id] || 0) : dev, et = { vendidas: "Se vendieron", quedan: "Quedan en la tienda", devueltas: "Regresan", merma: "Muestra / regalo" }[k];
             return '<div><small style="font-weight:600">' + et + '</small><div class="paso" style="margin-top:4px"><button type="button" data-l="' + k + '" data-id="' + esc(id) + '" data-d="-1">−</button><input readonly value="' + n + '" aria-label="' + et + '"><button type="button" data-l="' + k + '" data-id="' + esc(id) + '" data-d="1">+</button></div></div>';
           }).join("") + "</div>" + (f.modo === "quedan" ? '<div style="font-size:13px;margin-top:6px;font-weight:600;color:' + (vnd ? "var(--verde)" : "var(--suave)") + '">→ se vendieron ' + vnd + "</div>" : "") + "</div>";
       }).join("") + "</div>" +
@@ -1155,27 +1156,32 @@
         "Vendidas hoy: " + pesos(hoyVal) + " → <b>" + (saldoPrev + hoyVal >= 0 ? "te toca cobrar " + pesos(debeHoy) : "le debes " + pesos(-(saldoPrev + hoyVal))) + "</b></div>" +
       '<label style="margin-top:10px">¿Cuánto te pagó hoy?<input id="lpagado" inputmode="decimal" value="' + (f.pagado || 0) + '"></label>' +
       '<label style="margin-top:10px">Nota (opcional)<input id="lnota" value="' + esc(f.nota) + '" placeholder="Ej. le dejé 10 más"></label><p class="error" id="lerr" style="margin-top:10px"></p></div>' +
-      '<div class="barra"><button class="btn verde" id="lguardar">' + (total(f.vendidas) ? "Guardar · " + total(f.vendidas) + " vendidas" : "Guardar") + (f.pagado ? " · te paga " + pesos(f.pagado) : "") + (total(f.devueltas) ? " · " + total(f.devueltas) + " regresan" : "") + "</button></div>";
+      '<div class="barra"><button class="btn verde" id="lguardar">' + (total(f.vendidas) ? "Guardar · " + total(f.vendidas) + " vendidas" : "Guardar") + (total(f.merma) ? " · " + total(f.merma) + " de muestra" : "") + (f.pagado ? " · te paga " + pesos(f.pagado) : "") + (total(f.devueltas) ? " · " + total(f.devueltas) + " regresan" : "") + "</button></div>";
     v.innerHTML = h;
     function leer() {
       f.precio = parseFloat(document.getElementById("lprecio").value) || 0; f.fecha = document.getElementById("lfecha").value || D.hoy; f.nota = document.getElementById("lnota").value;
       var p = parseFloat(String(document.getElementById("lpagado").value).replace(/[$,\s]/g, "")) || 0; if (p !== f.pagado) { f.pagado = p; f.pagadoTocado = true; }
     }
     document.getElementById("volver").onclick = function () { ir("inventario"); };
-    document.getElementById("todas").onclick = function () { leer(); f.devueltas = {}; Object.keys(c.items).forEach(function (id) { f.vendidas[id] = c.items[id]; f.quedan[id] = 0; }); pintar(); };
+    document.getElementById("todas").onclick = function () { leer(); f.devueltas = {}; Object.keys(c.items).forEach(function (id) { f.vendidas[id] = c.items[id] - (f.merma[id] || 0); f.quedan[id] = 0; }); pintar(); };
     v.querySelectorAll("[data-modo]").forEach(function (b) { b.onclick = function () { leer(); f.modo = b.getAttribute("data-modo"); if (f.modo === "quedan") Object.keys(c.items).forEach(function (id) { f.quedan[id] = c.items[id] - (f.vendidas[id] || 0); }); pintar(); }; });
     v.querySelectorAll("[data-l]").forEach(function (b) {
       b.onclick = function () {
         leer();
         var k = b.getAttribute("data-l"), id = b.getAttribute("data-id"), d = Number(b.getAttribute("data-d"));
+        if (k === "merma") {
+          var libre = f.modo === "quedan" ? c.items[id] - (f.quedan[id] || 0) : c.items[id] - (f.vendidas[id] || 0) - (f.devueltas[id] || 0);
+          f.merma[id] = Math.max(0, Math.min((f.merma[id] || 0) + libre, (f.merma[id] || 0) + d));
+          pintar(); return;
+        }
         if (f.modo === "quedan") {
-          if (k === "quedan") f.quedan[id] = Math.max(0, Math.min(c.items[id], (f.quedan[id] || 0) + d));
+          if (k === "quedan") f.quedan[id] = Math.max(0, Math.min(c.items[id] - (f.merma[id] || 0), (f.quedan[id] || 0) + d));
           else f.devueltas[id] = Math.max(0, Math.min(f.quedan[id] || 0, (f.devueltas[id] || 0) + d));
           pintar(); return;
         }
         var otro = k === "vendidas" ? "devueltas" : "vendidas";
         var n = (f[k][id] || 0) + d;
-        n = Math.max(0, Math.min(n, c.items[id] - (f[otro][id] || 0)));
+        n = Math.max(0, Math.min(n, c.items[id] - (f[otro][id] || 0) - (f.merma[id] || 0)));
         f[k][id] = n; pintar();
       };
     });
@@ -1183,7 +1189,7 @@
     document.getElementById("lguardar").onclick = function () {
       leer();
       var b = this; b.disabled = true;
-      api("POST", "/consigna/liquidar", { tienda: c.tienda, precio: f.precio, fecha: f.fecha, nota: f.nota, vendidas: f.vendidas, devueltas: f.devueltas, pagado: f.pagado || 0 }).then(function (r) {
+      api("POST", "/consigna/liquidar", { tienda: c.tienda, precio: f.precio, fecha: f.fecha, nota: f.nota, vendidas: f.vendidas, devueltas: f.devueltas, merma: f.merma, pagado: f.pagado || 0 }).then(function (r) {
         b.disabled = false;
         if (!r.ok) { var le = document.getElementById("lerr"); le.textContent = r.error || "No se pudo guardar."; aviso(r.error || "No se pudo guardar", true); le.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
         aviso("Listo, cuentas al día con " + c.tienda); lform = null; vista = "inventario"; cargar();
@@ -1230,7 +1236,7 @@
           '<div style="font-size:14px;margin-top:6px;line-height:1.6">📦 Entregado: <b>' + t.dejadas + " bolsas · " + pesos(t.valor) + "</b> <span style=\"color:var(--suave)\">(" + t.n + (t.n === 1 ? " consigna" : " consignas") + ")</span><br>" +
           "🛒 Vendido: <b>" + t.cobradas + " bolsas · " + pesos(t.cobrado) + "</b><br>" +
           "💵 Pagado: <b>" + pesos(t.abonado) + "</b>" + (t.abonos.length ? " en " + t.abonos.length + (t.abonos.length === 1 ? " pago" : " pagos") : "") +
-          (t.regresaron ? "<br>Regresaron: " + t.regresaron : "") + (t.merma ? "<br>Merma: " + t.merma : "") +
+          (t.regresaron ? "<br>Regresaron: " + t.regresaron : "") + (t.merma ? "<br>🎁 Muestras o merma (no se cobran): " + t.merma : "") +
           (t.faltan ? "<br>Siguen en la tienda: <b>" + t.faltan + (t.faltan === 1 ? " bolsa" : " bolsas") + " (" + pesos(t.enTienda) + ")</b>" : "") + "</div>" +
           tag +
           '<div class="fila" style="gap:6px;margin-top:8px;align-items:flex-end" data-abobox="' + esc(t.tienda) + '" hidden><label style="flex:1;margin:0">Monto<input inputmode="decimal" placeholder="$0"></label><label style="flex:2;margin:0">Nota<input placeholder="Ej. cliente me transfirió directo"></label><button class="btn chico" data-abook="' + esc(t.tienda) + '">Guardar</button></div>' +
@@ -1242,7 +1248,7 @@
     }
     h += gs.length ? gs.slice(0, 200).map(function (g) {
       var n = 0; g.items.forEach(function (m) { n += m.cantidad; });
-      return '<div class="mov"><div class="cab"><span><span class="pill p-' + g.tipo + '">' + (g.consigna && g.tipo === "venta" ? "Cobro de consigna" : nombres[g.tipo] + (g.consigna && g.tipo !== "devolucion" ? " (consigna)" : "")) + "</span> " + esc(fechaBonita(g.fecha)) + "</span><span>" + esc(nombrePersona(g.quien)) + "</span></div>" +
+      return '<div class="mov"><div class="cab"><span><span class="pill p-' + g.tipo + '">' + (g.consigna && g.tipo === "venta" ? "Cobro de consigna" : g.consigna && g.tipo === "merma" ? "Muestra o merma (consigna)" : nombres[g.tipo] + (g.consigna && g.tipo !== "devolucion" ? " (consigna)" : "")) + "</span> " + esc(fechaBonita(g.fecha)) + "</span><span>" + esc(nombrePersona(g.quien)) + "</span></div>" +
         (g.cliente ? '<div style="font-weight:600;margin-top:6px">' + esc(g.cliente) + "</div>" : "") +
         "<ul>" + g.items.map(function (m) { return "<li>" + m.cantidad + " × " + esc(nombreProd(m.producto_id)) + "</li>"; }).join("") + "</ul>" +
         (g.nota ? '<div style="font-size:13px;color:var(--suave);margin-bottom:8px">' + esc(g.nota) + "</div>" : "") +
