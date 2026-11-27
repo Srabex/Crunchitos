@@ -85,20 +85,17 @@ input:focus{outline:none;border-color:var(--amarillo)}
   <div class="env">
     <img src="/img/logo.svg" alt="Crunchitos" width="857" height="280">
     <h1>Mis pedidos</h1>
-    <p>Anota los pedidos de tus clientes y mándanoslos por WhatsApp.</p>
+    <p>Anota lo que te piden tus clientes y mándanos el pedido por WhatsApp.</p>
   </div>
 </header>
 
 <main class="env">
   <div class="elige-ciudad" hidden style="margin-top:16px"></div>
   <div class="caja" style="margin-top:16px">
-    <div class="dos">
-      <div><label for="vend">Tu nombre</label><input type="text" id="vend" autocomplete="name" placeholder="Ej. Cecy"></div>
-      <div><label for="precio">Tu precio por bolsa (opcional)</label><input id="precio" inputmode="decimal" placeholder="Ej. 50"></div>
-    </div>
+    <label for="vend">Tu nombre</label><input type="text" id="vend" autocomplete="name" placeholder="Ej. Cecy">
   </div>
 
-  <h2 id="tform">Nuevo pedido</h2>
+  <h2 id="tform">Agregar cliente</h2>
   <p id="ayuda" class="aviso-ed" hidden></p>
   <div class="caja">
     <div class="dos">
@@ -107,32 +104,26 @@ input:focus{outline:none;border-color:var(--amarillo)}
     </div>
     <div class="sabores" id="sabores" style="margin-top:12px"></div>
     <div style="margin-top:12px"><label for="nota">Nota (opcional)</label><input type="text" id="nota" placeholder="Ej. entregar el viernes"></div>
-    <div class="checks">
-      <label><input type="checkbox" id="pago"> Ya pagó</label>
-      <label><input type="checkbox" id="entregado"> Ya se entregó</label>
-    </div>
     <p id="msg" class="vacio" style="color:#B3261E;margin-top:8px" hidden></p>
     <div style="display:flex;gap:10px;margin-top:12px">
-      <button class="btn amarillo ancho" id="guardar">Guardar pedido</button>
+      <button class="btn amarillo ancho" id="guardar">Agregar al pedido</button>
       <button class="btn claro" id="cancelar" hidden>Cancelar</button>
     </div>
   </div>
 
-  <h2>Pedidos <span id="npeds" style="font-family:Poppins;font-size:16px;opacity:.6"></span></h2>
+  <h2>Mi pedido <span id="npeds" style="font-family:Poppins;font-size:16px;opacity:.6"></span></h2>
   <div class="caja" id="lista"></div>
 
   <h2>Total por sabor</h2>
   <div class="caja" id="resumen"></div>
 
-  <button class="btn claro ancho" id="todo" style="margin-top:6px">Mandar resumen de todo (entregas y cobros)</button>
-  <button class="btn claro ancho" id="limpiarok" style="margin-top:8px">Quitar los ya entregados y pagados</button>
-  <button class="btn claro ancho" id="nueva" style="margin-top:8px">Empezar una lista nueva</button>
+  <p id="enviado" class="aviso-ed" style="margin-top:12px" hidden>¿Ya nos mandaste tu pedido? Cuando te lo entreguemos, toca <b>Empezar pedido nuevo</b> para hacer el siguiente.</p>
+  <button class="btn claro ancho" id="nueva" style="margin-top:8px">Empezar pedido nuevo</button>
   <p class="aviso">Tus pedidos se guardan en este celular. <a href="/kit/">← Volver al kit</a></p>
 </main>
 
 <div class="barra"><div class="env">
-  <a class="btn claro" href="/kit/" style="flex:0 0 auto">Mi kit</a>
-  <a class="btn wa" id="enviar" href="#" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+  <a class="btn wa" id="enviar" href="#" target="_blank" rel="noopener">Mandar pedido por WhatsApp</a>
 </div></div>
 
 <script>
@@ -171,10 +162,9 @@ input:focus{outline:none;border-color:var(--amarillo)}
   var fechaCorta = function (iso) { try { return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" }); } catch (e) { return ""; } };
   var bolsas = function (p) { var n = 0; Object.keys(p.items).forEach(function (k) { n += p.items[k]; }); return n; };
 
-  var form = {}, editando = null, agregando = null;
-  $("vend").value = st.vendedor || ""; $("precio").value = st.precio || "";
+  var form = {}, editando = null;
+  $("vend").value = st.vendedor || "";
   $("vend").oninput = function () { st.vendedor = this.value; guardarSt(); pintar(); };
-  $("precio").oninput = function () { st.precio = this.value; guardarSt(); pintar(); };
 
   $("sabores").innerHTML = SABORES.map(function (s) {
     return '<div class="sab" data-id="' + s[0] + '"><span class="pto" style="background:' + s[3] + '"></span><span class="nom">' + s[1] + "<small>" + s[2] + "</small></span>" +
@@ -194,8 +184,8 @@ input:focus{outline:none;border-color:var(--amarillo)}
     });
   }
   function limpiar() {
-    form = {}; editando = null; agregando = null; $("cli").disabled = false; $("ayuda").hidden = true; $("cli").value = ""; $("tel").value = ""; $("nota").value = ""; $("pago").checked = false; $("entregado").checked = false;
-    $("tform").textContent = "Nuevo pedido"; $("guardar").textContent = "Guardar pedido"; $("cancelar").hidden = true; $("msg").hidden = true; pintarForm();
+    form = {}; editando = null; $("ayuda").hidden = true; $("cli").value = ""; $("tel").value = ""; $("nota").value = "";
+    $("tform").textContent = "Agregar cliente"; $("guardar").textContent = "Agregar al pedido"; $("cancelar").hidden = true; $("msg").hidden = true; pintarForm();
   }
   $("cancelar").onclick = limpiar;
   $("guardar").onclick = function () {
@@ -203,129 +193,70 @@ input:focus{outline:none;border-color:var(--amarillo)}
     var m = $("msg");
     if (!cli) { m.textContent = "Escribe el nombre del cliente."; m.hidden = false; $("cli").focus(); return; }
     if (!n) { m.textContent = "Agrega al menos una bolsa con el botón +."; m.hidden = false; return; }
-    if (agregando) {
-      st.pedidos.forEach(function (x) {
-        if (x.id !== agregando) return;
-        if (!x.pedidoItems && (x.pedido || x.entregado)) x.pedidoItems = copia(x.items);
-        Object.keys(form).forEach(function (k) { x.items[k] = (x.items[k] || 0) + form[k]; });
-        if (x.entregado) { x.entregado = false; } x.pago = false;
-        var nt = $("nota").value.trim(); if (nt) x.nota = x.nota ? x.nota + " · " + nt : nt;
-        var tl = $("tel").value.trim(); if (tl) x.tel = tl;
-      });
-      guardarSt(); limpiar(); pintar(); $("lista").scrollIntoView({ behavior: "smooth", block: "start" }); return;
-    }
-    var p = { id: editando || String(Date.now()), cliente: cli, tel: $("tel").value.trim(), nota: $("nota").value.trim(), items: JSON.parse(JSON.stringify(form)),
-      pago: $("pago").checked, entregado: $("entregado").checked, fecha: new Date().toISOString() };
-    if (editando) st.pedidos = st.pedidos.map(function (x) { if (x.id === editando) { p.fecha = x.fecha; p.pedido = x.pedido; p.pedidoItems = x.pedidoItems || (x.pedido ? copia(x.items) : undefined); if (p.entregado) p.pedidoItems = copia(p.items); return p; } return x; });
+    var p = { id: editando || String(Date.now()), cliente: cli, tel: $("tel").value.trim(), nota: $("nota").value.trim(), items: JSON.parse(JSON.stringify(form)), fecha: new Date().toISOString() };
+    if (editando) st.pedidos = st.pedidos.map(function (x) { if (x.id === editando) { p.fecha = x.fecha; return p; } return x; });
     else st.pedidos.push(p);
-    guardarSt(); limpiar(); pintar();
+    st.enviado = false; guardarSt(); limpiar(); pintar();
     $("lista").scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  function totales() { var tot = {}, n = 0; st.pedidos.forEach(function (p) { n += bolsas(p); Object.keys(p.items).forEach(function (k) { tot[k] = (tot[k] || 0) + p.items[k]; }); }); return { tot: tot, n: n }; }
   function pintar() {
-    var L = $("lista"), pr = precio();
-    $("npeds").textContent = st.pedidos.length ? "(" + st.pedidos.length + ")" : "";
-    if (!st.pedidos.length) L.innerHTML = '<p class="vacio">Todavía no hay pedidos. Anota el primero arriba.</p>';
+    var L = $("lista");
+    $("npeds").textContent = st.pedidos.length ? "(" + st.pedidos.length + (st.pedidos.length === 1 ? " cliente)" : " clientes)") : "";
+    if (!st.pedidos.length) L.innerHTML = '<p class="vacio">Todavía no hay clientes. Agrega el primero arriba.</p>';
     else L.innerHTML = st.pedidos.map(function (p) {
       var n = bolsas(p);
-      return '<div class="ped"><div class="cab"><strong>' + esc(p.cliente) + "</strong><span>" + n + (n === 1 ? " bolsa" : " bolsas") + (pr ? " · " + pesos(n * pr) : "") + "</span></div>" +
+      return '<div class="ped"><div class="cab"><strong>' + esc(p.cliente) + "</strong><span>" + n + (n === 1 ? " bolsa" : " bolsas") + "</span></div>" +
         '<div class="det">' + Object.keys(p.items).map(function (k) { return p.items[k] + " " + esc(nombre(k)); }).join(" · ") + (p.tel ? "<br>📞 " + esc(p.tel) : "") + (p.nota ? "<br>📝 " + esc(p.nota) : "") + "</div>" +
-        '<div class="tags"><span class="tag' + (p.pago ? " si" : "") + '">' + (p.pago ? "Pagó" : "Falta pago") + '</span><span class="tag' + (p.entregado ? " si" : "") + '">' + (p.entregado ? "Entregado" : "Por entregar") + "</span>" + (function () {
-          var f = porPedir(p), nf = suma(f);
-          if (!nf) return !p.entregado && p.pedido ? '<span class="tag">Pedido el ' + esc(fechaCorta(p.pedido)) + "</span>" : "";
-          var txt = Object.keys(f).map(function (k) { return f[k] + " " + esc(nombre(k)); }).join(", ");
-          return '<span class="tag nuevo">' + (p.pedido ? "Falta pedir: " + txt : "Nuevo · falta pedirlo") + "</span>" + (p.pedido ? '<span class="tag">Lo demás pedido el ' + esc(fechaCorta(p.pedido)) + "</span>" : "");
-        })() + "</div>" +
-        '<div class="acc"><button class="btn claro" data-a="pago" data-id="' + p.id + '">' + (p.pago ? "Quitar pagado" : "Marcar pagado") + '</button><button class="btn claro" data-a="ent" data-id="' + p.id + '">' + (p.entregado ? "Quitar entregado" : "Marcar entregado") + '</button><button class="btn amarillo" data-a="mas" data-id="' + p.id + '">+ Agregar</button><button class="btn claro" data-a="edit" data-id="' + p.id + '">Editar</button><button class="btn claro" data-a="del" data-id="' + p.id + '">Borrar</button></div></div>';
+        '<div class="acc"><button class="btn claro" data-a="edit" data-id="' + p.id + '">Editar</button><button class="btn claro" data-a="del" data-id="' + p.id + '">Borrar</button></div></div>';
     }).join("");
-    // resumen
-    var tot = {}, n = 0, pend = 0, cobrar = 0;
-    st.pedidos.forEach(function (p) { var b = bolsas(p); n += b; if (!p.entregado) pend += b; if (!p.pago) cobrar += b; Object.keys(p.items).forEach(function (k) { tot[k] = (tot[k] || 0) + p.items[k]; }); });
-    var R = $("resumen");
-    if (!n) R.innerHTML = '<p class="vacio">Aquí verás cuántas bolsas de cada sabor llevas.</p>';
-    else R.innerHTML = '<table class="res">' + SABORES.filter(function (s) { return tot[s[0]]; }).map(function (s) {
-      return '<tr><td><span class="pto" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:' + s[3] + ';margin-right:8px"></span>' + s[1] + " " + s[2] + "</td><td>" + tot[s[0]] + "</td></tr>";
-    }).join("") + '<tr class="tot"><td>Total</td><td>' + n + " bolsas" + (pr ? " · " + pesos(n * pr) : "") + "</td></tr></table>" +
-      '<p class="vacio" style="margin-top:10px">Por entregar: <b>' + pend + "</b> · Falta cobrar: <b>" + cobrar + "</b>" + (pr && cobrar ? " (" + pesos(cobrar * pr) + ")" : "") + "</p>";
-    var nuevos = st.pedidos.filter(esNuevo), nn = 0, tn = {};
-    nuevos.forEach(function (p) { var f = porPedir(p); nn += suma(f); Object.keys(f).forEach(function (k) { tn[k] = (tn[k] || 0) + f[k]; }); });
-    $("enviar").href = "https://wa.me/" + WA + "?text=" + encodeURIComponent(mensajeNuevo(nuevos, tn, nn));
-    $("enviar").setAttribute("aria-disabled", String(!nn));
-    $("enviar").textContent = nn ? "Pedir lo nuevo · " + nn + (nn === 1 ? " bolsa" : " bolsas") : "No hay pedidos nuevos";
-    $("todo").hidden = !n;
-    $("limpiarok").hidden = !st.pedidos.some(function (p) { return p.pago && p.entregado; });
+    var t = totales(), R = $("resumen");
+    if (!t.n) R.innerHTML = '<p class="vacio">Aquí verás cuántas bolsas de cada sabor llevas.</p>';
+    else R.innerHTML = '<table class="res">' + SABORES.filter(function (s) { return t.tot[s[0]]; }).map(function (s) {
+      return '<tr><td><span class="pto" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:' + s[3] + ';margin-right:8px"></span>' + s[1] + " " + s[2] + "</td><td>" + t.tot[s[0]] + "</td></tr>";
+    }).join("") + '<tr class="tot"><td>Total</td><td>' + t.n + (t.n === 1 ? " bolsa" : " bolsas") + "</td></tr></table>";
+    $("enviar").href = "https://wa.me/" + WA + "?text=" + encodeURIComponent(mensaje(t.tot, t.n));
+    $("enviar").setAttribute("aria-disabled", String(!t.n));
+    $("enviar").textContent = t.n ? "Mandar pedido · " + t.n + (t.n === 1 ? " bolsa" : " bolsas") : "Mandar pedido por WhatsApp";
+    $("nueva").hidden = !st.pedidos.length;
+    $("enviado").hidden = !(st.enviado && st.pedidos.length);
   }
-  function mensajeNuevo(peds, tot, n) {
-    var pr = precio(), l = [];
-    l.push("🛒 *Pedido nuevo Crunchitos*" + (st.vendedor ? " · " + st.vendedor : ""));
+  function mensaje(tot, n) {
+    var l = [];
+    l.push("🛒 *Pedido Crunchitos*" + (st.vendedor ? " · " + st.vendedor : ""));
     l.push(new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" }));
     l.push("");
     SABORES.forEach(function (s) { if (tot[s[0]]) l.push("• " + tot[s[0]] + " " + s[1] + " " + s[2]); });
     l.push("*Total: " + n + (n === 1 ? " bolsa" : " bolsas") + "*");
-    l.push(""); l.push("_Para:_");
-    peds.forEach(function (p) {
-      var f = porPedir(p), b = suma(f);
-      l.push("- " + p.cliente + ": " + Object.keys(f).map(function (k) { return f[k] + " " + nombre(k); }).join(", ") + (pr ? " (" + pesos(b * pr) + ")" : "") + (p.pedido ? " (se suma a lo que ya pidió)" : ""));
+    l.push(""); l.push("_Por cliente:_");
+    st.pedidos.forEach(function (p) {
+      l.push("- " + p.cliente + ": " + Object.keys(p.items).map(function (k) { return p.items[k] + " " + nombre(k); }).join(", ") + (p.nota ? " (" + p.nota + ")" : ""));
     });
     return l.join(String.fromCharCode(10));
   }
-  function mensaje(tot, n) {
-    var pr = precio(), l = [];
-    l.push("🧾 *Pedidos Crunchitos*" + (st.vendedor ? " · " + st.vendedor : ""));
-    l.push(new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" }));
-    l.push("");
-    st.pedidos.forEach(function (p, i) {
-      var b = bolsas(p);
-      l.push("*" + (i + 1) + ". " + p.cliente + "* — " + b + (b === 1 ? " bolsa" : " bolsas") + (pr ? " · " + pesos(b * pr) : "") + (p.pago ? " ✅ pagó" : " ⏳ falta pago") + (p.entregado ? " · entregado" : ""));
-      Object.keys(p.items).forEach(function (k) { l.push("   • " + p.items[k] + " " + nombre(k)); });
-      if (p.nota) l.push("   📝 " + p.nota);
-    });
-    l.push(""); l.push("*Total por sabor*");
-    SABORES.forEach(function (s) { if (tot[s[0]]) l.push("• " + tot[s[0]] + " " + s[1] + " " + s[2]); });
-    l.push("*Total: " + n + " bolsas*" + (pr ? " · " + pesos(n * pr) : ""));
-    return l.join("\n");
-  }
   $("enviar").addEventListener("click", function (e) {
-    if (this.getAttribute("aria-disabled") === "true") { e.preventDefault(); alertaVacia(); return; }
-    // Lo que se acaba de pedir queda marcado para no volver a pedirlo.
-    var hoy = new Date().toISOString();
-    st.pedidos.forEach(function (p) { if (esNuevo(p)) { p.pedido = hoy; p.pedidoItems = copia(p.items); } });
-    guardarSt(); setTimeout(pintar, 300);
+    if (this.getAttribute("aria-disabled") === "true") { e.preventDefault(); var m = $("msg"); m.textContent = "Primero agrega al menos un cliente con sus bolsas."; m.hidden = false; $("cli").focus(); return; }
+    st.enviado = true; guardarSt(); setTimeout(pintar, 300);
   });
-  $("todo").onclick = function () {
-    var tot = {}, n = 0; st.pedidos.forEach(function (p) { n += bolsas(p); Object.keys(p.items).forEach(function (k) { tot[k] = (tot[k] || 0) + p.items[k]; }); });
-    window.open("https://wa.me/" + WA + "?text=" + encodeURIComponent(mensaje(tot, n)), "_blank");
-  };
-  $("limpiarok").onclick = function () {
-    if (this.getAttribute("data-ok") !== "1") { this.setAttribute("data-ok", "1"); this.textContent = "¿Quitarlos de la lista? Toca otra vez"; var b = this; setTimeout(function () { b.removeAttribute("data-ok"); b.textContent = "Quitar los ya entregados y pagados"; }, 4000); return; }
-    st.pedidos = st.pedidos.filter(function (p) { return !(p.pago && p.entregado); });
-    this.removeAttribute("data-ok"); this.textContent = "Quitar los ya entregados y pagados"; guardarSt(); pintar();
-  };
-  function alertaVacia() { var m = $("msg"); m.textContent = st.pedidos.length ? "No hay pedidos nuevos: todo lo de tu lista ya se pidió o ya se entregó. Anota uno nuevo arriba." : "Primero anota al menos un pedido."; m.hidden = false; $("cli").focus(); }
   $("lista").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-a]"); if (!b) return;
     var id = b.getAttribute("data-id"), a = b.getAttribute("data-a"), p = st.pedidos.filter(function (x) { return x.id === id; })[0]; if (!p) return;
-    if (a === "pago") p.pago = !p.pago;
-    else if (a === "ent") { p.entregado = !p.entregado; if (p.entregado) p.pedidoItems = copia(p.items); }
-    else if (a === "del") {
+    if (a === "del") {
       if (b.getAttribute("data-ok") !== "1") { b.setAttribute("data-ok", "1"); b.textContent = "¿Seguro? Toca otra vez"; return; }
       st.pedidos = st.pedidos.filter(function (x) { return x.id !== id; });
-    } else if (a === "mas") {
-      limpiar(); agregando = id; $("cli").value = p.cliente; $("cli").disabled = true;
-      $("tform").textContent = "Agregar al pedido de " + p.cliente; $("guardar").textContent = "Agregar al pedido"; $("cancelar").hidden = false;
-      $("ayuda").textContent = "Ya tiene: " + Object.keys(p.items).map(function (k) { return p.items[k] + " " + nombre(k); }).join(", ") + ". Aquí pon solo lo nuevo que te pidió."; $("ayuda").hidden = false;
-      pintarForm(); $("tform").scrollIntoView({ behavior: "smooth" }); return;
     } else if (a === "edit") {
       editando = id; form = JSON.parse(JSON.stringify(p.items)); $("cli").value = p.cliente; $("tel").value = p.tel || ""; $("nota").value = p.nota || "";
-      $("pago").checked = !!p.pago; $("entregado").checked = !!p.entregado; $("tform").textContent = "Editando el pedido de " + p.cliente; $("ayuda").textContent = "Cambia las cantidades y toca Guardar cambios. Si te pidió algo más, mejor usa + Agregar."; $("ayuda").hidden = false; $("guardar").textContent = "Guardar cambios"; $("cancelar").hidden = false;
+      $("tform").textContent = "Editando a " + p.cliente; $("ayuda").textContent = "Cambia las bolsas (+ / −) y toca Guardar cambios."; $("ayuda").hidden = false; $("guardar").textContent = "Guardar cambios"; $("cancelar").hidden = false;
       pintarForm(); $("tform").scrollIntoView({ behavior: "smooth" }); return;
     }
     guardarSt(); pintar();
   });
   $("nueva").onclick = function () {
     if (!st.pedidos.length) return;
-    if (this.getAttribute("data-ok") !== "1") { this.setAttribute("data-ok", "1"); this.textContent = "¿Borrar todos los pedidos? Toca otra vez"; var b = this; setTimeout(function () { b.removeAttribute("data-ok"); b.textContent = "Empezar una lista nueva"; }, 4000); return; }
-    st.pedidos = []; guardarSt(); this.removeAttribute("data-ok"); this.textContent = "Empezar una lista nueva"; limpiar(); pintar();
+    if (this.getAttribute("data-ok") !== "1") { this.setAttribute("data-ok", "1"); this.textContent = "¿Borrar este pedido y empezar otro? Toca otra vez"; var b = this; setTimeout(function () { b.removeAttribute("data-ok"); b.textContent = "Empezar pedido nuevo"; }, 4000); return; }
+    st.pedidos = []; st.enviado = false; guardarSt(); this.removeAttribute("data-ok"); this.textContent = "Empezar pedido nuevo"; limpiar(); pintar();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
   pintarForm(); pintar();
 })();
